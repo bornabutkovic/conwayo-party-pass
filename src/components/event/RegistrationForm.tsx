@@ -263,10 +263,17 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
           <Button
             type="submit"
             size="lg"
-            className="w-full text-lg"
+            className="relative w-full text-lg"
             disabled={submitting || !selectedTierId}
           >
-            {submitting ? "Registering..." : "Complete Registration"}
+            {submitting && (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+              </span>
+            )}
+            <span className={submitting ? "invisible" : ""}>
+              Complete Registration
+            </span>
           </Button>
         </form>
       </div>
