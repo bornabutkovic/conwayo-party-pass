@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EventHero } from "@/components/event/EventHero";
 import { TicketTierCard } from "@/components/event/TicketTierCard";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
+import { EventNotFound } from "@/components/event/EventNotFound";
 import { RegistrationSuccess } from "@/components/event/RegistrationSuccess";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import type { Enums } from "@/integrations/supabase/types";
 
@@ -110,18 +111,7 @@ export default function EventRegister() {
   if (authLoading || eventLoading) return <EventPageSkeleton />;
 
   if (eventError || !event) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="mx-auto max-w-md text-center">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10">
-            <AlertTriangle className="h-10 w-10 text-destructive" />
-          </div>
-          <h1 className="mb-2 text-3xl font-bold text-foreground">Event Not Found</h1>
-          <p className="mb-8 text-muted-foreground">The event you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate("/")} variant="outline">Back to Home</Button>
-        </div>
-      </div>
-    );
+    return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
   }
 
   const currency = event.currency ?? "EUR";
