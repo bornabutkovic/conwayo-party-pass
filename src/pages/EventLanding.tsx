@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { supabase } from "@/integrations/supabase/client";
@@ -234,6 +235,7 @@ export default function EventLanding() {
   if (success) {
     return (
       <div className="min-h-screen bg-background">
+        <ConvwayoHeader />
         <section className="container mx-auto flex min-h-screen items-center justify-center px-4 py-16">
           <div className="mx-auto max-w-md text-center">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
@@ -344,6 +346,7 @@ export default function EventLanding() {
 
   return (
     <div className="min-h-screen bg-background">
+      <ConvwayoHeader />
       <EventHero event={event} />
 
       <section className="container mx-auto px-4 py-12 md:py-16">
