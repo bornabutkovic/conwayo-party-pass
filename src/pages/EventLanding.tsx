@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { EventHero } from "@/components/event/EventHero";
-import { RegistrationForm } from "@/components/event/RegistrationForm";
+import { TicketTierCard } from "@/components/event/TicketTierCard";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
@@ -9,6 +10,7 @@ import { AlertTriangle } from "lucide-react";
 export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: event, isLoading, error } = useEvent(slug ?? "");
   const { data: tiers = [] } = useTicketTiers(event?.id);
 
@@ -35,10 +37,45 @@ export default function EventLanding() {
     );
   }
 
+  const currency = event.currency ?? "EUR";
+
+  const handleRegister = () => {
+    if (user) {
+      navigate(`/event/${slug}/register`);
+    } else {
+      navigate(`/event/${slug}/auth`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <EventHero event={event} />
-      <RegistrationForm event={event} tiers={tiers} />
+
+      <section className="container mx-auto px-4 py-12 md:py-16">
+        <div className="mx-auto max-w-2xl">
+          {/* Ticket Tiers Preview */}
+          {tiers.length > 0 && (
+            <div className="mb-10">
+              <h2 className="mb-4 text-2xl font-bold text-foreground">Available Tickets</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {tiers.map((tier) => (
+                  <TicketTierCard
+                    key={tier.id}
+                    tier={tier}
+                    selected={false}
+                    currency={currency}
+                    onSelect={() => handleRegister()}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Button size="lg" className="w-full text-lg" onClick={handleRegister}>
+            Register for Event
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
