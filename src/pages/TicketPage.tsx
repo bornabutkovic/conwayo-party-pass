@@ -2,25 +2,34 @@ import { useEffect, useState } from "react";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useEventServices } from "@/hooks/useEventServices";
+import { CreateAccountBanner } from "@/components/event/CreateAccountBanner";
+import { ServiceCard } from "@/components/event/ServiceCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { Ticket, User, CreditCard, Loader2 } from "lucide-react";
+import { Ticket, User, CreditCard, Loader2, ShoppingBag } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Attendee = Tables<"attendees">;
 
 export default function TicketPage() {
   const { attendeeId } = useParams<{ attendeeId: string }>();
+  const { user } = useAuth();
   const [attendee, setAttendee] = useState<Attendee | null>(null);
   const [eventName, setEventName] = useState("");
-  const [eventSlug, setEventSlug] = useState("");
+  const [eventId, setEventId] = useState<string | null>(null);
   const [poNumber, setPoNumber] = useState<string | null>(null);
+  const [currency, setCurrency] = useState("EUR");
   const [loading, setLoading] = useState(true);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
+  const [purchasedServiceIds, setPurchasedServiceIds] = useState<Set<string>>(new Set());
+
+  const { data: services = [] } = useEventServices(eventId);
 
   useEffect(() => {
     if (!attendeeId) return;
@@ -52,16 +61,28 @@ export default function TicketPage() {
           setPoNumber(order.po_number);
         }
 
+        // Fetch purchased services
+        const { data: items } = await supabase
+          .from("order_items")
+          .select("service_id")
+          .eq("attendee_id", att.id)
+          .not("service_id", "is", null);
+
+        if (items) {
+          setPurchasedServiceIds(new Set(items.map((i) => i.service_id!)));
+        }
+
         if (att.event_id) {
+          setEventId(att.event_id);
           const { data: ev } = await supabase
             .from("events")
-            .select("name, slug")
+            .select("name, slug, currency")
             .eq("id", att.event_id)
             .maybeSingle();
 
           if (ev) {
             setEventName(ev.name);
-            setEventSlug(ev.slug);
+            setCurrency(ev.currency ?? "EUR");
           }
         }
       } catch (err: any) {
@@ -78,21 +99,10 @@ export default function TicketPage() {
     if (!attendee) return;
     setRedirectingToStripe(true);
     try {
-      const res = await fetch(
-        `https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxdXNxZmRhaWtrdnZqZmxnbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDMxNzYsImV4cCI6MjA4MjY3OTE3Nn0.nWRj48zSZxz5qUK_wkV3PKbkG969rdpsbQ8OAWdBESk`,
-          },
-          body: JSON.stringify({
-            attendeeId: attendee.id,
-            eventId: attendee.event_id,
-          }),
-        }
-      );
-      const result = await res.json();
+      const res = await supabase.functions.invoke("create-checkout", {
+        body: { attendeeId: attendee.id, eventId: attendee.event_id },
+      });
+      const result = res.data;
       if (result.free) {
         setAttendee({ ...attendee, payment_status: "paid" });
         toast({ title: "Free ticket activated!" });
@@ -107,6 +117,72 @@ export default function TicketPage() {
       toast({ title: "Payment redirect failed", description: err.message, variant: "destructive" });
     } finally {
       setRedirectingToStripe(false);
+    }
+  };
+
+  const handlePurchaseService = async (serviceId: string) => {
+    if (!attendee || !eventId) return;
+
+    const service = services.find((s) => s.id === serviceId);
+    if (!service) return;
+
+    try {
+      // Fetch event for VAT
+      const { data: ev } = await supabase
+        .from("events")
+        .select("vat_rate")
+        .eq("id", eventId)
+        .maybeSingle();
+
+      const vatRate = ev?.vat_rate ?? 25;
+      const vatAmount = Number(((service.price * vatRate) / (100 + vatRate)).toFixed(2));
+
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          event_id: eventId,
+          attendee_id: attendee.id,
+          payer_name: `${attendee.first_name} ${attendee.last_name}`,
+          payer_type: "individual",
+          status: "draft",
+          total_amount: service.price,
+        })
+        .select("id")
+        .single();
+
+      if (orderError) throw orderError;
+
+      const { error: itemError } = await supabase.from("order_items").insert({
+        order_id: order.id,
+        attendee_id: attendee.id,
+        service_id: serviceId,
+        description: service.name,
+        quantity: 1,
+        unit_price: service.price,
+        total_price: service.price,
+        vat_amount: vatAmount,
+        price_at_purchase: service.price,
+      });
+
+      if (itemError) throw itemError;
+
+      if (service.price <= 0) {
+        setPurchasedServiceIds((prev) => new Set([...prev, serviceId]));
+        toast({ title: "Service added to your ticket!" });
+        return;
+      }
+
+      const res = await supabase.functions.invoke("create-checkout", {
+        body: { attendeeId: attendee.id, eventId },
+      });
+
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      } else {
+        throw new Error(res.data?.error || "Failed to create payment");
+      }
+    } catch (err: any) {
+      toast({ title: "Purchase failed", description: err.message, variant: "destructive" });
     }
   };
 
@@ -134,6 +210,7 @@ export default function TicketPage() {
   }
 
   const isPaid = attendee.payment_status === "paid";
+  const isGuest = !attendee.profile_id;
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,12 +218,23 @@ export default function TicketPage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-lg space-y-6">
+          {/* Guest → Account Conversion Banner */}
+          {isGuest && !user && attendee.email && (
+            <CreateAccountBanner
+              attendeeId={attendee.id}
+              email={attendee.email}
+              firstName={attendee.first_name}
+              lastName={attendee.last_name}
+            />
+          )}
+
           {/* QR Code Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Ticket className="h-5 w-5 text-primary" />
                 My Ticket
+                {eventName && <span className="text-sm font-normal text-muted-foreground">— {eventName}</span>}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center">
@@ -236,6 +324,29 @@ export default function TicketPage() {
               </dl>
             </CardContent>
           </Card>
+
+          {/* Marketplace / Services */}
+          {services.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingBag className="h-5 w-5 text-primary" />
+                  Additional Services
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {services.map((service) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    currency={currency}
+                    purchased={purchasedServiceIds.has(service.id)}
+                    onPurchase={handlePurchaseService}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </main>
     </div>
