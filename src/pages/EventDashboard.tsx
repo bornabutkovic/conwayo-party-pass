@@ -108,13 +108,22 @@ export default function EventDashboard() {
                 </div>
               ) : attendee ? (
                 <div className="flex flex-col items-center gap-4">
-                  <div className="rounded-xl border-2 border-primary/20 bg-card p-4">
-                    <QRCodeSVG
-                      value={attendee.id}
-                      size={192}
-                      level="H"
-                      includeMargin
-                    />
+                  <div className="relative rounded-xl border-2 border-primary/20 bg-card p-4">
+                    <div className={attendee.payment_status !== "paid" ? "blur-md pointer-events-none select-none" : ""}>
+                      <QRCodeSVG
+                        value={attendee.id}
+                        size={192}
+                        level="H"
+                        includeMargin
+                      />
+                    </div>
+                    {attendee.payment_status !== "paid" && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="rounded-full bg-background/90 px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm">
+                          Waiting for payment confirmation
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     ID: {attendee.id.slice(0, 8)}...
