@@ -4,13 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEvent } from "@/hooks/useEvent";
 import { supabase } from "@/integrations/supabase/client";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
+import { EventNotFound } from "@/components/event/EventNotFound";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { AlertTriangle, LogOut, Ticket, User } from "lucide-react";
+import { LogOut, Ticket, User } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Attendee = Tables<"attendees">;
@@ -70,18 +71,7 @@ export default function EventDashboard() {
   if (authLoading || eventLoading) return <EventPageSkeleton />;
 
   if (eventError || !event) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="mx-auto max-w-md text-center">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10">
-            <AlertTriangle className="h-10 w-10 text-destructive" />
-          </div>
-          <h1 className="mb-2 text-3xl font-bold text-foreground">Event Not Found</h1>
-          <p className="mb-8 text-muted-foreground">The event you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate("/")} variant="outline">Back to Home</Button>
-        </div>
-      </div>
-    );
+    return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
   }
 
   return (

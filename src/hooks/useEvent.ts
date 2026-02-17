@@ -9,16 +9,38 @@ export function useEvent(slug: string) {
   return useQuery({
     queryKey: ["event", slug],
     queryFn: async () => {
+      console.log("Current Slug:", slug);
       const { data, error } = await supabase
         .from("events")
         .select("*")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("Event not found");
+      if (error) {
+        console.error("Supabase event query error:", error);
+        throw error;
+      }
+      if (!data) {
+        console.warn("No event found for slug:", slug);
+        throw new Error("Event not found");
+      }
+      console.log("Event loaded:", data.name, data.id);
       return data as Event;
     },
     enabled: !!slug,
+  });
+}
+
+export function useAvailableEvents() {
+  return useQuery({
+    queryKey: ["available_events"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("events")
+        .select("slug, name, status, start_date, venue_name")
+        .order("start_date", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 }
 
