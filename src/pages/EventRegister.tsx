@@ -10,12 +10,14 @@ import { EventNotFound } from "@/components/event/EventNotFound";
 import { RegistrationSuccess } from "@/components/event/RegistrationSuccess";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Building2, UserIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Enums } from "@/integrations/supabase/types";
 
 interface SuccessData {
@@ -25,6 +27,7 @@ interface SuccessData {
   tierName: string;
   price: number;
   currency: string;
+  payerType: "individual" | "company";
 }
 
 export default function EventRegister() {
@@ -49,6 +52,7 @@ export default function EventRegister() {
     payer_type: "individual" as "individual" | "company",
     payer_oib: "",
     payer_address: "",
+    company_name: "",
   });
 
   // Redirect unauthenticated users
@@ -132,10 +136,16 @@ export default function EventRegister() {
       toast({ title: "Payer name is required", variant: "destructive" });
       return;
     }
+    if (form.payer_type === "company" && !form.company_name) {
+      toast({ title: "Company name is required for company billing", variant: "destructive" });
+      return;
+    }
 
     setSubmitting(true);
     try {
-      // Create attendee
+      const isCompany = form.payer_type === "company";
+
+      // Create attendee with pending status for both flows
       const { data: attendee, error: attError } = await supabase
         .from("attendees")
         .insert({
@@ -148,7 +158,7 @@ export default function EventRegister() {
           institution: form.institution || null,
           profile_id: user!.id,
           status: "approved",
-          payment_status: "paid",
+          payment_status: "pending",
         })
         .select("id, price_paid")
         .single();
@@ -165,11 +175,11 @@ export default function EventRegister() {
         .insert({
           event_id: event.id,
           attendee_id: attendee.id,
-          payer_name: form.payer_name,
+          payer_name: isCompany ? form.company_name : form.payer_name,
           payer_type: form.payer_type as Enums<"payer_type">,
           payer_oib: form.payer_oib || null,
           payer_address: form.payer_address || null,
-          status: "paid",
+          status: "draft",
           total_amount: pricePaid,
         })
         .select("id")
@@ -199,6 +209,7 @@ export default function EventRegister() {
         tierName: selectedTier?.name ?? "Ticket",
         price: pricePaid,
         currency,
+        payerType: form.payer_type,
       });
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
@@ -219,18 +230,43 @@ export default function EventRegister() {
               </svg>
             </div>
 
-            <h2 className="mb-2 text-3xl font-bold text-foreground">You're In!</h2>
-            <p className="mb-6 text-muted-foreground">
-              Your registration for <strong>{success.eventName}</strong> has been confirmed.
-            </p>
+            {success.payerType === "company" ? (
+              <>
+                <h2 className="mb-2 text-3xl font-bold text-foreground">Invoice Requested</h2>
+                <p className="mb-6 text-muted-foreground">
+                  We have sent your details to our accounting system (MS Business Central). You will receive an offer via email shortly.
+                </p>
+                <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
+                  <p>Your QR code will be available on the dashboard once payment is confirmed.</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="mb-2 text-3xl font-bold text-foreground">Almost There!</h2>
+                <p className="mb-6 text-muted-foreground">
+                  Your registration for <strong>{success.eventName}</strong> is confirmed. Please complete your payment to activate your ticket.
+                </p>
+                {/* Stripe payment link placeholder */}
+                <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
+                  <p className="mb-2 font-medium">Payment Required</p>
+                  <p className="text-muted-foreground">
+                    You will be redirected to complete payment. Your QR code will appear on the dashboard once payment is confirmed.
+                  </p>
+                </div>
+              </>
+            )}
 
-            {/* QR Code */}
-            <div className="mx-auto mb-6 inline-block rounded-xl border-2 border-primary/20 bg-card p-4">
-              <QRCodeSVG value={success.attendeeId} size={192} level="H" includeMargin />
+            {/* QR Code - blurred for pending */}
+            <div className="relative mx-auto mb-6 inline-block rounded-xl border-2 border-primary/20 bg-card p-4">
+              <div className="blur-md pointer-events-none select-none">
+                <QRCodeSVG value={success.attendeeId} size={192} level="H" includeMargin />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="rounded-full bg-background/90 px-4 py-2 text-sm font-medium text-muted-foreground">
+                  Waiting for payment
+                </span>
+              </div>
             </div>
-            <p className="mb-6 text-xs text-muted-foreground">
-              Ticket ID: {success.attendeeId.slice(0, 8)}...
-            </p>
 
             <div className="mb-8 rounded-lg border border-border bg-card p-6 text-left">
               <dl className="space-y-3 text-sm">
@@ -246,6 +282,12 @@ export default function EventRegister() {
                   <dt className="text-muted-foreground">Amount</dt>
                   <dd className="font-bold text-primary">
                     {success.price > 0 ? `${success.price} ${currency}` : "Free"}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Payment</dt>
+                  <dd>
+                    <Badge variant="secondary">Pending</Badge>
                   </dd>
                 </div>
               </dl>
@@ -350,6 +392,46 @@ export default function EventRegister() {
                 {/* Billing Info */}
                 <div>
                   <h3 className="mb-4 text-lg font-semibold text-foreground">Billing Information</h3>
+
+                  {/* Payer Type Toggle */}
+                  <div className="mb-6">
+                    <Label className="mb-3 block">Who is paying? *</Label>
+                    <RadioGroup
+                      value={form.payer_type}
+                      onValueChange={(v) => setForm((p) => ({ ...p, payer_type: v as "individual" | "company" }))}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <label
+                        htmlFor="type-individual"
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                          form.payer_type === "individual"
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-card hover:border-muted-foreground/30"
+                        }`}
+                      >
+                        <RadioGroupItem value="individual" id="type-individual" />
+                        <div className="flex items-center gap-2">
+                          <UserIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-foreground">Individual</span>
+                        </div>
+                      </label>
+                      <label
+                        htmlFor="type-company"
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                          form.payer_type === "company"
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-card hover:border-muted-foreground/30"
+                        }`}
+                      >
+                        <RadioGroupItem value="company" id="type-company" />
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-foreground">Company</span>
+                        </div>
+                      </label>
+                    </RadioGroup>
+                  </div>
+
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
                       <Label htmlFor="payer_name">Payer Name *</Label>
@@ -359,37 +441,37 @@ export default function EventRegister() {
                         onChange={(e) => setForm((p) => ({ ...p, payer_name: e.target.value }))}
                       />
                     </div>
-                    <div>
-                      <Label>Payer Type *</Label>
-                      <Select
-                        value={form.payer_type}
-                        onValueChange={(v) => setForm((p) => ({ ...p, payer_type: v as "individual" | "company" }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="individual">Individual</SelectItem>
-                          <SelectItem value="company">Company</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="payer_oib">Payer OIB</Label>
-                      <Input
-                        id="payer_oib"
-                        value={form.payer_oib}
-                        onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <Label htmlFor="payer_address">Payer Address</Label>
-                      <Input
-                        id="payer_address"
-                        value={form.payer_address}
-                        onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
-                      />
-                    </div>
+
+                    {form.payer_type === "company" && (
+                      <>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="company_name">Company Name *</Label>
+                          <Input
+                            id="company_name"
+                            value={form.company_name}
+                            onChange={(e) => setForm((p) => ({ ...p, company_name: e.target.value }))}
+                            placeholder="Your company legal name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="payer_oib">OIB / VAT ID *</Label>
+                          <Input
+                            id="payer_oib"
+                            value={form.payer_oib}
+                            onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
+                            placeholder="e.g. 12345678901"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="payer_address">Company Address</Label>
+                          <Input
+                            id="payer_address"
+                            value={form.payer_address}
+                            onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -415,7 +497,11 @@ export default function EventRegister() {
                   disabled={submitting || !selectedTierId}
                 >
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {submitting ? "Registering..." : "Complete Registration"}
+                  {submitting
+                    ? "Registering..."
+                    : form.payer_type === "company"
+                      ? "Register & Request Invoice"
+                      : "Register & Pay"}
                 </Button>
               </form>
             </>
