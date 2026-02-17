@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,13 +137,7 @@ export default function TicketPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold text-foreground">{eventName || "Event"}</h1>
-          <p className="text-sm text-muted-foreground">Your Ticket</p>
-        </div>
-      </header>
+      <ConvwayoHeader />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-lg space-y-6">
