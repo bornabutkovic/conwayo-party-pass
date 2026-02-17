@@ -18,27 +18,14 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Get the user from the auth header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization header");
-
-    const supabaseClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) throw new Error("Not authenticated");
-
-    const { attendeeId, eventId, slug } = await req.json();
-    if (!attendeeId || !eventId || !slug) throw new Error("Missing attendeeId, eventId, or slug");
-
-    // Use service role to fetch event and attendee data
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { attendeeId, eventId } = await req.json();
+    if (!attendeeId || !eventId) throw new Error("Missing attendeeId or eventId");
 
     const { data: event, error: eventError } = await adminClient
       .from("events")
-      .select("name, price, currency")
+      .select("name, price, currency, slug")
       .eq("id", eventId)
       .single();
 
@@ -48,14 +35,12 @@ Deno.serve(async (req) => {
       .from("attendees")
       .select("id, first_name, last_name, email, price_paid")
       .eq("id", attendeeId)
-      .eq("profile_id", user.id)
       .single();
 
     if (attError || !attendee) throw new Error("Attendee not found");
 
     const price = attendee.price_paid ?? event.price ?? 0;
     if (price <= 0) {
-      // Free ticket - just mark as paid
       await adminClient
         .from("attendees")
         .update({ payment_status: "paid" })
@@ -69,13 +54,12 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const currency = (event.currency ?? "EUR").toLowerCase();
 
-    // Build the origin from the request's referer or a fallback
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/[^/]*$/, "") || "https://localhost:5173";
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
-      customer_email: attendee.email ?? user.email,
+      customer_email: attendee.email ?? undefined,
       line_items: [
         {
           price_data: {
@@ -84,7 +68,7 @@ Deno.serve(async (req) => {
               name: `${event.name} — Ticket`,
               description: `Attendee: ${attendee.first_name} ${attendee.last_name}`,
             },
-            unit_amount: Math.round(price * 100), // Stripe uses cents
+            unit_amount: Math.round(price * 100),
           },
           quantity: 1,
         },
@@ -93,8 +77,8 @@ Deno.serve(async (req) => {
         attendee_id: attendeeId,
         event_id: eventId,
       },
-      success_url: `${origin}/event/${slug}/dashboard?payment=success`,
-      cancel_url: `${origin}/event/${slug}/dashboard?payment=cancelled`,
+      success_url: `${origin}/ticket/${attendeeId}?payment=success`,
+      cancel_url: `${origin}/ticket/${attendeeId}?payment=cancelled`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
