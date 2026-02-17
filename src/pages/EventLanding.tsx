@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { EventHero } from "@/components/event/EventHero";
 import { TicketTierCard } from "@/components/event/TicketTierCard";
@@ -11,8 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, UserIcon, CreditCard } from "lucide-react";
+import { Loader2, Building2, UserIcon, CreditCard, LogIn, UserPlus } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Enums } from "@/integrations/supabase/types";
@@ -32,12 +35,19 @@ export default function EventLanding() {
   const navigate = useNavigate();
   const { data: event, isLoading, error } = useEvent(slug ?? "");
   const { data: tiers = [] } = useTicketTiers(event?.id);
+  const { user, signIn, loading: authLoading } = useAuth();
 
+  const [entryTab, setEntryTab] = useState<string>("guest");
   const [selectedTierId, setSelectedTierId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
 
+  // Login form
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Guest form
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -51,12 +61,48 @@ export default function EventLanding() {
     po_number: "",
   });
 
-  if (isLoading) return <EventPageSkeleton />;
+  if (isLoading || authLoading) return <EventPageSkeleton />;
   if (error || !event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
 
   const currency = event.currency ?? "EUR";
   const selectedTier = tiers.find((t) => t.id === selectedTierId);
 
+  // --- Sign In handler ---
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginForm.email || !loginForm.password) {
+      toast({ title: "Email and password are required", variant: "destructive" });
+      return;
+    }
+    setLoginLoading(true);
+    try {
+      const { error } = await signIn(loginForm.email, loginForm.password);
+      if (error) throw error;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Login failed");
+
+      // Check for existing attendee
+      const { data: attendee } = await supabase
+        .from("attendees")
+        .select("id")
+        .eq("event_id", event.id)
+        .eq("profile_id", session.user.id)
+        .maybeSingle();
+
+      if (attendee) {
+        navigate(`/event/${slug}/dashboard`);
+      } else {
+        navigate(`/event/${slug}/register`);
+      }
+    } catch (err: any) {
+      toast({ title: "Login failed", description: err.message, variant: "destructive" });
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // --- Guest Registration handler ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -92,7 +138,7 @@ export default function EventLanding() {
         return;
       }
 
-      // Create attendee (no profile_id needed)
+      // Create attendee (no profile_id — guest)
       const { data: attendee, error: attError } = await supabase
         .from("attendees")
         .insert({
@@ -161,19 +207,11 @@ export default function EventLanding() {
 
       // Send ticket email
       try {
-        await fetch(
-          `https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/send-ticket-email`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxdXNxZmRhaWtrdnZqZmxnbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDMxNzYsImV4cCI6MjA4MjY3OTE3Nn0.nWRj48zSZxz5qUK_wkV3PKbkG969rdpsbQ8OAWdBESk`,
-            },
-            body: JSON.stringify({ attendeeId: attendee.id }),
-          }
-        );
+        await supabase.functions.invoke("send-ticket-email", {
+          body: { attendeeId: attendee.id },
+        });
       } catch {
-        // Email sending is best-effort
+        // Best-effort
       }
 
       // For individual payers with price > 0, redirect to Stripe
@@ -196,22 +234,11 @@ export default function EventLanding() {
 
     setRedirectingToStripe(true);
     try {
-      const res = await fetch(
-        `https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxdXNxZmRhaWtrdnZqZmxnbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDMxNzYsImV4cCI6MjA4MjY3OTE3Nn0.nWRj48zSZxz5qUK_wkV3PKbkG969rdpsbQ8OAWdBESk`,
-          },
-          body: JSON.stringify({
-            attendeeId: aid,
-            eventId: event.id,
-          }),
-        }
-      );
+      const res = await supabase.functions.invoke("create-checkout", {
+        body: { attendeeId: aid, eventId: event.id },
+      });
 
-      const result = await res.json();
+      const result = res.data;
 
       if (result.free) {
         toast({ title: "Free ticket activated!" });
@@ -231,7 +258,7 @@ export default function EventLanding() {
     }
   };
 
-  // Success view
+  // --- Success view ---
   if (success) {
     return (
       <div className="min-h-screen bg-background">
@@ -248,7 +275,7 @@ export default function EventLanding() {
               <>
                 <h2 className="mb-2 text-3xl font-bold text-foreground">Invoice Requested</h2>
                 <p className="mb-6 text-muted-foreground">
-                  We have sent your details to our accounting system (MS Business Central). You will receive an offer via email shortly.
+                  We have sent your details to our accounting system. You will receive an offer via email shortly.
                 </p>
                 <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
                   <p>Your QR code will be available once payment is confirmed.</p>
@@ -271,7 +298,6 @@ export default function EventLanding() {
               </>
             )}
 
-            {/* QR Code - blurred for pending */}
             <div className="relative mx-auto mb-6 inline-block rounded-xl border-2 border-primary/20 bg-card p-4">
               <div className="blur-md pointer-events-none select-none">
                 <QRCodeSVG value={success.attendeeId} size={192} level="H" includeMargin />
@@ -325,11 +351,7 @@ export default function EventLanding() {
                   )}
                   {redirectingToStripe ? "Redirecting..." : "PAY NOW"}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/ticket/${success.attendeeId}`)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/ticket/${success.attendeeId}`)}>
                   View My Ticket
                 </Button>
               </div>
@@ -344,6 +366,7 @@ export default function EventLanding() {
     );
   }
 
+  // --- Main Event Page ---
   return (
     <div className="min-h-screen bg-background">
       <ConvwayoHeader />
@@ -351,191 +374,254 @@ export default function EventLanding() {
 
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="mx-auto max-w-2xl">
-          <h2 className="mb-8 text-3xl font-bold text-foreground">Register for Event</h2>
+          <h2 className="mb-6 text-3xl font-bold text-foreground">Register for Event</h2>
 
-          {/* Ticket Tiers */}
-          <div className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Select Your Ticket</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {tiers.map((tier) => (
-                <TicketTierCard
-                  key={tier.id}
-                  tier={tier}
-                  selected={selectedTierId === tier.id}
-                  currency={currency}
-                  onSelect={() => setSelectedTierId(tier.id)}
-                />
-              ))}
-            </div>
-            {tiers.length === 0 && (
-              <p className="text-muted-foreground">No tickets available at this time.</p>
-            )}
-          </div>
+          {/* Dual Entry Tabs */}
+          <Tabs value={entryTab} onValueChange={setEntryTab} className="mb-10">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="guest" className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Quick Registration
+              </TabsTrigger>
+              <TabsTrigger value="login" className="flex items-center gap-2">
+                <LogIn className="h-4 w-4" />
+                Sign In
+              </TabsTrigger>
+            </TabsList>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Attendee Info */}
-            <div>
-              <h3 className="mb-4 text-lg font-semibold text-foreground">Your Information</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="first_name">First Name *</Label>
-                  <Input
-                    id="first_name"
-                    value={form.first_name}
-                    onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">Last Name *</Label>
-                  <Input
-                    id="last_name"
-                    value={form.last_name}
-                    onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={form.phone}
-                    onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="institution">Institution</Label>
-                  <Input
-                    id="institution"
-                    value={form.institution}
-                    onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Billing Info */}
-            <div>
-              <h3 className="mb-4 text-lg font-semibold text-foreground">Billing Information</h3>
-
-              <div className="mb-6">
-                <Label className="mb-3 block">Who is paying? *</Label>
-                <RadioGroup
-                  value={form.payer_type}
-                  onValueChange={(v) => setForm((p) => ({ ...p, payer_type: v as "individual" | "company" }))}
-                  className="grid grid-cols-2 gap-4"
-                >
-                  <label
-                    htmlFor="type-individual"
-                    className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                      form.payer_type === "individual"
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card hover:border-muted-foreground/30"
-                    }`}
-                  >
-                    <RadioGroupItem value="individual" id="type-individual" />
-                    <div className="flex items-center gap-2">
-                      <UserIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-foreground">Individual</span>
+            <TabsContent value="login" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Welcome Back</CardTitle>
+                  <CardDescription>
+                    Sign in to auto-fill your details and manage all your tickets from your dashboard.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                      <Label htmlFor="login_email">Email</Label>
+                      <Input
+                        id="login_email"
+                        type="email"
+                        value={loginForm.email}
+                        onChange={(e) => setLoginForm((p) => ({ ...p, email: e.target.value }))}
+                      />
                     </div>
-                  </label>
-                  <label
-                    htmlFor="type-company"
-                    className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                      form.payer_type === "company"
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card hover:border-muted-foreground/30"
-                    }`}
-                  >
-                    <RadioGroupItem value="company" id="type-company" />
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-foreground">Company</span>
+                    <div>
+                      <Label htmlFor="login_password">Password</Label>
+                      <Input
+                        id="login_password"
+                        type="password"
+                        value={loginForm.password}
+                        onChange={(e) => setLoginForm((p) => ({ ...p, password: e.target.value }))}
+                      />
                     </div>
-                  </label>
-                </RadioGroup>
-              </div>
+                    <Button type="submit" className="w-full" disabled={loginLoading}>
+                      {loginLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {loginLoading ? "Logging In..." : "Sign In"}
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground mt-2">
+                      Don't have an account?{" "}
+                      <button type="button" className="text-primary underline" onClick={() => navigate(`/event/${slug}/auth`)}>
+                        Create one here
+                      </button>
+                    </p>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              {form.payer_type === "company" && (
+            <TabsContent value="guest" className="mt-6">
+              {/* Ticket Tiers */}
+              <div className="mb-10">
+                <h3 className="mb-4 text-lg font-semibold text-foreground">Select Your Ticket</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="company_name">Company Name *</Label>
-                    <Input
-                      id="company_name"
-                      value={form.company_name}
-                      onChange={(e) => setForm((p) => ({ ...p, company_name: e.target.value }))}
-                      placeholder="Your company legal name"
+                  {tiers.map((tier) => (
+                    <TicketTierCard
+                      key={tier.id}
+                      tier={tier}
+                      selected={selectedTierId === tier.id}
+                      currency={currency}
+                      onSelect={() => setSelectedTierId(tier.id)}
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="payer_oib">OIB / VAT ID *</Label>
-                    <Input
-                      id="payer_oib"
-                      value={form.payer_oib}
-                      onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
-                      placeholder="e.g. 12345678901"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="payer_address">Company Address</Label>
-                    <Input
-                      id="payer_address"
-                      value={form.payer_address}
-                      onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="po_number">Purchase Order (PO) Number</Label>
-                    <Input
-                      id="po_number"
-                      value={form.po_number}
-                      onChange={(e) => setForm((p) => ({ ...p, po_number: e.target.value }))}
-                      placeholder="e.g. PO-2026-001"
-                    />
-                  </div>
+                  ))}
                 </div>
-              )}
-            </div>
-
-            {/* Summary */}
-            {selectedTier && (
-              <div className="rounded-lg border border-border bg-secondary/50 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-foreground">{selectedTier.name}</p>
-                    <p className="text-sm text-muted-foreground">{event.name}</p>
-                  </div>
-                  <p className="text-2xl font-bold text-primary">
-                    {selectedTier.price > 0 ? `${selectedTier.price} ${currency}` : "Free"}
-                  </p>
-                </div>
+                {tiers.length === 0 && (
+                  <p className="text-muted-foreground">No tickets available at this time.</p>
+                )}
               </div>
-            )}
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full text-lg"
-              disabled={submitting || !selectedTierId}
-            >
-              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {submitting
-                ? "Registering..."
-                : form.payer_type === "company"
-                  ? "Register & Request Invoice"
-                  : "Register & Pay"}
-            </Button>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Attendee Info */}
+                <div>
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">Your Information</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="first_name">First Name *</Label>
+                      <Input
+                        id="first_name"
+                        value={form.first_name}
+                        onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="last_name">Last Name *</Label>
+                      <Input
+                        id="last_name"
+                        value={form.last_name}
+                        onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        value={form.phone}
+                        onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="institution">Institution</Label>
+                      <Input
+                        id="institution"
+                        value={form.institution}
+                        onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Billing Info */}
+                <div>
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">Billing Information</h3>
+
+                  <div className="mb-6">
+                    <Label className="mb-3 block">Who is paying? *</Label>
+                    <RadioGroup
+                      value={form.payer_type}
+                      onValueChange={(v) => setForm((p) => ({ ...p, payer_type: v as "individual" | "company" }))}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <label
+                        htmlFor="type-individual"
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                          form.payer_type === "individual"
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-card hover:border-muted-foreground/30"
+                        }`}
+                      >
+                        <RadioGroupItem value="individual" id="type-individual" />
+                        <div className="flex items-center gap-2">
+                          <UserIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-foreground">Individual</span>
+                        </div>
+                      </label>
+                      <label
+                        htmlFor="type-company"
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                          form.payer_type === "company"
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-card hover:border-muted-foreground/30"
+                        }`}
+                      >
+                        <RadioGroupItem value="company" id="type-company" />
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-foreground">Company</span>
+                        </div>
+                      </label>
+                    </RadioGroup>
+                  </div>
+
+                  {form.payer_type === "company" && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="company_name">Company Name *</Label>
+                        <Input
+                          id="company_name"
+                          value={form.company_name}
+                          onChange={(e) => setForm((p) => ({ ...p, company_name: e.target.value }))}
+                          placeholder="Your company legal name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="payer_oib">OIB / VAT ID *</Label>
+                        <Input
+                          id="payer_oib"
+                          value={form.payer_oib}
+                          onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
+                          placeholder="e.g. 12345678901"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="payer_address">Company Address</Label>
+                        <Input
+                          id="payer_address"
+                          value={form.payer_address}
+                          onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="po_number">Purchase Order (PO) Number</Label>
+                        <Input
+                          id="po_number"
+                          value={form.po_number}
+                          onChange={(e) => setForm((p) => ({ ...p, po_number: e.target.value }))}
+                          placeholder="e.g. PO-2026-001"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Summary */}
+                {selectedTier && (
+                  <div className="rounded-lg border border-border bg-secondary/50 p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-foreground">{selectedTier.name}</p>
+                        <p className="text-sm text-muted-foreground">{event.name}</p>
+                      </div>
+                      <p className="text-2xl font-bold text-primary">
+                        {selectedTier.price > 0 ? `${selectedTier.price} ${currency}` : "Free"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full text-lg"
+                  disabled={submitting || !selectedTierId}
+                >
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {submitting
+                    ? "Registering..."
+                    : form.payer_type === "company"
+                      ? "Register & Request Invoice"
+                      : "Register & Pay"}
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  No account needed. You'll receive a ticket link via email.
+                </p>
+              </form>
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
     </div>
