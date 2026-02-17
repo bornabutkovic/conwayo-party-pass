@@ -17,6 +17,7 @@ export default function TicketPage() {
   const [attendee, setAttendee] = useState<Attendee | null>(null);
   const [eventName, setEventName] = useState("");
   const [eventSlug, setEventSlug] = useState("");
+  const [poNumber, setPoNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
 
@@ -38,6 +39,17 @@ export default function TicketPage() {
         }
 
         setAttendee(att);
+
+        // Fetch PO number from order
+        const { data: order } = await supabase
+          .from("orders")
+          .select("po_number")
+          .eq("attendee_id", att.id)
+          .maybeSingle();
+
+        if (order?.po_number) {
+          setPoNumber(order.po_number);
+        }
 
         if (att.event_id) {
           const { data: ev } = await supabase
@@ -220,6 +232,12 @@ export default function TicketPage() {
                     </Badge>
                   </dd>
                 </div>
+                {poNumber && (
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">PO Number</dt>
+                    <dd className="font-medium text-foreground">{poNumber}</dd>
+                  </div>
+                )}
               </dl>
             </CardContent>
           </Card>

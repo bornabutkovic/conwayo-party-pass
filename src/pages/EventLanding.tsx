@@ -47,6 +47,7 @@ export default function EventLanding() {
     company_name: "",
     payer_oib: "",
     payer_address: "",
+    po_number: "",
   });
 
   if (isLoading) return <EventPageSkeleton />;
@@ -123,6 +124,7 @@ export default function EventLanding() {
           payer_type: form.payer_type as Enums<"payer_type">,
           payer_oib: form.payer_oib || null,
           payer_address: form.payer_address || null,
+          po_number: form.po_number || null,
           status: "draft",
           total_amount: pricePaid,
         })
@@ -487,6 +489,15 @@ export default function EventLanding() {
                       id="payer_address"
                       value={form.payer_address}
                       onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="po_number">Purchase Order (PO) Number</Label>
+                    <Input
+                      id="po_number"
+                      value={form.po_number}
+                      onChange={(e) => setForm((p) => ({ ...p, po_number: e.target.value }))}
+                      placeholder="e.g. PO-2026-001"
                     />
                   </div>
                 </div>
