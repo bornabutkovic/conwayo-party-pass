@@ -8,6 +8,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import EventLanding from "./pages/EventLanding";
 import EventAuth from "./pages/EventAuth";
+import EventRegister from "./pages/EventRegister";
 import EventDashboard from "./pages/EventDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/event/:slug" element={<EventLanding />} />
               <Route path="/event/:slug/auth" element={<EventAuth />} />
+              <Route path="/event/:slug/register" element={<EventRegister />} />
               <Route path="/event/:slug/dashboard" element={<EventDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

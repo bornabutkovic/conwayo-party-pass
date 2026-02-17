@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEvent } from "@/hooks/useEvent";
@@ -16,13 +16,12 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 export default function EventAuth() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { signUp, signIn } = useAuth();
+  const { user, loading: authLoading, signUp, signIn } = useAuth();
   const { data: event, isLoading, error } = useEvent(slug ?? "");
 
   const [tab, setTab] = useState<string>("register");
   const [submitting, setSubmitting] = useState(false);
 
-  // Register form state
   const [regForm, setRegForm] = useState({
     first_name: "",
     last_name: "",
@@ -31,10 +30,31 @@ export default function EventAuth() {
     password: "",
   });
 
-  // Login form state
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
 
-  if (isLoading) return <EventPageSkeleton />;
+  // If already logged in, check attendee and redirect
+  useEffect(() => {
+    if (authLoading || isLoading || !user || !event) return;
+
+    const checkExisting = async () => {
+      const { data: existing } = await supabase
+        .from("attendees")
+        .select("id")
+        .eq("event_id", event.id)
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      if (existing) {
+        navigate(`/event/${slug}/dashboard`, { replace: true });
+      } else {
+        navigate(`/event/${slug}/register`, { replace: true });
+      }
+    };
+
+    checkExisting();
+  }, [authLoading, isLoading, user, event, slug, navigate]);
+
+  if (isLoading || authLoading) return <EventPageSkeleton />;
 
   if (error || !event) {
     return (
@@ -66,14 +86,13 @@ export default function EventAuth() {
 
     setSubmitting(true);
     try {
-      // 1. Create auth user
       const { error: authError } = await signUp(regForm.email, regForm.password, {
         first_name: regForm.first_name,
         last_name: regForm.last_name,
       });
       if (authError) throw authError;
 
-      // 2. Get the newly created user session
+      // Check if session was created (email confirmation may be required)
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         toast({
@@ -85,22 +104,8 @@ export default function EventAuth() {
         return;
       }
 
-      // 3. Create attendee record linked to profile
-      const { error: attError } = await supabase.from("attendees").insert({
-        event_id: event.id,
-        first_name: regForm.first_name,
-        last_name: regForm.last_name,
-        email: regForm.email,
-        phone: regForm.phone || null,
-        profile_id: session.user.id,
-        status: "approved",
-        payment_status: "paid",
-      });
-
-      if (attError) throw attError;
-
-      toast({ title: "Registration successful!" });
-      navigate(`/event/${slug}/dashboard`);
+      // Session exists → redirect to register form (profile-first)
+      navigate(`/event/${slug}/register`);
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
     } finally {
@@ -120,10 +125,10 @@ export default function EventAuth() {
       const { error } = await signIn(loginForm.email, loginForm.password);
       if (error) throw error;
 
-      // Check if attendee exists for this event
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Login failed");
 
+      // Check for existing attendee
       const { data: attendee } = await supabase
         .from("attendees")
         .select("id")
@@ -131,18 +136,11 @@ export default function EventAuth() {
         .eq("profile_id", session.user.id)
         .maybeSingle();
 
-      if (!attendee) {
-        toast({
-          title: "No registration found",
-          description: "You are not registered for this event. Please register first.",
-          variant: "destructive",
-        });
-        setTab("register");
-        setSubmitting(false);
-        return;
+      if (attendee) {
+        navigate(`/event/${slug}/dashboard`);
+      } else {
+        navigate(`/event/${slug}/register`);
       }
-
-      navigate(`/event/${slug}/dashboard`);
     } catch (err: any) {
       toast({ title: "Login failed", description: err.message, variant: "destructive" });
     } finally {
@@ -158,15 +156,15 @@ export default function EventAuth() {
         <div className="mx-auto max-w-md">
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="register">Register</TabsTrigger>
-              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Sign Up</TabsTrigger>
+              <TabsTrigger value="login">Log In</TabsTrigger>
             </TabsList>
 
             <TabsContent value="register">
               <Card>
                 <CardHeader>
                   <CardTitle>Create Your Account</CardTitle>
-                  <CardDescription>Register for {event.name} and get your digital ticket.</CardDescription>
+                  <CardDescription>Sign up to register for {event.name}.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleRegister} className="space-y-4">
@@ -198,14 +196,6 @@ export default function EventAuth() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="reg_phone">Phone</Label>
-                      <Input
-                        id="reg_phone"
-                        value={regForm.phone}
-                        onChange={(e) => setRegForm((p) => ({ ...p, phone: e.target.value }))}
-                      />
-                    </div>
-                    <div>
                       <Label htmlFor="reg_password">Password *</Label>
                       <Input
                         id="reg_password"
@@ -217,7 +207,7 @@ export default function EventAuth() {
                     </div>
                     <Button type="submit" className="w-full" disabled={submitting}>
                       {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {submitting ? "Creating Account..." : "Register & Get Ticket"}
+                      {submitting ? "Creating Account..." : "Sign Up"}
                     </Button>
                   </form>
                 </CardContent>
