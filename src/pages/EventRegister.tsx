@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, UserIcon } from "lucide-react";
+import { Loader2, Building2, UserIcon, CreditCard } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Enums } from "@/integrations/supabase/types";
@@ -40,6 +40,7 @@ export default function EventRegister() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [selectedTierId, setSelectedTierId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
 
   const [form, setForm] = useState({
@@ -202,7 +203,7 @@ export default function EventRegister() {
 
       if (itemError) throw itemError;
 
-      setSuccess({
+      const successData: SuccessData = {
         attendeeId: attendee.id,
         attendeeName: `${form.first_name} ${form.last_name}`,
         eventName: event.name,
@@ -210,11 +211,64 @@ export default function EventRegister() {
         price: pricePaid,
         currency,
         payerType: form.payer_type,
-      });
+      };
+
+      // For individual payers, immediately trigger Stripe checkout
+      if (!isCompany && pricePaid > 0) {
+        setSuccess(successData);
+        await triggerStripeCheckout(attendee.id);
+      } else {
+        setSuccess(successData);
+      }
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const triggerStripeCheckout = async (attendeeId?: string) => {
+    const aid = attendeeId || success?.attendeeId;
+    if (!aid || !event) return;
+
+    setRedirectingToStripe(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await fetch(
+        `https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-checkout`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            attendeeId: aid,
+            eventId: event.id,
+            slug,
+          }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (result.free) {
+        toast({ title: "Free ticket activated!" });
+        navigate(`/event/${slug}/dashboard`);
+        return;
+      }
+
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        throw new Error(result.error || "Failed to create checkout session");
+      }
+    } catch (err: any) {
+      toast({ title: "Payment redirect failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRedirectingToStripe(false);
     }
   };
 
@@ -244,15 +298,16 @@ export default function EventRegister() {
               <>
                 <h2 className="mb-2 text-3xl font-bold text-foreground">Almost There!</h2>
                 <p className="mb-6 text-muted-foreground">
-                  Your registration for <strong>{success.eventName}</strong> is confirmed. Please complete your payment to activate your ticket.
+                  Your registration for <strong>{success.eventName}</strong> is confirmed. Complete your payment to activate your ticket.
                 </p>
-                {/* Stripe payment link placeholder */}
-                <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
-                  <p className="mb-2 font-medium">Payment Required</p>
-                  <p className="text-muted-foreground">
-                    You will be redirected to complete payment. Your QR code will appear on the dashboard once payment is confirmed.
-                  </p>
-                </div>
+                {redirectingToStripe && (
+                  <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <p>Redirecting to Stripe Checkout...</p>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -293,9 +348,34 @@ export default function EventRegister() {
               </dl>
             </div>
 
-            <Button onClick={() => navigate(`/event/${slug}/dashboard`)}>
-              Go to My Dashboard
-            </Button>
+            {success.payerType === "individual" && success.price > 0 ? (
+              <div className="space-y-3">
+                <Button
+                  size="lg"
+                  className="w-full text-lg"
+                  onClick={() => triggerStripeCheckout()}
+                  disabled={redirectingToStripe}
+                >
+                  {redirectingToStripe ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CreditCard className="mr-2 h-5 w-5" />
+                  )}
+                  {redirectingToStripe ? "Redirecting..." : "PAY NOW"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/event/${slug}/dashboard`)}
+                >
+                  Go to Dashboard
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={() => navigate(`/event/${slug}/dashboard`)}>
+                Go to My Dashboard
+              </Button>
+            )}
           </div>
         </section>
       </div>

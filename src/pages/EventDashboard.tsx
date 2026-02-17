@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
-import { LogOut, Ticket, User } from "lucide-react";
+import { LogOut, Ticket, User, CreditCard, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Attendee = Tables<"attendees">;
@@ -24,6 +24,7 @@ export default function EventDashboard() {
 
   const [attendee, setAttendee] = useState<Attendee | null>(null);
   const [attLoading, setAttLoading] = useState(true);
+  const [redirectingToStripe, setRedirectingToStripe] = useState(false);
 
   useEffect(() => {
     if (authLoading || eventLoading) return;
@@ -66,6 +67,46 @@ export default function EventDashboard() {
   const handleLogout = async () => {
     await signOut();
     navigate(`/event/${slug}/auth`);
+  };
+
+  const triggerStripeCheckout = async () => {
+    if (!attendee || !event) return;
+    setRedirectingToStripe(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await fetch(
+        `https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-checkout`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            attendeeId: attendee.id,
+            eventId: event.id,
+            slug,
+          }),
+        }
+      );
+      const result = await res.json();
+      if (result.free) {
+        setAttendee({ ...attendee, payment_status: "paid" });
+        toast({ title: "Free ticket activated!" });
+        return;
+      }
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        throw new Error(result.error || "Failed to create checkout");
+      }
+    } catch (err: any) {
+      toast({ title: "Payment redirect failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRedirectingToStripe(false);
+    }
   };
 
   if (authLoading || eventLoading) return <EventPageSkeleton />;
@@ -128,6 +169,21 @@ export default function EventDashboard() {
                   <p className="text-xs text-muted-foreground">
                     ID: {attendee.id.slice(0, 8)}...
                   </p>
+                  {attendee.payment_status !== "paid" && (
+                    <Button
+                      size="lg"
+                      className="w-full mt-2"
+                      onClick={triggerStripeCheckout}
+                      disabled={redirectingToStripe}
+                    >
+                      {redirectingToStripe ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <CreditCard className="mr-2 h-5 w-5" />
+                      )}
+                      {redirectingToStripe ? "Redirecting..." : "PAY NOW"}
+                    </Button>
+                  )}
                 </div>
               ) : null}
             </CardContent>
