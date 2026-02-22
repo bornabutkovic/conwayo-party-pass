@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
@@ -58,17 +58,13 @@ interface SuccessData {
 
 /* ─── Quantity Selector ──────────────────────────────── */
 
-function QuantitySelector({
-  value,
-  onChange,
-  max,
-}: {
+const QuantitySelector = React.forwardRef<HTMLDivElement, {
   value: number;
   onChange: (v: number) => void;
   max?: number;
-}) {
+}>(function QuantitySelector({ value, onChange, max }, ref) {
   return (
-    <div className="flex items-center gap-2">
+    <div ref={ref} className="flex items-center gap-2">
       <Button
         type="button"
         variant="outline"
@@ -91,7 +87,7 @@ function QuantitySelector({
       </Button>
     </div>
   );
-}
+});
 
 /* ─── Main Component ─────────────────────────────────── */
 
