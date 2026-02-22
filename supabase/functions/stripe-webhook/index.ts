@@ -13,7 +13,6 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const body = await req.text();
 
-    // If STRIPE_WEBHOOK_SECRET is set, verify signature; otherwise trust the event
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     let event: Stripe.Event;
 
@@ -27,38 +26,66 @@ Deno.serve(async (req) => {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
+      const orderId = session.metadata?.order_id;
       const attendeeId = session.metadata?.attendee_id;
       const eventId = session.metadata?.event_id;
-
-      if (!attendeeId) {
-        console.error("No attendee_id in session metadata");
-        return new Response(JSON.stringify({ received: true }), { status: 200 });
-      }
 
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-      // Update attendee payment status
-      const { error: attError } = await adminClient
-        .from("attendees")
-        .update({ payment_status: "paid" })
-        .eq("id", attendeeId);
-
-      if (attError) console.error("Failed to update attendee:", attError);
-
-      // Update related order status
-      if (eventId) {
+      if (orderId) {
+        // ─── New unified order flow ───
+        // 1. Update the order to paid
         const { error: orderError } = await adminClient
           .from("orders")
           .update({ status: "paid" })
-          .eq("attendee_id", attendeeId)
-          .eq("event_id", eventId);
+          .eq("id", orderId);
 
         if (orderError) console.error("Failed to update order:", orderError);
-      }
 
-      console.log(`Payment confirmed for attendee ${attendeeId}`);
+        // 2. Find all attendees linked via order_items and mark them paid
+        const { data: items } = await adminClient
+          .from("order_items")
+          .select("attendee_id")
+          .eq("order_id", orderId)
+          .not("attendee_id", "is", null);
+
+        const attendeeIds = [...new Set((items ?? []).map((i: any) => i.attendee_id))];
+
+        for (const aid of attendeeIds) {
+          const { error: attError } = await adminClient
+            .from("attendees")
+            .update({ payment_status: "paid" })
+            .eq("id", aid);
+
+          if (attError) console.error(`Failed to update attendee ${aid}:`, attError);
+        }
+
+        console.log(`Payment confirmed for order ${orderId} (${attendeeIds.length} attendees)`);
+      } else if (attendeeId) {
+        // ─── Legacy single-attendee flow ───
+        const { error: attError } = await adminClient
+          .from("attendees")
+          .update({ payment_status: "paid" })
+          .eq("id", attendeeId);
+
+        if (attError) console.error("Failed to update attendee:", attError);
+
+        if (eventId) {
+          const { error: orderError } = await adminClient
+            .from("orders")
+            .update({ status: "paid" })
+            .eq("attendee_id", attendeeId)
+            .eq("event_id", eventId);
+
+          if (orderError) console.error("Failed to update order:", orderError);
+        }
+
+        console.log(`Payment confirmed for attendee ${attendeeId}`);
+      } else {
+        console.error("No order_id or attendee_id in session metadata");
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
