@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
+import { useEventServices } from "@/hooks/useEventServices";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { EventHero } from "@/components/event/EventHero";
-import { TicketTierCard } from "@/components/event/TicketTierCard";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Input } from "@/components/ui/input";
@@ -14,31 +14,102 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, UserIcon, CreditCard, LogIn, UserPlus } from "lucide-react";
+import {
+  Loader2, Building2, UserIcon, CreditCard, LogIn, UserPlus,
+  Minus, Plus, ShoppingBag, Ticket, Users, ChevronRight
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Enums } from "@/integrations/supabase/types";
+import type { TicketTier } from "@/hooks/useEvent";
+import type { EventService } from "@/hooks/useEventServices";
+
+/* ─── Types ──────────────────────────────────────────── */
+
+interface TicketSelection {
+  tierId: string;
+  quantity: number;
+}
+
+interface ServiceSelection {
+  serviceId: string;
+  quantity: number;
+}
+
+interface AttendeeDetail {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
 
 interface SuccessData {
-  attendeeId: string;
-  attendeeName: string;
+  orderId: string;
+  attendeeIds: string[];
   eventName: string;
-  tierName: string;
-  price: number;
+  totalAmount: number;
   currency: string;
   payerType: "individual" | "company";
 }
+
+/* ─── Quantity Selector ──────────────────────────────── */
+
+function QuantitySelector({
+  value,
+  onChange,
+  max,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  max?: number;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => onChange(Math.max(0, value - 1))}
+        disabled={value === 0}
+      >
+        <Minus className="h-3 w-3" />
+      </Button>
+      <span className="w-8 text-center font-semibold text-foreground">{value}</span>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => onChange(max ? Math.min(max, value + 1) : value + 1)}
+      >
+        <Plus className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+/* ─── Main Component ─────────────────────────────────── */
 
 export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { data: event, isLoading, error } = useEvent(slug ?? "");
   const { data: tiers = [] } = useTicketTiers(event?.id);
+  const { data: services = [] } = useEventServices(event?.id);
   const { user, signIn, loading: authLoading } = useAuth();
 
+  // Step management: "select" → "details" → "success"
+  const [step, setStep] = useState<"select" | "details" | "success">("select");
+
+  // Selection state
+  const [ticketSelections, setTicketSelections] = useState<Record<string, number>>({});
+  const [serviceSelections, setServiceSelections] = useState<Record<string, number>>({});
+
+  // Details state
+  const [attendees, setAttendees] = useState<AttendeeDetail[]>([]);
   const [entryTab, setEntryTab] = useState<string>("guest");
-  const [selectedTierId, setSelectedTierId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
@@ -47,10 +118,8 @@ export default function EventLanding() {
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // Guest form
-  const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
+  // Billing form (used for guest checkout)
+  const [billing, setBilling] = useState({
     email: "",
     phone: "",
     institution: "",
@@ -61,13 +130,64 @@ export default function EventLanding() {
     po_number: "",
   });
 
+  /* ─── Derived calculations (must be before early returns) ── */
+
+  const totalTickets = Object.values(ticketSelections).reduce((s, q) => s + q, 0);
+
+  const ticketLineItems = useMemo(() => {
+    return tiers
+      .filter((t) => (ticketSelections[t.id] ?? 0) > 0)
+      .map((t) => ({
+        tier: t,
+        quantity: ticketSelections[t.id],
+        subtotal: t.price * ticketSelections[t.id],
+      }));
+  }, [tiers, ticketSelections]);
+
+  const serviceLineItems = useMemo(() => {
+    return services
+      .filter((s) => (serviceSelections[s.id] ?? 0) > 0)
+      .map((s) => ({
+        service: s,
+        quantity: serviceSelections[s.id],
+        subtotal: s.price * serviceSelections[s.id],
+      }));
+  }, [services, serviceSelections]);
+
+  const grandTotal = useMemo(() => {
+    const ticketTotal = ticketLineItems.reduce((s, i) => s + i.subtotal, 0);
+    const serviceTotal = serviceLineItems.reduce((s, i) => s + i.subtotal, 0);
+    return ticketTotal + serviceTotal;
+  }, [ticketLineItems, serviceLineItems]);
+
   if (isLoading || authLoading) return <EventPageSkeleton />;
   if (error || !event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
 
   const currency = event.currency ?? "EUR";
-  const selectedTier = tiers.find((t) => t.id === selectedTierId);
+  const vatRate = event.vat_rate ?? 25;
 
-  // --- Sign In handler ---
+  const hasItems = totalTickets > 0;
+
+  /* ─── Step navigation ──────────────────────────────── */
+
+  const goToDetails = () => {
+    if (!hasItems) {
+      toast({ title: "Please select at least one ticket", variant: "destructive" });
+      return;
+    }
+    // Initialize attendee detail slots
+    const slots: AttendeeDetail[] = Array.from({ length: totalTickets }, () => ({
+      first_name: "",
+      last_name: "",
+      email: "",
+    }));
+    setAttendees(slots);
+    setStep("details");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  /* ─── Login handler ────────────────────────────────── */
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginForm.email || !loginForm.password) {
@@ -82,19 +202,35 @@ export default function EventLanding() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Login failed");
 
-      // Check for existing attendee
-      const { data: attendee } = await supabase
-        .from("attendees")
-        .select("id")
-        .eq("event_id", event.id)
-        .eq("profile_id", session.user.id)
+      // Auto-fill first attendee from profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, email, phone, institution")
+        .eq("id", session.user.id)
         .maybeSingle();
 
-      if (attendee) {
-        navigate(`/event/${slug}/dashboard`);
-      } else {
-        navigate(`/event/${slug}/register`);
+      if (profile) {
+        setAttendees((prev) => {
+          const updated = [...prev];
+          if (updated.length > 0) {
+            updated[0] = {
+              first_name: profile.first_name ?? "",
+              last_name: profile.last_name ?? "",
+              email: profile.email ?? session.user.email ?? "",
+            };
+          }
+          return updated;
+        });
+        setBilling((prev) => ({
+          ...prev,
+          email: profile.email ?? session.user.email ?? "",
+          phone: profile.phone ?? "",
+          institution: profile.institution ?? "",
+        }));
       }
+
+      setEntryTab("guest"); // Switch to form view after login
+      toast({ title: "Logged in successfully", description: "Your details have been auto-filled." });
     } catch (err: any) {
       toast({ title: "Login failed", description: err.message, variant: "destructive" });
     } finally {
@@ -102,154 +238,181 @@ export default function EventLanding() {
     }
   };
 
-  // --- Guest Registration handler ---
-  const handleSubmit = async (e: React.FormEvent) => {
+  /* ─── Submit / Checkout handler ────────────────────── */
+
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.first_name || !form.last_name || !form.email) {
-      toast({ title: "First name, last name and email are required", variant: "destructive" });
+    // Validate billing email
+    if (!billing.email) {
+      toast({ title: "Billing email is required", variant: "destructive" });
       return;
     }
-    if (!selectedTierId) {
-      toast({ title: "Please select a ticket tier", variant: "destructive" });
+
+    // Validate at least first attendee has name
+    const firstAtt = attendees[0];
+    if (!firstAtt?.first_name || !firstAtt?.last_name) {
+      toast({ title: "At least the first attendee's name is required", variant: "destructive" });
       return;
     }
-    if (form.payer_type === "company" && !form.company_name) {
+
+    if (billing.payer_type === "company" && !billing.company_name) {
       toast({ title: "Company name is required for company billing", variant: "destructive" });
       return;
     }
 
     setSubmitting(true);
     try {
-      const isCompany = form.payer_type === "company";
-      const payerName = isCompany ? form.company_name : `${form.first_name} ${form.last_name}`;
+      const isCompany = billing.payer_type === "company";
+      const payerName = isCompany ? billing.company_name : `${firstAtt.first_name} ${firstAtt.last_name}`;
 
-      // Check for duplicate by email + event
-      const { data: existing } = await supabase
-        .from("attendees")
-        .select("id")
-        .eq("event_id", event.id)
-        .eq("email", form.email)
-        .maybeSingle();
+      // 1. Create attendee records — one per ticket
+      const attendeeIds: string[] = [];
+      let ticketIndex = 0;
 
-      if (existing) {
-        toast({ title: "Already registered", description: "Redirecting to your ticket." });
-        navigate(`/ticket/${existing.id}`);
-        return;
+      for (const item of ticketLineItems) {
+        for (let i = 0; i < item.quantity; i++) {
+          const att = attendees[ticketIndex] ?? { first_name: "", last_name: "", email: "" };
+          const { data: created, error: attErr } = await supabase
+            .from("attendees")
+            .insert({
+              event_id: event.id,
+              ticket_tier_id: item.tier.id,
+              first_name: att.first_name || firstAtt.first_name,
+              last_name: att.last_name || firstAtt.last_name,
+              email: att.email || billing.email,
+              phone: billing.phone || null,
+              institution: billing.institution || null,
+              profile_id: user?.id ?? null,
+              status: "approved",
+              payment_status: "pending",
+              price_paid: item.tier.price,
+            })
+            .select("id")
+            .single();
+
+          if (attErr) throw attErr;
+          attendeeIds.push(created.id);
+          ticketIndex++;
+        }
       }
 
-      // Create attendee (no profile_id — guest)
-      const { data: attendee, error: attError } = await supabase
-        .from("attendees")
-        .insert({
-          event_id: event.id,
-          ticket_tier_id: selectedTierId,
-          first_name: form.first_name,
-          last_name: form.last_name,
-          email: form.email,
-          phone: form.phone || null,
-          institution: form.institution || null,
-          status: "approved",
-          payment_status: "pending",
-        })
-        .select("id, price_paid")
-        .single();
-
-      if (attError) throw attError;
-
-      const pricePaid = attendee.price_paid ?? selectedTier?.price ?? 0;
-      const vatRate = event.vat_rate ?? 25;
-      const vatAmount = Number(((pricePaid * vatRate) / (100 + vatRate)).toFixed(2));
-
-      // Create order
-      const { data: order, error: orderError } = await supabase
+      // 2. Create ONE order
+      const { data: order, error: orderErr } = await supabase
         .from("orders")
         .insert({
           event_id: event.id,
-          attendee_id: attendee.id,
+          attendee_id: attendeeIds[0], // primary attendee
           payer_name: payerName,
-          payer_type: form.payer_type as Enums<"payer_type">,
-          payer_oib: form.payer_oib || null,
-          payer_address: form.payer_address || null,
-          po_number: form.po_number || null,
+          payer_type: billing.payer_type as Enums<"payer_type">,
+          payer_oib: billing.payer_oib || null,
+          payer_address: billing.payer_address || null,
+          po_number: billing.po_number || null,
           status: "draft",
-          total_amount: pricePaid,
+          total_amount: grandTotal,
         })
         .select("id")
         .single();
 
-      if (orderError) throw orderError;
+      if (orderErr) throw orderErr;
 
-      // Create order item
-      const { error: itemError } = await supabase.from("order_items").insert({
-        order_id: order.id,
-        attendee_id: attendee.id,
-        ticket_type_id: selectedTierId,
-        description: selectedTier?.name ?? "Ticket",
-        quantity: 1,
-        unit_price: pricePaid,
-        total_price: pricePaid,
-        vat_amount: vatAmount,
-        price_at_purchase: pricePaid,
-      });
+      // 3. Create order_items — tickets
+      const orderItems: any[] = [];
+      let attIdx = 0;
+      for (const item of ticketLineItems) {
+        for (let i = 0; i < item.quantity; i++) {
+          const unitPrice = item.tier.price;
+          const vatAmount = Number(((unitPrice * vatRate) / (100 + vatRate)).toFixed(2));
+          orderItems.push({
+            order_id: order.id,
+            attendee_id: attendeeIds[attIdx],
+            ticket_type_id: item.tier.id,
+            description: item.tier.name,
+            quantity: 1,
+            unit_price: unitPrice,
+            total_price: unitPrice,
+            vat_amount: vatAmount,
+            price_at_purchase: unitPrice,
+          });
+          attIdx++;
+        }
+      }
 
-      if (itemError) throw itemError;
+      // 4. Create order_items — services
+      for (const item of serviceLineItems) {
+        const unitPrice = item.service.price;
+        const totalPrice = unitPrice * item.quantity;
+        const vatAmount = Number(((totalPrice * vatRate) / (100 + vatRate)).toFixed(2));
+        orderItems.push({
+          order_id: order.id,
+          attendee_id: attendeeIds[0], // services linked to primary attendee
+          service_id: item.service.id,
+          description: item.service.name,
+          quantity: item.quantity,
+          unit_price: unitPrice,
+          total_price: totalPrice,
+          vat_amount: vatAmount,
+          price_at_purchase: unitPrice,
+        });
+      }
+
+      const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
+      if (itemsErr) throw itemsErr;
+
+      // 5. Send ticket emails (best-effort)
+      for (const aid of attendeeIds) {
+        supabase.functions.invoke("send-ticket-email", { body: { attendeeId: aid } }).catch(() => {});
+      }
 
       const successData: SuccessData = {
-        attendeeId: attendee.id,
-        attendeeName: `${form.first_name} ${form.last_name}`,
+        orderId: order.id,
+        attendeeIds,
         eventName: event.name,
-        tierName: selectedTier?.name ?? "Ticket",
-        price: pricePaid,
+        totalAmount: grandTotal,
         currency,
-        payerType: form.payer_type,
+        payerType: billing.payer_type,
       };
 
-      // Send ticket email
-      try {
-        await supabase.functions.invoke("send-ticket-email", {
-          body: { attendeeId: attendee.id },
-        });
-      } catch {
-        // Best-effort
-      }
-
-      // For individual payers with price > 0, redirect to Stripe
-      if (!isCompany && pricePaid > 0) {
+      // 6. For individual payers with amount > 0, trigger Stripe
+      if (!isCompany && grandTotal > 0) {
         setSuccess(successData);
-        await triggerStripeCheckout(attendee.id);
+        setStep("success");
+        await triggerStripeCheckout(order.id);
       } else {
+        // Free or company invoice
+        if (grandTotal === 0) {
+          // Mark as paid immediately
+          await supabase.from("orders").update({ status: "paid" }).eq("id", order.id);
+          for (const aid of attendeeIds) {
+            await supabase.from("attendees").update({ payment_status: "paid" }).eq("id", aid);
+          }
+        }
         setSuccess(successData);
+        setStep("success");
       }
     } catch (err: any) {
-      toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+      toast({ title: "Checkout failed", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const triggerStripeCheckout = async (attendeeId?: string) => {
-    const aid = attendeeId || success?.attendeeId;
-    if (!aid || !event) return;
-
+  const triggerStripeCheckout = async (orderId: string) => {
     setRedirectingToStripe(true);
     try {
       const res = await supabase.functions.invoke("create-checkout", {
-        body: { attendeeId: aid, eventId: event.id },
+        body: { orderId, eventId: event.id },
       });
-
       const result = res.data;
 
-      if (result.free) {
+      if (result?.free) {
         toast({ title: "Free ticket activated!" });
-        navigate(`/ticket/${aid}`);
         return;
       }
-
-      if (result.url) {
+      if (result?.url) {
         window.location.href = result.url;
       } else {
-        throw new Error(result.error || "Failed to create checkout session");
+        throw new Error(result?.error || "Failed to create checkout session");
       }
     } catch (err: any) {
       toast({ title: "Payment redirect failed", description: err.message, variant: "destructive" });
@@ -258,12 +421,14 @@ export default function EventLanding() {
     }
   };
 
-  // --- Success view ---
-  if (success) {
+  /* ─── Success View ─────────────────────────────────── */
+
+  if (step === "success" && success) {
+    const primaryId = success.attendeeIds[0];
     return (
       <div className="min-h-screen bg-background">
         <ConvwayoHeader />
-        <section className="container mx-auto flex min-h-screen items-center justify-center px-4 py-16">
+        <section className="container mx-auto flex min-h-[80vh] items-center justify-center px-4 py-16">
           <div className="mx-auto max-w-md text-center">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
               <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -275,17 +440,21 @@ export default function EventLanding() {
               <>
                 <h2 className="mb-2 text-3xl font-bold text-foreground">Invoice Requested</h2>
                 <p className="mb-6 text-muted-foreground">
-                  We have sent your details to our accounting system. You will receive an offer via email shortly.
+                  Your order has been submitted. You will receive an invoice via email shortly.
                 </p>
-                <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
-                  <p>Your QR code will be available once payment is confirmed.</p>
-                </div>
+              </>
+            ) : success.totalAmount === 0 ? (
+              <>
+                <h2 className="mb-2 text-3xl font-bold text-foreground">Registration Complete!</h2>
+                <p className="mb-6 text-muted-foreground">
+                  Your free tickets for <strong>{success.eventName}</strong> are confirmed.
+                </p>
               </>
             ) : (
               <>
                 <h2 className="mb-2 text-3xl font-bold text-foreground">Almost There!</h2>
                 <p className="mb-6 text-muted-foreground">
-                  Your registration for <strong>{success.eventName}</strong> is confirmed. Complete your payment to activate your ticket.
+                  Your order for <strong>{success.eventName}</strong> is confirmed. Complete payment to activate your tickets.
                 </p>
                 {redirectingToStripe && (
                   <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
@@ -298,50 +467,35 @@ export default function EventLanding() {
               </>
             )}
 
-            <div className="relative mx-auto mb-6 inline-block rounded-xl border-2 border-primary/20 bg-card p-4">
-              <div className="blur-md pointer-events-none select-none">
-                <QRCodeSVG value={success.attendeeId} size={192} level="H" includeMargin />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="rounded-full bg-background/90 px-4 py-2 text-sm font-medium text-muted-foreground">
-                  Waiting for payment
-                </span>
-              </div>
-            </div>
-
             <div className="mb-8 rounded-lg border border-border bg-card p-6 text-left">
               <dl className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Name</dt>
-                  <dd className="font-medium text-foreground">{success.attendeeName}</dd>
+                  <dt className="text-muted-foreground">Tickets</dt>
+                  <dd className="font-medium text-foreground">{success.attendeeIds.length}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Ticket</dt>
-                  <dd className="font-medium text-foreground">{success.tierName}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Amount</dt>
+                  <dt className="text-muted-foreground">Total Amount</dt>
                   <dd className="font-bold text-primary">
-                    {success.price > 0 ? `${success.price} ${currency}` : "Free"}
+                    {success.totalAmount > 0 ? `${success.totalAmount.toFixed(2)} ${currency}` : "Free"}
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Payment</dt>
-                  <dd><Badge variant="secondary">Pending</Badge></dd>
+                  <dd>
+                    <Badge variant={success.totalAmount === 0 ? "default" : "secondary"}>
+                      {success.totalAmount === 0 ? "Confirmed" : "Pending"}
+                    </Badge>
+                  </dd>
                 </div>
               </dl>
             </div>
 
-            <div className="mb-4 rounded-lg border border-border bg-accent/5 p-4 text-sm text-muted-foreground">
-              A confirmation email with your ticket link has been sent to <strong className="text-foreground">{form.email}</strong>.
-            </div>
-
-            {success.payerType === "individual" && success.price > 0 ? (
+            {success.payerType === "individual" && success.totalAmount > 0 ? (
               <div className="space-y-3">
                 <Button
                   size="lg"
                   className="w-full text-lg"
-                  onClick={() => triggerStripeCheckout()}
+                  onClick={() => triggerStripeCheckout(success.orderId)}
                   disabled={redirectingToStripe}
                 >
                   {redirectingToStripe ? (
@@ -351,12 +505,12 @@ export default function EventLanding() {
                   )}
                   {redirectingToStripe ? "Redirecting..." : "PAY NOW"}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate(`/ticket/${success.attendeeId}`)}>
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/ticket/${primaryId}`)}>
                   View My Ticket
                 </Button>
               </div>
             ) : (
-              <Button onClick={() => navigate(`/ticket/${success.attendeeId}`)}>
+              <Button onClick={() => navigate(`/ticket/${primaryId}`)}>
                 View My Ticket
               </Button>
             )}
@@ -366,7 +520,360 @@ export default function EventLanding() {
     );
   }
 
-  // --- Main Event Page ---
+  /* ─── STEP 2: Details & Billing ────────────────────── */
+
+  if (step === "details") {
+    return (
+      <div className="min-h-screen bg-background">
+        <ConvwayoHeader />
+        <EventHero event={event} />
+
+        <section className="container mx-auto px-4 py-12 md:py-16">
+          <div className="mx-auto max-w-2xl">
+            {/* Back button */}
+            <Button variant="ghost" size="sm" className="mb-6" onClick={() => setStep("select")}>
+              ← Back to Selection
+            </Button>
+
+            <h2 className="mb-2 text-3xl font-bold text-foreground">Complete Your Order</h2>
+            <p className="mb-8 text-muted-foreground">
+              {totalTickets} ticket{totalTickets > 1 ? "s" : ""} · {grandTotal.toFixed(2)} {currency} total
+            </p>
+
+            {/* Auth Choice */}
+            <Tabs value={entryTab} onValueChange={setEntryTab} className="mb-8">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="guest" className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Quick Purchase
+                </TabsTrigger>
+                <TabsTrigger value="login" className="flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="login" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Welcome Back</CardTitle>
+                    <CardDescription>
+                      Sign in to link this purchase to your account and access past orders.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div>
+                        <Label htmlFor="login_email">Email</Label>
+                        <Input
+                          id="login_email"
+                          type="email"
+                          value={loginForm.email}
+                          onChange={(e) => setLoginForm((p) => ({ ...p, email: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="login_password">Password</Label>
+                        <Input
+                          id="login_password"
+                          type="password"
+                          value={loginForm.password}
+                          onChange={(e) => setLoginForm((p) => ({ ...p, password: e.target.value }))}
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loginLoading}>
+                        {loginLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {loginLoading ? "Logging In..." : "Sign In & Continue"}
+                      </Button>
+                      <p className="text-xs text-center text-muted-foreground">
+                        Don't have an account?{" "}
+                        <button type="button" className="text-primary underline" onClick={() => navigate(`/event/${slug}/auth`)}>
+                          Create one here
+                        </button>
+                      </p>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="guest" className="mt-6">
+                {user && (
+                  <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-foreground">
+                    Signed in as <strong>{user.email}</strong>. Your purchase will be linked to your account.
+                  </div>
+                )}
+
+                {!user && (
+                  <div className="mb-4 rounded-lg border border-border bg-accent/5 px-4 py-3 text-sm text-muted-foreground">
+                    Purchasing as a guest. You'll receive ticket links via email, but won't be able to view past purchases without an account.
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+
+            <form onSubmit={handleCheckout} className="space-y-8">
+              {/* Group Attendee Details */}
+              <div>
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+                  <Users className="h-5 w-5 text-primary" />
+                  Attendee Details
+                  {totalTickets > 1 && (
+                    <Badge variant="secondary" className="ml-2">{totalTickets} tickets</Badge>
+                  )}
+                </h3>
+
+                <div className="space-y-4">
+                  {attendees.map((att, idx) => {
+                    // Find which tier this attendee slot belongs to
+                    let tierLabel = "";
+                    let counter = 0;
+                    for (const item of ticketLineItems) {
+                      for (let i = 0; i < item.quantity; i++) {
+                        if (counter === idx) {
+                          tierLabel = item.tier.name;
+                        }
+                        counter++;
+                      }
+                    }
+
+                    return (
+                      <Card key={idx} className="border-border">
+                        <CardContent className="pt-4">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-sm font-medium text-foreground">
+                              Ticket #{idx + 1}
+                              {tierLabel && <span className="text-muted-foreground"> — {tierLabel}</span>}
+                            </p>
+                            {idx > 0 && (
+                              <p className="text-xs text-muted-foreground">
+                                Leave blank to use primary attendee's name
+                              </p>
+                            )}
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            <div>
+                              <Label>First Name {idx === 0 && "*"}</Label>
+                              <Input
+                                value={att.first_name}
+                                placeholder={idx === 0 ? "Required" : "Optional"}
+                                onChange={(e) => {
+                                  const updated = [...attendees];
+                                  updated[idx] = { ...updated[idx], first_name: e.target.value };
+                                  setAttendees(updated);
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Label>Last Name {idx === 0 && "*"}</Label>
+                              <Input
+                                value={att.last_name}
+                                placeholder={idx === 0 ? "Required" : "Optional"}
+                                onChange={(e) => {
+                                  const updated = [...attendees];
+                                  updated[idx] = { ...updated[idx], last_name: e.target.value };
+                                  setAttendees(updated);
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Label>Email {idx === 0 && "*"}</Label>
+                              <Input
+                                type="email"
+                                value={att.email}
+                                placeholder={idx === 0 ? "Required" : "Optional"}
+                                onChange={(e) => {
+                                  const updated = [...attendees];
+                                  updated[idx] = { ...updated[idx], email: e.target.value };
+                                  setAttendees(updated);
+                                  // Sync billing email from first attendee
+                                  if (idx === 0) {
+                                    setBilling((prev) => ({ ...prev, email: e.target.value }));
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Billing Information */}
+              <div>
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  Billing Information
+                </h3>
+
+                <div className="mb-6">
+                  <Label className="mb-3 block">Who is paying? *</Label>
+                  <RadioGroup
+                    value={billing.payer_type}
+                    onValueChange={(v) => setBilling((p) => ({ ...p, payer_type: v as "individual" | "company" }))}
+                    className="grid grid-cols-2 gap-4"
+                  >
+                    <label
+                      htmlFor="type-individual"
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                        billing.payer_type === "individual"
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <RadioGroupItem value="individual" id="type-individual" />
+                      <div className="flex items-center gap-2">
+                        <UserIcon className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium text-foreground">Individual</span>
+                          <p className="text-xs text-muted-foreground">Pay with card via Stripe</p>
+                        </div>
+                      </div>
+                    </label>
+                    <label
+                      htmlFor="type-company"
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                        billing.payer_type === "company"
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <RadioGroupItem value="company" id="type-company" />
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium text-foreground">Company</span>
+                          <p className="text-xs text-muted-foreground">Request an invoice</p>
+                        </div>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="billing_email">Contact Email *</Label>
+                    <Input
+                      id="billing_email"
+                      type="email"
+                      value={billing.email}
+                      onChange={(e) => setBilling((p) => ({ ...p, email: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="billing_phone">Phone</Label>
+                    <Input
+                      id="billing_phone"
+                      value={billing.phone}
+                      onChange={(e) => setBilling((p) => ({ ...p, phone: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="billing_institution">Institution</Label>
+                    <Input
+                      id="billing_institution"
+                      value={billing.institution}
+                      onChange={(e) => setBilling((p) => ({ ...p, institution: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {billing.payer_type === "company" && (
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <Label htmlFor="company_name">Company Name *</Label>
+                      <Input
+                        id="company_name"
+                        value={billing.company_name}
+                        onChange={(e) => setBilling((p) => ({ ...p, company_name: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="payer_oib">OIB / VAT ID</Label>
+                      <Input
+                        id="payer_oib"
+                        value={billing.payer_oib}
+                        onChange={(e) => setBilling((p) => ({ ...p, payer_oib: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="payer_address">Company Address</Label>
+                      <Input
+                        id="payer_address"
+                        value={billing.payer_address}
+                        onChange={(e) => setBilling((p) => ({ ...p, payer_address: e.target.value }))}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Label htmlFor="po_number">Purchase Order (PO) Number</Label>
+                      <Input
+                        id="po_number"
+                        value={billing.po_number}
+                        onChange={(e) => setBilling((p) => ({ ...p, po_number: e.target.value }))}
+                        placeholder="e.g. PO-2026-001"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Order Summary */}
+              <div className="rounded-lg border border-border bg-secondary/50 p-5 space-y-3">
+                <h4 className="font-semibold text-foreground">Order Summary</h4>
+                {ticketLineItems.map((item) => (
+                  <div key={item.tier.id} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {item.tier.name} × {item.quantity}
+                    </span>
+                    <span className="font-medium text-foreground">{item.subtotal.toFixed(2)} {currency}</span>
+                  </div>
+                ))}
+                {serviceLineItems.map((item) => (
+                  <div key={item.service.id} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {item.service.name} × {item.quantity}
+                    </span>
+                    <span className="font-medium text-foreground">{item.subtotal.toFixed(2)} {currency}</span>
+                  </div>
+                ))}
+                <Separator />
+                <div className="flex justify-between">
+                  <span className="font-semibold text-foreground">Grand Total</span>
+                  <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full text-lg"
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {submitting
+                  ? "Processing..."
+                  : billing.payer_type === "company"
+                    ? `Request Invoice — ${grandTotal.toFixed(2)} ${currency}`
+                    : grandTotal > 0
+                      ? `Pay ${grandTotal.toFixed(2)} ${currency}`
+                      : "Complete Registration"}
+              </Button>
+
+              {!user && (
+                <p className="text-xs text-center text-muted-foreground">
+                  No account needed. You'll receive ticket links via email.
+                </p>
+              )}
+            </form>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  /* ─── STEP 1: Unified Selection ────────────────────── */
+
   return (
     <div className="min-h-screen bg-background">
       <ConvwayoHeader />
@@ -374,254 +881,107 @@ export default function EventLanding() {
 
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="mx-auto max-w-2xl">
-          <h2 className="mb-6 text-3xl font-bold text-foreground">Register for Event</h2>
+          {/* Ticket Tiers */}
+          <div className="mb-10">
+            <h2 className="mb-2 flex items-center gap-2 text-2xl font-bold text-foreground">
+              <Ticket className="h-6 w-6 text-primary" />
+              Select Tickets
+            </h2>
+            <p className="mb-6 text-muted-foreground">Choose the ticket type and quantity for your group.</p>
 
-          {/* Dual Entry Tabs */}
-          <Tabs value={entryTab} onValueChange={setEntryTab} className="mb-10">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="guest" className="flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                Quick Registration
-              </TabsTrigger>
-              <TabsTrigger value="login" className="flex items-center gap-2">
-                <LogIn className="h-4 w-4" />
-                Sign In
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Welcome Back</CardTitle>
-                  <CardDescription>
-                    Sign in to auto-fill your details and manage all your tickets from your dashboard.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                      <Label htmlFor="login_email">Email</Label>
-                      <Input
-                        id="login_email"
-                        type="email"
-                        value={loginForm.email}
-                        onChange={(e) => setLoginForm((p) => ({ ...p, email: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="login_password">Password</Label>
-                      <Input
-                        id="login_password"
-                        type="password"
-                        value={loginForm.password}
-                        onChange={(e) => setLoginForm((p) => ({ ...p, password: e.target.value }))}
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loginLoading}>
-                      {loginLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {loginLoading ? "Logging In..." : "Sign In"}
-                    </Button>
-                    <p className="text-xs text-center text-muted-foreground mt-2">
-                      Don't have an account?{" "}
-                      <button type="button" className="text-primary underline" onClick={() => navigate(`/event/${slug}/auth`)}>
-                        Create one here
-                      </button>
-                    </p>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="guest" className="mt-6">
-              {/* Ticket Tiers */}
-              <div className="mb-10">
-                <h3 className="mb-4 text-lg font-semibold text-foreground">Select Your Ticket</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {tiers.map((tier) => (
-                    <TicketTierCard
-                      key={tier.id}
-                      tier={tier}
-                      selected={selectedTierId === tier.id}
-                      currency={currency}
-                      onSelect={() => setSelectedTierId(tier.id)}
-                    />
-                  ))}
-                </div>
-                {tiers.length === 0 && (
-                  <p className="text-muted-foreground">No tickets available at this time.</p>
-                )}
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Attendee Info */}
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">Your Information</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="first_name">First Name *</Label>
-                      <Input
-                        id="first_name"
-                        value={form.first_name}
-                        onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="last_name">Last Name *</Label>
-                      <Input
-                        id="last_name"
-                        value={form.last_name}
-                        onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={form.phone}
-                        onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="institution">Institution</Label>
-                      <Input
-                        id="institution"
-                        value={form.institution}
-                        onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Billing Info */}
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">Billing Information</h3>
-
-                  <div className="mb-6">
-                    <Label className="mb-3 block">Who is paying? *</Label>
-                    <RadioGroup
-                      value={form.payer_type}
-                      onValueChange={(v) => setForm((p) => ({ ...p, payer_type: v as "individual" | "company" }))}
-                      className="grid grid-cols-2 gap-4"
-                    >
-                      <label
-                        htmlFor="type-individual"
-                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                          form.payer_type === "individual"
-                            ? "border-primary bg-primary/5"
-                            : "border-border bg-card hover:border-muted-foreground/30"
-                        }`}
-                      >
-                        <RadioGroupItem value="individual" id="type-individual" />
-                        <div className="flex items-center gap-2">
-                          <UserIcon className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">Individual</span>
-                        </div>
-                      </label>
-                      <label
-                        htmlFor="type-company"
-                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                          form.payer_type === "company"
-                            ? "border-primary bg-primary/5"
-                            : "border-border bg-card hover:border-muted-foreground/30"
-                        }`}
-                      >
-                        <RadioGroupItem value="company" id="type-company" />
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">Company</span>
-                        </div>
-                      </label>
-                    </RadioGroup>
-                  </div>
-
-                  {form.payer_type === "company" && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="company_name">Company Name *</Label>
-                        <Input
-                          id="company_name"
-                          value={form.company_name}
-                          onChange={(e) => setForm((p) => ({ ...p, company_name: e.target.value }))}
-                          placeholder="Your company legal name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="payer_oib">OIB / VAT ID *</Label>
-                        <Input
-                          id="payer_oib"
-                          value={form.payer_oib}
-                          onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
-                          placeholder="e.g. 12345678901"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="payer_address">Company Address</Label>
-                        <Input
-                          id="payer_address"
-                          value={form.payer_address}
-                          onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="po_number">Purchase Order (PO) Number</Label>
-                        <Input
-                          id="po_number"
-                          value={form.po_number}
-                          onChange={(e) => setForm((p) => ({ ...p, po_number: e.target.value }))}
-                          placeholder="e.g. PO-2026-001"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Summary */}
-                {selectedTier && (
-                  <div className="rounded-lg border border-border bg-secondary/50 p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-foreground">{selectedTier.name}</p>
-                        <p className="text-sm text-muted-foreground">{event.name}</p>
-                      </div>
-                      <p className="text-2xl font-bold text-primary">
-                        {selectedTier.price > 0 ? `${selectedTier.price} ${currency}` : "Free"}
+            <div className="space-y-3">
+              {tiers.map((tier) => (
+                <Card key={tier.id} className="border-border">
+                  <CardContent className="flex items-center justify-between gap-4 py-5">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground">{tier.name}</h3>
+                      {tier.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{tier.description}</p>
+                      )}
+                      <p className="mt-1 text-lg font-bold text-primary">
+                        {tier.price > 0 ? `${tier.price.toFixed(2)} ${currency}` : "Free"}
                       </p>
                     </div>
-                  </div>
+                    <QuantitySelector
+                      value={ticketSelections[tier.id] ?? 0}
+                      onChange={(v) => setTicketSelections((prev) => ({ ...prev, [tier.id]: v }))}
+                      max={tier.capacity ?? undefined}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+              {tiers.length === 0 && (
+                <p className="text-muted-foreground">No tickets available at this time.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Services */}
+          {services.length > 0 && (
+            <div className="mb-10">
+              <h2 className="mb-2 flex items-center gap-2 text-2xl font-bold text-foreground">
+                <ShoppingBag className="h-6 w-6 text-primary" />
+                Additional Services
+              </h2>
+              <p className="mb-6 text-muted-foreground">
+                Enhance your experience with workshops, dinners, and more.
+              </p>
+
+              <div className="space-y-3">
+                {services.map((service) => (
+                  <Card key={service.id} className="border-border">
+                    <CardContent className="flex items-center justify-between gap-4 py-5">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground">{service.name}</h3>
+                        {service.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
+                        )}
+                        <p className="mt-1 text-lg font-bold text-primary">
+                          {service.price > 0 ? `${service.price.toFixed(2)} ${currency}` : "Free"}
+                        </p>
+                      </div>
+                      <QuantitySelector
+                        value={serviceSelections[service.id] ?? 0}
+                        onChange={(v) => setServiceSelections((prev) => ({ ...prev, [service.id]: v }))}
+                        max={service.capacity ?? undefined}
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sticky Order Summary Bar */}
+          <div className="sticky bottom-0 -mx-4 border-t border-border bg-background/95 backdrop-blur px-4 py-4">
+            <div className="mx-auto flex max-w-2xl items-center justify-between">
+              <div>
+                {hasItems && (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      {totalTickets} ticket{totalTickets > 1 ? "s" : ""}
+                      {serviceLineItems.length > 0 && ` + ${serviceLineItems.length} service${serviceLineItems.length > 1 ? "s" : ""}`}
+                    </p>
+                    <p className="text-xl font-bold text-foreground">
+                      {grandTotal > 0 ? `${grandTotal.toFixed(2)} ${currency}` : "Free"}
+                    </p>
+                  </>
                 )}
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full text-lg"
-                  disabled={submitting || !selectedTierId}
-                >
-                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {submitting
-                    ? "Registering..."
-                    : form.payer_type === "company"
-                      ? "Register & Request Invoice"
-                      : "Register & Pay"}
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  No account needed. You'll receive a ticket link via email.
-                </p>
-              </form>
-            </TabsContent>
-          </Tabs>
+                {!hasItems && (
+                  <p className="text-muted-foreground">Select at least one ticket to continue</p>
+                )}
+              </div>
+              <Button
+                size="lg"
+                className="text-lg gap-2"
+                disabled={!hasItems}
+                onClick={goToDetails}
+              >
+                Continue
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
     </div>
