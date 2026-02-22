@@ -35,11 +35,11 @@ Deno.serve(async (req) => {
       const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
       if (orderId) {
-        // ─── New unified order flow ───
+        // ─── Unified order flow (source of truth) ───
         // 1. Update the order to paid
         const { error: orderError } = await adminClient
           .from("orders")
-          .update({ status: "paid" })
+          .update({ status: "paid", payment_method: "stripe" })
           .eq("id", orderId);
 
         if (orderError) console.error("Failed to update order:", orderError);
@@ -53,13 +53,13 @@ Deno.serve(async (req) => {
 
         const attendeeIds = [...new Set((items ?? []).map((i: any) => i.attendee_id))];
 
-        for (const aid of attendeeIds) {
+        if (attendeeIds.length > 0) {
           const { error: attError } = await adminClient
             .from("attendees")
             .update({ payment_status: "paid" })
-            .eq("id", aid);
+            .in("id", attendeeIds);
 
-          if (attError) console.error(`Failed to update attendee ${aid}:`, attError);
+          if (attError) console.error("Failed to update attendees:", attError);
         }
 
         console.log(`Payment confirmed for order ${orderId} (${attendeeIds.length} attendees)`);
