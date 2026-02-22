@@ -263,8 +263,7 @@ export default function EventLanding() {
 
     setSubmitting(true);
     try {
-      const isCompany = billing.payer_type === "company";
-      const payerName = isCompany ? billing.company_name : `${firstAtt.first_name} ${firstAtt.last_name}`;
+      const payerName = billing.payer_type === "company" ? billing.company_name : `${firstAtt.first_name} ${firstAtt.last_name}`;
 
       // 1. Create attendee records — one per ticket
       const attendeeIds: string[] = [];
@@ -297,7 +296,11 @@ export default function EventLanding() {
         }
       }
 
-      // 2. Create ONE order
+      // 2. Create ONE order (draft-first pattern)
+      const isCompany = billing.payer_type === "company";
+      const paymentMethod = isCompany ? "invoice" : "stripe";
+      const isGroupOrder = totalTickets > 1;
+
       const { data: order, error: orderErr } = await supabase
         .from("orders")
         .insert({
@@ -310,6 +313,8 @@ export default function EventLanding() {
           po_number: billing.po_number || null,
           status: "draft",
           total_amount: grandTotal,
+          payment_method: paymentMethod,
+          is_group_order: isGroupOrder,
         })
         .select("id")
         .single();
