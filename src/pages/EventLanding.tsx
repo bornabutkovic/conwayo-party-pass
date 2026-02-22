@@ -38,6 +38,9 @@ interface ServiceSelection {
   quantity: number;
 }
 
+// Maps serviceId → array of attendee indices (one per quantity unit)
+type ServiceAssignments = Record<string, number[]>;
+
 interface AttendeeDetail {
   first_name: string;
   last_name: string;
@@ -109,6 +112,7 @@ export default function EventLanding() {
 
   // Details state
   const [attendees, setAttendees] = useState<AttendeeDetail[]>([]);
+  const [serviceAssignments, setServiceAssignments] = useState<ServiceAssignments>({});
   const [entryTab, setEntryTab] = useState<string>("guest");
   const [submitting, setSubmitting] = useState(false);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
@@ -182,6 +186,14 @@ export default function EventLanding() {
       email: "",
     }));
     setAttendees(slots);
+
+    // Initialize service assignments — default all units to attendee index 0
+    const assignments: ServiceAssignments = {};
+    for (const item of serviceLineItems) {
+      assignments[item.service.id] = Array.from({ length: item.quantity }, () => 0);
+    }
+    setServiceAssignments(assignments);
+
     setStep("details");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -343,22 +355,26 @@ export default function EventLanding() {
         }
       }
 
-      // 4. Create order_items — services
+      // 4. Create order_items — services (with per-attendee assignment)
       for (const item of serviceLineItems) {
-        const unitPrice = item.service.price;
-        const totalPrice = unitPrice * item.quantity;
-        const vatAmount = Number(((totalPrice * vatRate) / (100 + vatRate)).toFixed(2));
-        orderItems.push({
-          order_id: order.id,
-          attendee_id: attendeeIds[0], // services linked to primary attendee
-          service_id: item.service.id,
-          description: item.service.name,
-          quantity: item.quantity,
-          unit_price: unitPrice,
-          total_price: totalPrice,
-          vat_amount: vatAmount,
-          price_at_purchase: unitPrice,
-        });
+        const assignments = serviceAssignments[item.service.id] ?? [];
+        for (let i = 0; i < item.quantity; i++) {
+          const assignedAttIdx = assignments[i] ?? 0;
+          const assignedAttId = attendeeIds[assignedAttIdx] ?? attendeeIds[0];
+          const unitPrice = item.service.price;
+          const vatAmount = Number(((unitPrice * vatRate) / (100 + vatRate)).toFixed(2));
+          orderItems.push({
+            order_id: order.id,
+            attendee_id: assignedAttId,
+            service_id: item.service.id,
+            description: item.service.name,
+            quantity: 1,
+            unit_price: unitPrice,
+            total_price: unitPrice,
+            vat_amount: vatAmount,
+            price_at_purchase: unitPrice,
+          });
+        }
       }
 
       const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
@@ -704,6 +720,74 @@ export default function EventLanding() {
                   })}
                 </div>
               </div>
+
+              {/* Service Assignment (per attendee) */}
+              {serviceLineItems.length > 0 && (
+                <div>
+                  <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+                    <ShoppingBag className="h-5 w-5 text-primary" />
+                    Assign Services to Attendees
+                  </h3>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Choose which attendee receives each service (e.g., Gala Dinner, Workshop).
+                  </p>
+
+                  <div className="space-y-4">
+                    {serviceLineItems.map((item) => {
+                      const assignments = serviceAssignments[item.service.id] ?? [];
+                      return (
+                        <Card key={item.service.id} className="border-border">
+                          <CardContent className="pt-4">
+                            <div className="mb-3 flex items-center justify-between">
+                              <p className="font-semibold text-foreground">{item.service.name}</p>
+                              <Badge variant="secondary">
+                                {item.quantity} × {item.service.price > 0 ? `${item.service.price.toFixed(2)} ${currency}` : "Free"}
+                              </Badge>
+                            </div>
+                            <div className="space-y-2">
+                              {Array.from({ length: item.quantity }, (_, unitIdx) => {
+                                const currentIdx = assignments[unitIdx] ?? 0;
+                                return (
+                                  <div key={unitIdx} className="flex items-center gap-3">
+                                    <Label className="text-sm text-muted-foreground whitespace-nowrap min-w-[60px]">
+                                      Unit {item.quantity > 1 ? `#${unitIdx + 1}` : ""}
+                                    </Label>
+                                    <select
+                                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                      value={currentIdx}
+                                      onChange={(e) => {
+                                        const newIdx = Number(e.target.value);
+                                        setServiceAssignments((prev) => {
+                                          const updated = { ...prev };
+                                          const arr = [...(updated[item.service.id] ?? [])];
+                                          arr[unitIdx] = newIdx;
+                                          updated[item.service.id] = arr;
+                                          return updated;
+                                        });
+                                      }}
+                                    >
+                                      {attendees.map((att, attIdx) => {
+                                        const label = att.first_name || att.last_name
+                                          ? `${att.first_name} ${att.last_name}`.trim()
+                                          : `Attendee #${attIdx + 1}`;
+                                        return (
+                                          <option key={attIdx} value={attIdx}>
+                                            {label}
+                                          </option>
+                                        );
+                                      })}
+                                    </select>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Billing Information */}
               <div>
