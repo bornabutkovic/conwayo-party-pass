@@ -944,6 +944,7 @@ export type Database = {
       }
     }
     Functions: {
+      auto_complete_past_events: { Args: never; Returns: undefined }
       create_user_wizard: {
         Args: {
           email_input: string
@@ -954,6 +955,7 @@ export type Database = {
         }
         Returns: string
       }
+      is_admin_user: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       payer_type: "individual" | "company" | "sponsor"
