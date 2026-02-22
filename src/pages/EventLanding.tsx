@@ -421,21 +421,29 @@ export default function EventLanding() {
   const triggerStripeCheckout = async (orderId: string) => {
     setRedirectingToStripe(true);
     try {
-      const res = await supabase.functions.invoke("create-checkout", {
+      console.log("create-checkout payload:", { orderId, eventId: event.id });
+
+      const { data, error: fnError } = await supabase.functions.invoke("create-checkout", {
         body: { orderId, eventId: event.id },
       });
-      const result = res.data;
 
-      if (result?.free) {
+      console.log("create-checkout response:", { data, fnError });
+
+      if (fnError) {
+        throw new Error(typeof fnError === "object" && fnError.message ? fnError.message : "Edge function error: " + JSON.stringify(fnError));
+      }
+
+      if (data?.free) {
         toast({ title: "Free ticket activated!" });
         return;
       }
-      if (result?.url) {
-        window.location.href = result.url;
+      if (data?.url) {
+        window.location.href = data.url;
       } else {
-        throw new Error(result?.error || "Failed to create checkout session");
+        throw new Error(data?.error || "Payment system unavailable. Please check configuration.");
       }
     } catch (err: any) {
+      console.error("Stripe checkout error:", err);
       toast({ title: "Payment redirect failed", description: err.message, variant: "destructive" });
     } finally {
       setRedirectingToStripe(false);
