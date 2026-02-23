@@ -67,29 +67,36 @@ Deno.serve(async (req) => {
       const currency = (event.currency ?? "EUR").toLowerCase();
       const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/[^/]*$/, "") || "https://localhost:5173";
 
-      const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        customer_email: (attendee.email && isValidEmail(attendee.email)) ? attendee.email : undefined,
-        line_items: [
-          {
-            price_data: {
-              currency,
-              product_data: {
-                name: `${event.name} — Ticket`,
-                description: `Attendee: ${attendee.first_name} ${attendee.last_name}`,
+      let session;
+      try {
+        session = await stripe.checkout.sessions.create({
+          ui_mode: "hosted",
+          mode: "payment",
+          customer_email: (attendee.email && isValidEmail(attendee.email)) ? attendee.email : undefined,
+          line_items: [
+            {
+              price_data: {
+                currency,
+                product_data: {
+                  name: `${event.name} — Ticket`,
+                  description: `Attendee: ${attendee.first_name} ${attendee.last_name}`,
+                },
+                unit_amount: Math.round(price * 100),
               },
-              unit_amount: Math.round(price * 100),
+              quantity: 1,
             },
-            quantity: 1,
+          ],
+          metadata: {
+            attendee_id: body.attendeeId,
+            event_id: eventId,
           },
-        ],
-        metadata: {
-          attendee_id: body.attendeeId,
-          event_id: eventId,
-        },
-        success_url: `${origin}/ticket/${body.attendeeId}?payment=success`,
-        cancel_url: `${origin}/ticket/${body.attendeeId}?payment=cancelled`,
-      });
+          success_url: `${origin}/ticket/${body.attendeeId}?payment=success`,
+          cancel_url: `${origin}/ticket/${body.attendeeId}?payment=cancelled`,
+        });
+      } catch (stripeError: any) {
+        console.error("Stripe Error:", stripeError);
+        throw new Error("Stripe error: " + (stripeError?.message || "Unknown Stripe error"));
+      }
 
       return new Response(JSON.stringify({ url: session.url }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -187,6 +194,7 @@ Deno.serve(async (req) => {
 
     try {
       const session = await stripe.checkout.sessions.create({
+        ui_mode: "hosted",
         mode: "payment",
         customer_email: customerEmail,
         line_items: validLineItems,
