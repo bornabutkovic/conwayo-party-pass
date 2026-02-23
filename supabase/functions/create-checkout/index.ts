@@ -1,6 +1,10 @@
 import Stripe from "npm:stripe@^14.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -65,7 +69,7 @@ Deno.serve(async (req) => {
 
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
-        customer_email: attendee.email ?? undefined,
+        customer_email: (attendee.email && isValidEmail(attendee.email)) ? attendee.email : undefined,
         line_items: [
           {
             price_data: {
@@ -157,7 +161,8 @@ Deno.serve(async (req) => {
         .select("email")
         .eq("id", order.attendee_id)
         .single();
-      customerEmail = att?.email ?? undefined;
+      const rawEmail = att?.email ?? undefined;
+      customerEmail = (rawEmail && isValidEmail(rawEmail)) ? rawEmail : undefined;
     }
 
     const lineItems = orderItems.map((item: any) => {
