@@ -161,7 +161,8 @@ Deno.serve(async (req) => {
         .select("email")
         .eq("id", order.attendee_id)
         .single();
-      customerEmail = att?.email ?? undefined;
+      const rawEmail = att?.email ?? undefined;
+      customerEmail = (rawEmail && isValidEmail(rawEmail)) ? rawEmail : undefined;
     }
 
     const lineItems = orderItems.map((item: any) => {
