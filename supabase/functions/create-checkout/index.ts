@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
-        customer_email: attendee.email ?? undefined,
+        customer_email: (attendee.email && isValidEmail(attendee.email)) ? attendee.email : undefined,
         line_items: [
           {
             price_data: {
