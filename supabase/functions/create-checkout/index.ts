@@ -1,6 +1,10 @@
 import Stripe from "npm:stripe@^14.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
