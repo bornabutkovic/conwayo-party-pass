@@ -64,7 +64,6 @@ Deno.serve(async (req) => {
       const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/[^/]*$/, "") || "https://localhost:5173";
 
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
         mode: "payment",
         customer_email: attendee.email ?? undefined,
         line_items: [
@@ -183,7 +182,6 @@ Deno.serve(async (req) => {
 
     try {
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
         mode: "payment",
         customer_email: customerEmail,
         line_items: validLineItems,
