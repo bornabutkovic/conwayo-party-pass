@@ -342,7 +342,7 @@ export default function EventRegister() {
             </div>
             <h2 className="mb-2 text-3xl font-bold text-foreground">Invoice Request Received!</h2>
             <p className="mb-6 text-muted-foreground">
-              Your invoice request has been received. A payment instruction will be sent to your email shortly.
+              {invoiceSuccessMessage || "Your invoice request has been received! A payment instruction will be sent to your email shortly."}
             </p>
             <Button onClick={() => navigate(`/event/${slug}`)}>
               Back to Event
