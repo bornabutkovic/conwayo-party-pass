@@ -156,36 +156,41 @@ export default function EventRegister() {
     if (isCompany) {
       setSubmitting(true);
       try {
-        const tickets = [{ ticket_tier_id: selectedTierId, quantity: ticketQty }];
-        const selectedServices = Object.entries(serviceQtys)
-          .filter(([, qty]) => qty > 0)
-          .map(([service_id, quantity]) => ({ service_id, quantity }));
+        const tickets = [{ id: selectedTierId, quantity: ticketQty }];
+        const servicesPayload = Object.entries(serviceQtys).map(([id, quantity]) => ({ id, quantity }));
 
-        const body = {
-          event_id: event.id,
-          first_name: form.first_name,
-          last_name: form.last_name,
-          email: form.email,
-          phone: form.phone || null,
-          profile_id: user?.id ?? null,
-          company_name: form.company_name,
-          company_oib: form.payer_oib || null,
-          company_address: form.payer_address || null,
-          billing_email: form.billing_email || form.email,
-          po_number: form.po_number || null,
-          tickets,
-          services: selectedServices,
-        };
-
-        const res = await fetch(N8N_INVOICE_WEBHOOK, {
+        const response = await fetch("https://penta.app.n8n.cloud/webhook/lovable-invoice-registration", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            event_id: event.id,
+            first_name: form.first_name,
+            last_name: form.last_name,
+            email: form.email,
+            phone: form.phone || null,
+            profile_id: user?.id ?? null,
+            company_name: form.company_name,
+            company_oib: form.payer_oib || null,
+            company_address: form.payer_address || null,
+            billing_email: form.billing_email || form.email,
+            po_number: form.po_number || null,
+            tickets: tickets
+              .filter((t) => t.quantity > 0)
+              .map((t) => ({ ticket_tier_id: t.id, quantity: t.quantity })),
+            services: servicesPayload
+              .filter((s) => s.quantity > 0)
+              .map((s) => ({ service_id: s.id, quantity: s.quantity })),
+          }),
         });
 
-        if (!res.ok) throw new Error("Webhook returned an error");
-
-        setInvoiceSuccess(true);
+        if (response.ok) {
+          setInvoiceSuccessMessage(
+            "Your invoice request has been received! A payment instruction will be sent to your email shortly.",
+          );
+          setInvoiceSuccess(true);
+        } else {
+          throw new Error("Webhook failed");
+        }
       } catch (err: any) {
         toast({
           title: "Something went wrong. Please try again or contact support.",
