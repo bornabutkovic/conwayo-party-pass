@@ -551,9 +551,9 @@ export default function EventLanding() {
 
   if (step === "details") {
     return (
-      <div className="min-h-screen bg-background">
-        <ConvwayoHeader />
-        <EventHero event={event} />
+      <EventBrandingProvider event={event}>
+      <div className="min-h-screen" style={{ backgroundColor: event.branding_secondary_color ?? '#ffffff', color: event.branding_text_color ?? '#1f2937' }}>
+        <EventBrandedHeader event={event} />
 
         <section className="container mx-auto px-4 py-12 md:py-16">
           <div className="mx-auto max-w-2xl">
