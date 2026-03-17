@@ -189,7 +189,7 @@ export default function EventRegister() {
         setInvoiceSuccess(true);
       } catch (err: any) {
         toast({
-          title: "Something went wrong. Please try again.",
+          title: "Something went wrong. Please try again or contact support.",
           description: err.message,
           variant: "destructive",
         });
