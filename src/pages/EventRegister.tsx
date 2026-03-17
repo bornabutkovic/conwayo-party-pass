@@ -152,44 +152,49 @@ export default function EventRegister() {
 
     const isCompany = form.payer_type === "company";
 
-    // ── COMPANY / INVOICE FLOW → n8n webhook ──
+    // ── COMPANY / INVOICE FLOW → Edge Function ──
     if (isCompany) {
       setSubmitting(true);
       try {
         const tickets = [{ id: selectedTierId, quantity: ticketQty }];
         const servicesPayload = Object.entries(serviceQtys).map(([id, quantity]) => ({ id, quantity }));
 
-        const response = await fetch("https://penta.app.n8n.cloud/webhook/lovable-invoice-registration", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            event_id: event.id,
-            first_name: form.first_name,
-            last_name: form.last_name,
-            email: form.email,
-            phone: form.phone || null,
-            profile_id: user?.id ?? null,
-            company_name: form.company_name,
-            company_oib: form.payer_oib || null,
-            company_address: form.payer_address || null,
-            billing_email: form.billing_email || form.email,
-            po_number: form.po_number || null,
-            tickets: tickets
-              .filter((t) => t.quantity > 0)
-              .map((t) => ({ ticket_tier_id: t.id, quantity: t.quantity })),
-            services: servicesPayload
-              .filter((s) => s.quantity > 0)
-              .map((s) => ({ service_id: s.id, quantity: s.quantity })),
-          }),
-        });
+        const response = await fetch(
+          "https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-invoice-registration",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              event_id: event.id,
+              first_name: form.first_name,
+              last_name: form.last_name,
+              email: form.email,
+              phone: form.phone || null,
+              profile_id: user?.id ?? null,
+              company_name: form.company_name,
+              company_oib: form.payer_oib || null,
+              company_address: form.payer_address || null,
+              billing_email: form.billing_email || form.email,
+              po_number: form.po_number || null,
+              tickets: tickets
+                .filter((t) => t.quantity > 0)
+                .map((t) => ({ ticket_tier_id: t.id, quantity: t.quantity })),
+              services: (servicesPayload || [])
+                .filter((s) => s.quantity > 0)
+                .map((s) => ({ service_id: s.id, quantity: s.quantity })),
+            }),
+          },
+        );
 
-        if (response.ok) {
+        const result = await response.json();
+
+        if (result.success) {
           setInvoiceSuccessMessage(
-            "Your invoice request has been received! A payment instruction will be sent to your email shortly.",
+            `Your invoice request has been received! Quote number: ${result.quote_number}. Payment instructions sent to your email.`,
           );
           setInvoiceSuccess(true);
         } else {
-          throw new Error("Webhook failed");
+          throw new Error("Something went wrong: " + result.error);
         }
       } catch (err: any) {
         toast({
