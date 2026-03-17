@@ -265,26 +265,11 @@ export default function EventRegister() {
           await supabase.from("order_items").insert(orderItemsToInsert);
         }
 
-        // Show success immediately — order is saved
-        setInvoiceSuccessMessage(
-          "Invoice request received! A payment instruction will be sent to your email shortly.",
-        );
-        setInvoiceSuccess(true);
-
-        // 2. Call edge function for BC processing (non-blocking)
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
-
-        fetch(
-          "https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-invoice-registration",
+        // 2. Call edge function for BC quote creation (like create-checkout uses supabase.functions.invoke)
+        const { data: invoiceResult, error: invoiceError } = await supabase.functions.invoke(
+          "create-invoice-registration",
           {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-              apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxdXNxZmRhaWtrdnZqZmxnbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDMxNzYsImV4cCI6MjA4MjY3OTE3Nn0.nWRj48zSZxz5qUK_wkV3PKbkG969rdpsbQ8OAWdBESk",
-            },
-            body: JSON.stringify({
+            body: {
               order_id: order.id,
               event_id: event.id,
               first_name: form.first_name,
@@ -297,16 +282,26 @@ export default function EventRegister() {
               company_address: form.payer_address || null,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
-              tickets: [{ ticket_tier_id: selectedTierId, quantity: ticketQty }],
-              services: selectedServices.map((s) => ({
-                service_id: s.service_id,
-                quantity: s.quantity,
-              })),
-            }),
+              tickets: [{ ticket_tier_id: selectedTierId, quantity: ticketQty }]
+                .filter((t) => t.quantity > 0),
+              services: selectedServices
+                .filter((s) => s.quantity > 0)
+                .map((s) => ({ service_id: s.service_id, quantity: s.quantity })),
+            },
           },
-        ).catch((err) => {
-          console.error("BC processing call failed (non-blocking):", err);
-        });
+        );
+
+        if (invoiceError || !invoiceResult?.success) {
+          console.error("BC processing failed:", invoiceError || invoiceResult?.error);
+          setInvoiceSuccessMessage(
+            "Invoice request received! Payment email could not be sent — please contact support.",
+          );
+        } else {
+          setInvoiceSuccessMessage(
+            `Quote created! Payment instructions have been sent to your email.`,
+          );
+        }
+        setInvoiceSuccess(true);
       } catch (err: any) {
         toast({
           title: "Something went wrong. Please try again or contact support.",
