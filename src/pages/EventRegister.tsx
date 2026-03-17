@@ -152,19 +152,129 @@ export default function EventRegister() {
 
     const isCompany = form.payer_type === "company";
 
-    // ── COMPANY / INVOICE FLOW → Edge Function ──
+    // ── COMPANY / INVOICE FLOW ──
+    // Step 1: Create order in Supabase, Step 2: Call edge function for BC processing
     if (isCompany) {
       setSubmitting(true);
       try {
-        const tickets = [{ id: selectedTierId, quantity: ticketQty }];
-        const servicesPayload = Object.entries(serviceQtys).map(([id, quantity]) => ({ id, quantity }));
+        const pricePaid = selectedTier?.price ?? 0;
+        const vatRate = event.vat_rate ?? 25;
+        const ticketTotal = pricePaid * ticketQty;
 
-        const response = await fetch(
+        // Calculate services total
+        let svcTotal = 0;
+        const selectedServices = Object.entries(serviceQtys)
+          .filter(([, qty]) => qty > 0)
+          .map(([sid, qty]) => {
+            const svc = services.find((s) => s.id === sid);
+            const linePrice = (svc?.price ?? 0) * qty;
+            svcTotal += linePrice;
+            return { service_id: sid, quantity: qty, svc };
+          });
+        const totalAmount = ticketTotal + svcTotal;
+
+        // 1a. Create attendee
+        const { data: attendee, error: attError } = await supabase
+          .from("attendees")
+          .insert({
+            event_id: event.id,
+            ticket_tier_id: selectedTierId,
+            first_name: form.first_name,
+            last_name: form.last_name,
+            email: form.email,
+            phone: form.phone || null,
+            institution: form.institution || null,
+            profile_id: user?.id ?? null,
+            status: "pending",
+            payment_status: "pending",
+          })
+          .select("id")
+          .single();
+
+        if (attError) throw attError;
+
+        // 1b. Create order
+        const { data: order, error: orderError } = await supabase
+          .from("orders")
+          .insert({
+            event_id: event.id,
+            attendee_id: attendee.id,
+            payer_name: form.company_name,
+            payer_type: "company" as Enums<"payer_type">,
+            payer_oib: form.payer_oib || null,
+            payer_address: form.payer_address || null,
+            billing_email: form.billing_email || form.email,
+            contact_name: `${form.first_name} ${form.last_name}`,
+            contact_email: form.email,
+            contact_phone: form.phone || null,
+            po_number: form.po_number || null,
+            payment_method: "invoice",
+            status: "draft",
+            total_amount: totalAmount,
+            is_group_order: ticketQty > 1,
+          })
+          .select("id, order_number")
+          .single();
+
+        if (orderError) throw orderError;
+
+        // 1c. Create order items — tickets
+        const orderItemsToInsert: Array<Record<string, unknown>> = [];
+        const ticketVat = Number(((ticketTotal * vatRate) / (100 + vatRate)).toFixed(2));
+        orderItemsToInsert.push({
+          order_id: order.id,
+          attendee_id: attendee.id,
+          ticket_type_id: selectedTierId,
+          description: selectedTier?.name ?? "Ticket",
+          quantity: ticketQty,
+          unit_price: pricePaid,
+          total_price: ticketTotal,
+          vat_amount: ticketVat,
+          price_at_purchase: pricePaid,
+        });
+
+        // 1d. Create order items — services
+        for (const s of selectedServices) {
+          const lineTotal = (s.svc?.price ?? 0) * s.quantity;
+          const svcVat = Number(((lineTotal * vatRate) / (100 + vatRate)).toFixed(2));
+          orderItemsToInsert.push({
+            order_id: order.id,
+            attendee_id: attendee.id,
+            service_id: s.service_id,
+            description: s.svc?.name ?? "Service",
+            quantity: s.quantity,
+            unit_price: s.svc?.price ?? 0,
+            total_price: lineTotal,
+            vat_amount: svcVat,
+            price_at_purchase: s.svc?.price ?? 0,
+          });
+        }
+
+        if (orderItemsToInsert.length > 0) {
+          await supabase.from("order_items").insert(orderItemsToInsert);
+        }
+
+        // Show success immediately — order is saved
+        setInvoiceSuccessMessage(
+          "Invoice request received! A payment instruction will be sent to your email shortly.",
+        );
+        setInvoiceSuccess(true);
+
+        // 2. Call edge function for BC processing (non-blocking)
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        fetch(
           "https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-invoice-registration",
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxdXNxZmRhaWtrdnZqZmxnbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDMxNzYsImV4cCI6MjA4MjY3OTE3Nn0.nWRj48zSZxz5qUK_wkV3PKbkG969rdpsbQ8OAWdBESk",
+            },
             body: JSON.stringify({
+              order_id: order.id,
               event_id: event.id,
               first_name: form.first_name,
               last_name: form.last_name,
@@ -176,26 +286,16 @@ export default function EventRegister() {
               company_address: form.payer_address || null,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
-              tickets: tickets
-                .filter((t) => t.quantity > 0)
-                .map((t) => ({ ticket_tier_id: t.id, quantity: t.quantity })),
-              services: (servicesPayload || [])
-                .filter((s) => s.quantity > 0)
-                .map((s) => ({ service_id: s.id, quantity: s.quantity })),
+              tickets: [{ ticket_tier_id: selectedTierId, quantity: ticketQty }],
+              services: selectedServices.map((s) => ({
+                service_id: s.service_id,
+                quantity: s.quantity,
+              })),
             }),
           },
-        );
-
-        const result = await response.json();
-
-        if (result.success) {
-          setInvoiceSuccessMessage(
-            `Your invoice request has been received! Quote number: ${result.quote_number}. Payment instructions sent to your email.`,
-          );
-          setInvoiceSuccess(true);
-        } else {
-          throw new Error("Something went wrong: " + result.error);
-        }
+        ).catch((err) => {
+          console.error("BC processing call failed (non-blocking):", err);
+        });
       } catch (err: any) {
         toast({
           title: "Something went wrong. Please try again or contact support.",
