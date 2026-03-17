@@ -543,6 +543,7 @@ export default function EventLanding() {
           </div>
         </section>
       </div>
+      </EventBrandingProvider>
     );
   }
 
