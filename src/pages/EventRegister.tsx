@@ -151,11 +151,58 @@ export default function EventRegister() {
       return;
     }
 
+    const isCompany = form.payer_type === "company";
+
+    // ── COMPANY / INVOICE FLOW → n8n webhook ──
+    if (isCompany) {
+      setSubmitting(true);
+      try {
+        const tickets = [{ ticket_tier_id: selectedTierId, quantity: ticketQty }];
+        const selectedServices = Object.entries(serviceQtys)
+          .filter(([, qty]) => qty > 0)
+          .map(([service_id, quantity]) => ({ service_id, quantity }));
+
+        const body = {
+          event_id: event.id,
+          first_name: form.first_name,
+          last_name: form.last_name,
+          email: form.email,
+          phone: form.phone || null,
+          profile_id: user?.id ?? null,
+          company_name: form.company_name,
+          company_oib: form.payer_oib || null,
+          company_address: form.payer_address || null,
+          billing_email: form.billing_email || form.email,
+          po_number: form.po_number || null,
+          tickets,
+          services: selectedServices,
+        };
+
+        const res = await fetch(N8N_INVOICE_WEBHOOK, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) throw new Error("Webhook returned an error");
+
+        setInvoiceSuccess(true);
+      } catch (err: any) {
+        toast({
+          title: "Registration failed. Please try again.",
+          description: err.message,
+          variant: "destructive",
+        });
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // ── INDIVIDUAL / STRIPE FLOW → existing Supabase logic ──
     setSubmitting(true);
     try {
-      const isCompany = form.payer_type === "company";
-
-      // Create attendee with pending status for both flows
+      // Create attendee with pending status
       const { data: attendee, error: attError } = await supabase
         .from("attendees")
         .insert({
@@ -185,7 +232,7 @@ export default function EventRegister() {
         .insert({
           event_id: event.id,
           attendee_id: attendee.id,
-          payer_name: isCompany ? form.company_name : form.payer_name,
+          payer_name: form.payer_name,
           payer_type: form.payer_type as Enums<"payer_type">,
           payer_oib: form.payer_oib || null,
           payer_address: form.payer_address || null,
@@ -222,8 +269,7 @@ export default function EventRegister() {
         payerType: form.payer_type,
       };
 
-      // For individual payers, immediately trigger Stripe checkout
-      if (!isCompany && pricePaid > 0) {
+      if (pricePaid > 0) {
         setSuccess(successData);
         await triggerStripeCheckout(attendee.id);
       } else {
