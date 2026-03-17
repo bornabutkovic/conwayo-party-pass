@@ -219,7 +219,18 @@ export default function EventRegister() {
         if (orderError) throw orderError;
 
         // 1c. Create order items — tickets
-        const orderItemsToInsert: Array<Record<string, unknown>> = [];
+        const orderItemsToInsert: Array<{
+          order_id: string;
+          attendee_id: string;
+          description: string;
+          quantity: number;
+          unit_price: number;
+          total_price: number;
+          vat_amount: number;
+          price_at_purchase: number;
+          ticket_type_id?: string;
+          service_id?: string;
+        }> = [];
         const ticketVat = Number(((ticketTotal * vatRate) / (100 + vatRate)).toFixed(2));
         orderItemsToInsert.push({
           order_id: order.id,
