@@ -827,6 +827,24 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
+                          <Label htmlFor="company_country">Country / Država *</Label>
+                          <Select
+                            value={form.company_country_code}
+                            onValueChange={(v) => setForm((p) => ({ ...p, company_country_code: v }))}
+                          >
+                            <SelectTrigger id="company_country">
+                              <SelectValue placeholder="Select country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COUNTRIES.map((c) => (
+                                <SelectItem key={c.code} value={c.code}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
                           <Label htmlFor="billing_email">Billing Email</Label>
                           <Input
                             id="billing_email"
