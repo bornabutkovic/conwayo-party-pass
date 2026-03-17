@@ -257,6 +257,12 @@ export type Database = {
           additional_admins: string[] | null
           bc_position: string | null
           bc_reference: string | null
+          branding_banner_url: string | null
+          branding_favicon_url: string | null
+          branding_logo_url: string | null
+          branding_primary_color: string | null
+          branding_secondary_color: string | null
+          branding_text_color: string | null
           created_at: string | null
           currency: string | null
           early_bird_deadline: string | null
@@ -289,6 +295,12 @@ export type Database = {
           additional_admins?: string[] | null
           bc_position?: string | null
           bc_reference?: string | null
+          branding_banner_url?: string | null
+          branding_favicon_url?: string | null
+          branding_logo_url?: string | null
+          branding_primary_color?: string | null
+          branding_secondary_color?: string | null
+          branding_text_color?: string | null
           created_at?: string | null
           currency?: string | null
           early_bird_deadline?: string | null
@@ -321,6 +333,12 @@ export type Database = {
           additional_admins?: string[] | null
           bc_position?: string | null
           bc_reference?: string | null
+          branding_banner_url?: string | null
+          branding_favicon_url?: string | null
+          branding_logo_url?: string | null
+          branding_primary_color?: string | null
+          branding_secondary_color?: string | null
+          branding_text_color?: string | null
           created_at?: string | null
           currency?: string | null
           early_bird_deadline?: string | null
@@ -569,6 +587,10 @@ export type Database = {
           bc_customer_no: string | null
           bc_invoice_id: string | null
           bc_invoice_number: string | null
+          billing_email: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string | null
           event_id: string | null
           id: string
@@ -589,6 +611,10 @@ export type Database = {
           bc_customer_no?: string | null
           bc_invoice_id?: string | null
           bc_invoice_number?: string | null
+          billing_email?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           event_id?: string | null
           id?: string
@@ -609,6 +635,10 @@ export type Database = {
           bc_customer_no?: string | null
           bc_invoice_id?: string | null
           bc_invoice_number?: string | null
+          billing_email?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           event_id?: string | null
           id?: string
@@ -686,6 +716,7 @@ export type Database = {
           phone: string | null
           role: string | null
           telegram_id: string | null
+          whatsapp_id: string | null
         }
         Insert: {
           billing_email?: string | null
@@ -703,6 +734,7 @@ export type Database = {
           phone?: string | null
           role?: string | null
           telegram_id?: string | null
+          whatsapp_id?: string | null
         }
         Update: {
           billing_email?: string | null
@@ -720,6 +752,7 @@ export type Database = {
           phone?: string | null
           role?: string | null
           telegram_id?: string | null
+          whatsapp_id?: string | null
         }
         Relationships: [
           {
@@ -826,6 +859,45 @@ export type Database = {
           },
           {
             foreignKeyName: "ticket_tiers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "view_events_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_sessions: {
+        Row: {
+          event_id: string | null
+          event_name: string | null
+          event_slug: string | null
+          updated_at: string | null
+          wa_id: string
+        }
+        Insert: {
+          event_id?: string | null
+          event_name?: string | null
+          event_slug?: string | null
+          updated_at?: string | null
+          wa_id: string
+        }
+        Update: {
+          event_id?: string | null
+          event_name?: string | null
+          event_slug?: string | null
+          updated_at?: string | null
+          wa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_sessions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_sessions_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "view_events_full"
@@ -963,6 +1035,14 @@ export type Database = {
     }
     Functions: {
       auto_complete_past_events: { Args: never; Returns: undefined }
+      calculate_event_status: {
+        Args: {
+          p_current_status: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: string
+      }
       create_user_wizard: {
         Args: {
           email_input: string
@@ -973,7 +1053,33 @@ export type Database = {
         }
         Returns: string
       }
+      get_user_event_status: {
+        Args: { p_event_id: string; p_phone: string }
+        Returns: {
+          attendee_id: string
+          billing_email: string
+          company_name: string
+          company_oib: string
+          email: string
+          event_id: string
+          first_name: string
+          last_name: string
+          payment_status: string
+          phone: string
+          profile_id: string
+          ticket_tier_id: string
+        }[]
+      }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
+      normalize_phone_to_waid: { Args: { phone: string }; Returns: string }
+      update_completed_events: { Args: never; Returns: undefined }
+      upsert_wa_session: {
+        Args: { p_new_slug?: string; p_wa_id: string }
+        Returns: {
+          event_slug: string
+          wa_id: string
+        }[]
+      }
     }
     Enums: {
       payer_type: "individual" | "company" | "sponsor"

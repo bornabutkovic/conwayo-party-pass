@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { ConvwayoHeader } from "@/components/ConvwayoHeader";
+import { EventBrandedHeader } from "@/components/event/EventBrandedHeader";
+import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
@@ -451,8 +452,9 @@ export default function EventLanding() {
   if (step === "success" && success) {
     const primaryId = success.attendeeIds[0];
     return (
-      <div className="min-h-screen bg-background">
-        <ConvwayoHeader />
+      <EventBrandingProvider event={event}>
+      <div className="min-h-screen" style={{ backgroundColor: event.branding_secondary_color ?? '#ffffff', color: event.branding_text_color ?? '#1f2937' }}>
+        <EventBrandedHeader event={event} />
         <section className="container mx-auto flex min-h-[80vh] items-center justify-center px-4 py-16">
           <div className="mx-auto max-w-md text-center">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
@@ -542,6 +544,7 @@ export default function EventLanding() {
           </div>
         </section>
       </div>
+      </EventBrandingProvider>
     );
   }
 
@@ -549,9 +552,9 @@ export default function EventLanding() {
 
   if (step === "details") {
     return (
-      <div className="min-h-screen bg-background">
-        <ConvwayoHeader />
-        <EventHero event={event} />
+      <EventBrandingProvider event={event}>
+      <div className="min-h-screen" style={{ backgroundColor: event.branding_secondary_color ?? '#ffffff', color: event.branding_text_color ?? '#1f2937' }}>
+        <EventBrandedHeader event={event} />
 
         <section className="container mx-auto px-4 py-12 md:py-16">
           <div className="mx-auto max-w-2xl">
@@ -962,15 +965,16 @@ export default function EventLanding() {
           </div>
         </section>
       </div>
+      </EventBrandingProvider>
     );
   }
 
   /* ─── STEP 1: Unified Selection ────────────────────── */
 
   return (
-    <div className="min-h-screen bg-background">
-      <ConvwayoHeader />
-      <EventHero event={event} />
+    <EventBrandingProvider event={event}>
+    <div className="min-h-screen" style={{ backgroundColor: event.branding_secondary_color ?? '#ffffff', color: event.branding_text_color ?? '#1f2937' }}>
+      <EventBrandedHeader event={event} />
 
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="mx-auto max-w-2xl">
@@ -1078,5 +1082,6 @@ export default function EventLanding() {
         </div>
       </section>
     </div>
+    </EventBrandingProvider>
   );
 }
