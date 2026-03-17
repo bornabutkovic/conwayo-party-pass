@@ -452,9 +452,9 @@ export default function EventLanding() {
   if (step === "success" && success) {
     const primaryId = success.attendeeIds[0];
     return (
-      <div className="min-h-screen bg-background">
-        <ConvwayoHeader />
-        <section className="container mx-auto flex min-h-[80vh] items-center justify-center px-4 py-16">
+      <EventBrandingProvider event={event}>
+      <div className="min-h-screen" style={{ backgroundColor: event.branding_secondary_color ?? '#ffffff', color: event.branding_text_color ?? '#1f2937' }}>
+        <EventBrandedHeader event={event} />
           <div className="mx-auto max-w-md text-center">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
               <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
