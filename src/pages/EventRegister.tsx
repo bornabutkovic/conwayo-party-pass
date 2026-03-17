@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
+import { useEventServices } from "@/hooks/useEventServices";
 import { supabase } from "@/integrations/supabase/client";
 import { EventHero } from "@/components/event/EventHero";
 import { TicketTierCard } from "@/components/event/TicketTierCard";
@@ -15,10 +16,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, UserIcon, CreditCard } from "lucide-react";
+import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Enums } from "@/integrations/supabase/types";
+
+const N8N_INVOICE_WEBHOOK = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration";
 
 interface SuccessData {
   attendeeId: string;
