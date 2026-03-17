@@ -964,8 +964,8 @@ export default function EventLanding() {
           </div>
         </section>
       </div>
+      </EventBrandingProvider>
     );
-  }
 
   /* ─── STEP 1: Unified Selection ────────────────────── */
 
