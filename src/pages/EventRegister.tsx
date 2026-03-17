@@ -799,6 +799,46 @@ export default function EventRegister() {
                       : "Register & Pay"}
                 </Button>
               </form>
+
+              {/* Dev Test Button */}
+              <div className="mt-8 rounded-lg border-2 border-dashed border-destructive/30 bg-destructive/5 p-4">
+                <p className="mb-2 text-xs font-mono text-destructive">DEV ONLY — Test Invoice API</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={async () => {
+                    try {
+                      const r = await fetch(
+                        "https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-invoice-registration",
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            event_id: "67a20761-6f3c-420e-b6fd-3e604f30952a",
+                            first_name: "Test",
+                            last_name: "Korisnik",
+                            email: "brnbutkovic11@gmail.com",
+                            company_name: "Test d.o.o.",
+                            company_oib: "13749207582",
+                            company_address: "Ulica 1, Zagreb",
+                            billing_email: "brnbutkovic11@gmail.com",
+                            tickets: [{ ticket_tier_id: "4d66c2aa-ac19-447e-a13e-5c734522365e", quantity: 1 }],
+                            services: [{ service_id: "0c755ea1-9da8-4d90-888e-b550e10a60c5", quantity: 1 }],
+                          }),
+                        },
+                      );
+                      const data = await r.json();
+                      alert(JSON.stringify(data, null, 2));
+                    } catch (err: any) {
+                      alert("Error: " + err.message);
+                    }
+                  }}
+                >
+                  Test Invoice API
+                </Button>
+              </div>
             </>
           )}
         </div>
