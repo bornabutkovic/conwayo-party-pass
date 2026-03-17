@@ -189,7 +189,7 @@ export default function EventRegister() {
         setInvoiceSuccess(true);
       } catch (err: any) {
         toast({
-          title: "Registration failed. Please try again.",
+          title: "Something went wrong. Please try again.",
           description: err.message,
           variant: "destructive",
         });
@@ -338,7 +338,7 @@ export default function EventRegister() {
             </div>
             <h2 className="mb-2 text-3xl font-bold text-foreground">Invoice Request Received!</h2>
             <p className="mb-6 text-muted-foreground">
-              You will receive a payment instruction email with IBAN details shortly.
+              Your invoice request has been received. A payment instruction will be sent to your email shortly.
             </p>
             <Button onClick={() => navigate(`/event/${slug}`)}>
               Back to Event
