@@ -60,6 +60,7 @@ export default function EventRegister() {
     payer_oib: "",
     payer_address: "",
     company_name: "",
+    company_country_code: "HR",
     billing_email: "",
     po_number: "",
   });
