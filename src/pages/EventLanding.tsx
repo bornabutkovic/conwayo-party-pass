@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { ConvwayoHeader } from "@/components/ConvwayoHeader";
+import { EventBrandedHeader } from "@/components/event/EventBrandedHeader";
+import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
