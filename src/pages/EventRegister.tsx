@@ -21,8 +21,6 @@ import { QRCodeSVG } from "qrcode.react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Enums } from "@/integrations/supabase/types";
 
-const N8N_INVOICE_WEBHOOK = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration";
-
 interface SuccessData {
   attendeeId: string;
   attendeeName: string;
