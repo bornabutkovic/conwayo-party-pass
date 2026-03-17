@@ -39,12 +39,16 @@ export default function EventRegister() {
   const { user, loading: authLoading } = useAuth();
   const { data: event, isLoading: eventLoading, error: eventError } = useEvent(slug ?? "");
   const { data: tiers = [] } = useTicketTiers(event?.id);
+  const { data: services = [] } = useEventServices(event?.id);
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [selectedTierId, setSelectedTierId] = useState("");
+  const [ticketQty, setTicketQty] = useState(1);
+  const [serviceQtys, setServiceQtys] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
+  const [invoiceSuccess, setInvoiceSuccess] = useState(false);
 
   const [form, setForm] = useState({
     first_name: "",
@@ -57,6 +61,8 @@ export default function EventRegister() {
     payer_oib: "",
     payer_address: "",
     company_name: "",
+    billing_email: "",
+    po_number: "",
   });
 
   // Redirect unauthenticated users
