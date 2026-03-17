@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
 import { supabase } from "@/integrations/supabase/client";
+import { COUNTRIES } from "@/lib/countries";
 import { EventHero } from "@/components/event/EventHero";
 import { TicketTierCard } from "@/components/event/TicketTierCard";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
