@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
 import { supabase } from "@/integrations/supabase/client";
+import { COUNTRIES } from "@/lib/countries";
 import { EventHero } from "@/components/event/EventHero";
 import { TicketTierCard } from "@/components/event/TicketTierCard";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
@@ -60,6 +61,7 @@ export default function EventRegister() {
     payer_oib: "",
     payer_address: "",
     company_name: "",
+    company_country_code: "HR",
     billing_email: "",
     po_number: "",
   });
@@ -280,6 +282,8 @@ export default function EventRegister() {
               company_name: form.company_name,
               company_oib: form.payer_oib || null,
               company_address: form.payer_address || null,
+              company_country_code: form.company_country_code || "HR",
+              payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
               tickets: [{ ticket_tier_id: selectedTierId, quantity: ticketQty }]
@@ -824,6 +828,24 @@ export default function EventRegister() {
                             value={form.payer_address}
                             onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
                           />
+                        </div>
+                        <div>
+                          <Label htmlFor="company_country">Country / Država *</Label>
+                          <Select
+                            value={form.company_country_code}
+                            onValueChange={(v) => setForm((p) => ({ ...p, company_country_code: v }))}
+                          >
+                            <SelectTrigger id="company_country">
+                              <SelectValue placeholder="Select country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COUNTRIES.map((c) => (
+                                <SelectItem key={c.code} value={c.code}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label htmlFor="billing_email">Billing Email</Label>
