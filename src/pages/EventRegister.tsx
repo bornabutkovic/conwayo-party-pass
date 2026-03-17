@@ -47,6 +47,7 @@ export default function EventRegister() {
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
   const [invoiceSuccess, setInvoiceSuccess] = useState(false);
+  const [invoiceSuccessMessage, setInvoiceSuccessMessage] = useState("");
 
   const [form, setForm] = useState({
     first_name: "",
