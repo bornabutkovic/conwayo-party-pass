@@ -281,6 +281,8 @@ export default function EventRegister() {
               company_name: form.company_name,
               company_oib: form.payer_oib || null,
               company_address: form.payer_address || null,
+              company_country_code: form.company_country_code || "HR",
+              payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
               tickets: [{ ticket_tier_id: selectedTierId, quantity: ticketQty }]
