@@ -327,7 +327,29 @@ export default function EventRegister() {
     }
   };
 
-  // Success view with QR code
+  // ── Invoice success view ──
+  if (invoiceSuccess) {
+    return (
+      <div className="min-h-screen bg-background">
+        <section className="container mx-auto flex min-h-screen items-center justify-center px-4 py-16">
+          <div className="mx-auto max-w-md text-center">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle2 className="h-10 w-10 text-primary" />
+            </div>
+            <h2 className="mb-2 text-3xl font-bold text-foreground">Invoice Request Received!</h2>
+            <p className="mb-6 text-muted-foreground">
+              You will receive a payment instruction email with IBAN details shortly.
+            </p>
+            <Button onClick={() => navigate(`/event/${slug}`)}>
+              Back to Event
+            </Button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  // Success view with QR code (individual/Stripe flow)
   if (success) {
     return (
       <div className="min-h-screen bg-background">
@@ -339,31 +361,17 @@ export default function EventRegister() {
               </svg>
             </div>
 
-            {success.payerType === "company" ? (
-              <>
-                <h2 className="mb-2 text-3xl font-bold text-foreground">Invoice Requested</h2>
-                <p className="mb-6 text-muted-foreground">
-                  We have sent your details to our accounting system (MS Business Central). You will receive an offer via email shortly.
-                </p>
-                <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
-                  <p>Your QR code will be available on the dashboard once payment is confirmed.</p>
+            <h2 className="mb-2 text-3xl font-bold text-foreground">Almost There!</h2>
+            <p className="mb-6 text-muted-foreground">
+              Your registration for <strong>{success.eventName}</strong> is confirmed. Complete your payment to activate your ticket.
+            </p>
+            {redirectingToStripe && (
+              <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <p>Redirecting to Stripe Checkout...</p>
                 </div>
-              </>
-            ) : (
-              <>
-                <h2 className="mb-2 text-3xl font-bold text-foreground">Almost There!</h2>
-                <p className="mb-6 text-muted-foreground">
-                  Your registration for <strong>{success.eventName}</strong> is confirmed. Complete your payment to activate your ticket.
-                </p>
-                {redirectingToStripe && (
-                  <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <p>Redirecting to Stripe Checkout...</p>
-                    </div>
-                  </div>
-                )}
-              </>
+              </div>
             )}
 
             {/* QR Code - blurred for pending */}
@@ -403,7 +411,7 @@ export default function EventRegister() {
               </dl>
             </div>
 
-            {success.payerType === "individual" && success.price > 0 ? (
+            {success.price > 0 ? (
               <div className="space-y-3">
                 <Button
                   size="lg"
@@ -436,6 +444,14 @@ export default function EventRegister() {
       </div>
     );
   }
+
+  // ── Compute total for company invoice button ──
+  const ticketTotal = (selectedTier?.price ?? 0) * ticketQty;
+  const servicesTotal = Object.entries(serviceQtys).reduce((sum, [sid, qty]) => {
+    const svc = services.find((s) => s.id === sid);
+    return sum + (svc?.price ?? 0) * qty;
+  }, 0);
+  const grandTotal = ticketTotal + servicesTotal;
 
   return (
     <div className="min-h-screen bg-background">
@@ -474,6 +490,95 @@ export default function EventRegister() {
                   <p className="text-muted-foreground">No tickets available at this time.</p>
                 )}
               </div>
+
+              {/* Ticket Quantity (company only) */}
+              {form.payer_type === "company" && selectedTier && (
+                <div className="mb-6 flex items-center gap-4">
+                  <Label className="text-sm font-medium text-foreground">Ticket Quantity</Label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setTicketQty(Math.max(1, ticketQty - 1))}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="w-8 text-center font-medium text-foreground">{ticketQty}</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setTicketQty(ticketQty + 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Services */}
+              {services.length > 0 && (
+                <div className="mb-10">
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">Additional Services</h3>
+                  <div className="space-y-3">
+                    {services.map((svc) => {
+                      const qty = serviceQtys[svc.id] ?? 0;
+                      return (
+                        <div
+                          key={svc.id}
+                          className={`flex items-center justify-between rounded-lg border-2 p-4 transition-colors ${
+                            qty > 0 ? "border-primary bg-primary/5" : "border-border bg-card"
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{svc.name}</p>
+                            {svc.description && (
+                              <p className="text-sm text-muted-foreground">{svc.description}</p>
+                            )}
+                            <p className="mt-1 text-sm font-semibold text-primary">
+                              €{Number(svc.price).toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() =>
+                                setServiceQtys((p) => ({
+                                  ...p,
+                                  [svc.id]: Math.max(0, (p[svc.id] ?? 0) - 1),
+                                }))
+                              }
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-8 text-center font-medium text-foreground">{qty}</span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() =>
+                                setServiceQtys((p) => ({
+                                  ...p,
+                                  [svc.id]: (p[svc.id] ?? 0) + 1,
+                                }))
+                              }
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Attendee Info - auto-filled */}
@@ -605,6 +710,25 @@ export default function EventRegister() {
                             onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
                           />
                         </div>
+                        <div>
+                          <Label htmlFor="billing_email">Billing Email</Label>
+                          <Input
+                            id="billing_email"
+                            type="email"
+                            value={form.billing_email}
+                            onChange={(e) => setForm((p) => ({ ...p, billing_email: e.target.value }))}
+                            placeholder="invoices@company.com"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="po_number">PO Number</Label>
+                          <Input
+                            id="po_number"
+                            value={form.po_number}
+                            onChange={(e) => setForm((p) => ({ ...p, po_number: e.target.value }))}
+                            placeholder="Optional"
+                          />
+                        </div>
                       </>
                     )}
                   </div>
@@ -612,16 +736,43 @@ export default function EventRegister() {
 
                 {/* Summary */}
                 {selectedTier && (
-                  <div className="rounded-lg border border-border bg-secondary/50 p-5">
+                  <div className="rounded-lg border border-border bg-secondary/50 p-5 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-foreground">{selectedTier.name}</p>
+                        <p className="font-semibold text-foreground">
+                          {selectedTier.name}
+                          {form.payer_type === "company" && ticketQty > 1 ? ` × ${ticketQty}` : ""}
+                        </p>
                         <p className="text-sm text-muted-foreground">{event.name}</p>
                       </div>
-                      <p className="text-2xl font-bold text-primary">
-                        {selectedTier.price > 0 ? `${selectedTier.price} ${currency}` : "Free"}
+                      <p className="text-xl font-bold text-primary">
+                        {ticketTotal > 0 ? `${ticketTotal.toFixed(2)} ${currency}` : "Free"}
                       </p>
                     </div>
+                    {Object.entries(serviceQtys)
+                      .filter(([, qty]) => qty > 0)
+                      .map(([sid, qty]) => {
+                        const svc = services.find((s) => s.id === sid);
+                        if (!svc) return null;
+                        return (
+                          <div key={sid} className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {svc.name} × {qty}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {(Number(svc.price) * qty).toFixed(2)} {currency}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    {servicesTotal > 0 && (
+                      <div className="border-t border-border pt-2 flex items-center justify-between">
+                        <span className="font-semibold text-foreground">Total</span>
+                        <span className="text-2xl font-bold text-primary">
+                          {grandTotal.toFixed(2)} {currency}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -633,9 +784,9 @@ export default function EventRegister() {
                 >
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
-                    ? "Registering..."
+                    ? "Processing..."
                     : form.payer_type === "company"
-                      ? "Register & Request Invoice"
+                      ? `Request Invoice — ${grandTotal.toFixed(2)} ${currency}`
                       : "Register & Pay"}
                 </Button>
               </form>
