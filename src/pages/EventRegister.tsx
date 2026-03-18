@@ -118,9 +118,6 @@ export default function EventRegister() {
   // Contact phone (shared)
   const [contactPhone, setContactPhone] = useState("");
 
-  // Service quantities
-  const [serviceQtys, setServiceQtys] = useState<Record<string, number>>({});
-
   // Billing form
   const [payerType, setPayerType] = useState<"individual" | "company">("individual");
   const [payerName, setPayerName] = useState("");
