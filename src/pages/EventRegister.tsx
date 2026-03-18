@@ -168,9 +168,15 @@ export default function EventRegister() {
 
   // No longer redirect unauthenticated users — guest checkout is allowed
 
-  // Auto-fill from profile
+  // Auto-fill from profile (only if logged in)
   useEffect(() => {
-    if (authLoading || eventLoading || !user || !event) return;
+    if (authLoading || eventLoading || !event) return;
+
+    // If not logged in, just stop loading
+    if (!user) {
+      setProfileLoading(false);
+      return;
+    }
 
     const init = async () => {
       try {
@@ -197,7 +203,6 @@ export default function EventRegister() {
           setPayerName(`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
           setContactPhone(profile.phone ?? "");
           setProfileEmail(profile.email ?? user.email ?? "");
-          // Pre-fill first attendee if empty
           setAttendees(prev => {
             if (prev.length === 0) return prev;
             const updated = [...prev];
