@@ -1,11 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
 import { supabase } from "@/integrations/supabase/client";
 import { EventHero } from "@/components/event/EventHero";
-import { TicketTierCard } from "@/components/event/TicketTierCard";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Input } from "@/components/ui/input";
@@ -17,9 +16,8 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { Enums } from "@/integrations/supabase/types";
 
-// ── CHANGE 1: Country list & zone helper ──
+// ── Country list & zone helper ──
 const EU_CODES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
 
 const COUNTRIES = [
@@ -77,6 +75,14 @@ const getZone = (code: string) => {
   return 'INO';
 };
 
+interface AttendeeRow {
+  firstName: string;
+  lastName: string;
+  email: string;
+  tierId: string;
+  tierName: string;
+}
+
 interface SuccessData {
   attendeeId: string;
   attendeeName: string;
@@ -96,30 +102,33 @@ export default function EventRegister() {
   const { data: services = [] } = useEventServices(event?.id);
 
   const [profileLoading, setProfileLoading] = useState(true);
-  const [selectedTierId, setSelectedTierId] = useState("");
-  const [ticketQty, setTicketQty] = useState(1);
-  const [serviceQtys, setServiceQtys] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
   const [invoiceSuccess, setInvoiceSuccess] = useState(false);
   const [invoiceSuccessMessage, setInvoiceSuccessMessage] = useState("");
 
-  const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    institution: "",
-    payer_name: "",
-    payer_type: "individual" as "individual" | "company",
-    payer_oib: "",
-    company_name: "",
-    billing_email: "",
-    po_number: "",
-  });
+  // Ticket quantities per tier
+  const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>({});
 
-  // ── CHANGE 2: Address state variables ──
+  // Per-ticket attendee rows
+  const [attendees, setAttendees] = useState<AttendeeRow[]>([]);
+
+  // Contact phone (shared)
+  const [contactPhone, setContactPhone] = useState("");
+
+  // Service quantities
+  const [serviceQtys, setServiceQtys] = useState<Record<string, number>>({});
+
+  // Billing form
+  const [payerType, setPayerType] = useState<"individual" | "company">("individual");
+  const [payerName, setPayerName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [companyOib, setCompanyOib] = useState("");
+  const [billingEmail, setBillingEmail] = useState("");
+  const [poNumber, setPoNumber] = useState("");
+
+  // Address
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
@@ -127,8 +136,10 @@ export default function EventRegister() {
   const [countryName, setCountryName] = useState('Croatia');
   const [countrySearch, setCountrySearch] = useState('');
   const [countryOpen, setCountryOpen] = useState(false);
-
   const countryRef = useRef<HTMLDivElement>(null);
+
+  // Profile email for fallback
+  const [profileEmail, setProfileEmail] = useState("");
 
   // Close country dropdown on outside click
   useEffect(() => {
@@ -149,7 +160,7 @@ export default function EventRegister() {
     }
   }, [authLoading, user, slug, navigate]);
 
-  // Check for existing attendee + auto-fill from profile
+  // Auto-fill from profile
   useEffect(() => {
     if (authLoading || eventLoading || !user || !event) return;
 
@@ -175,17 +186,25 @@ export default function EventRegister() {
           .maybeSingle();
 
         if (profile) {
-          setForm((prev) => ({
-            ...prev,
-            first_name: profile.first_name ?? prev.first_name,
-            last_name: profile.last_name ?? prev.last_name,
-            email: profile.email ?? user.email ?? prev.email,
-            phone: profile.phone ?? prev.phone,
-            institution: profile.institution ?? prev.institution,
-            payer_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || prev.payer_name,
-          }));
+          setPayerName(`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
+          setContactPhone(profile.phone ?? "");
+          setProfileEmail(profile.email ?? user.email ?? "");
+          // Pre-fill first attendee if empty
+          setAttendees(prev => {
+            if (prev.length === 0) return prev;
+            const updated = [...prev];
+            if (!updated[0].firstName && !updated[0].lastName) {
+              updated[0] = {
+                ...updated[0],
+                firstName: profile.first_name ?? "",
+                lastName: profile.last_name ?? "",
+                email: profile.email ?? user.email ?? "",
+              };
+            }
+            return updated;
+          });
         } else {
-          setForm((prev) => ({ ...prev, email: user.email ?? prev.email }));
+          setProfileEmail(user.email ?? "");
         }
       } catch (err: any) {
         toast({ title: "Error loading profile", description: err.message, variant: "destructive" });
@@ -197,31 +216,89 @@ export default function EventRegister() {
     init();
   }, [authLoading, eventLoading, user, event, slug, navigate]);
 
-  if (authLoading || eventLoading) return <EventPageSkeleton />;
+  // Rebuild attendee rows when ticket quantities change
+  useEffect(() => {
+    const newRows: AttendeeRow[] = [];
+    for (const tier of tiers) {
+      const qty = ticketQuantities[tier.id] ?? 0;
+      for (let i = 0; i < qty; i++) {
+        // Try to preserve existing data
+        const existingIdx = newRows.length;
+        const existing = attendees[existingIdx];
+        if (existing && existing.tierId === tier.id) {
+          newRows.push(existing);
+        } else {
+          newRows.push({ firstName: "", lastName: "", email: "", tierId: tier.id, tierName: tier.name });
+        }
+      }
+    }
+    setAttendees(newRows);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketQuantities, tiers]);
 
-  if (eventError || !event) {
-    return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
-  }
+  // When first ticket is added and profile is loaded, pre-fill first attendee
+  const profileLoadedRef = useRef(false);
+  useEffect(() => {
+    if (profileLoading || profileLoadedRef.current) return;
+    profileLoadedRef.current = true;
+  }, [profileLoading]);
+
+  const totalTickets = useMemo(() =>
+    Object.values(ticketQuantities).reduce((s, q) => s + q, 0),
+    [ticketQuantities]
+  );
+
+  if (authLoading || eventLoading) return <EventPageSkeleton />;
+  if (eventError || !event) return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
 
   const currency = event.currency ?? "EUR";
-  const selectedTier = tiers.find((t) => t.id === selectedTierId);
+
+  const setTierQty = (tierId: string, delta: number) => {
+    setTicketQuantities(prev => {
+      const current = prev[tierId] ?? 0;
+      const next = Math.max(0, current + delta);
+      return { ...prev, [tierId]: next };
+    });
+  };
+
+  const updateAttendee = (index: number, field: keyof Pick<AttendeeRow, 'firstName' | 'lastName' | 'email'>, value: string) => {
+    setAttendees(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  // Compute totals
+  const ticketTotal = tiers.reduce((sum, tier) => {
+    return sum + (tier.price ?? 0) * (ticketQuantities[tier.id] ?? 0);
+  }, 0);
+  const servicesTotal = Object.entries(serviceQtys).reduce((sum, [sid, qty]) => {
+    const svc = services.find((s) => s.id === sid);
+    return sum + (svc?.price ?? 0) * qty;
+  }, 0);
+  const grandTotal = ticketTotal + servicesTotal;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.first_name || !form.last_name || !form.email) {
-      toast({ title: "First name, last name and email are required", variant: "destructive" });
+    if (totalTickets === 0) {
+      toast({ title: "Please select at least one ticket", variant: "destructive" });
       return;
     }
-    if (!selectedTierId) {
-      toast({ title: "Please select a ticket tier", variant: "destructive" });
+
+    // Validate all attendees
+    const incomplete = attendees.some(a => !a.firstName.trim() || !a.lastName.trim() || !a.email.trim());
+    if (incomplete) {
+      toast({ title: "Please fill in details for all attendees", description: "Every ticket requires a first name, last name, and email.", variant: "destructive" });
       return;
     }
-    if (!form.payer_name && form.payer_type === "individual") {
+
+    if (payerType === "individual" && !payerName.trim()) {
       toast({ title: "Payer name is required", variant: "destructive" });
       return;
     }
-    if (form.payer_type === "company" && !form.company_name) {
+    if (payerType === "company" && !companyName.trim()) {
       toast({ title: "Company name is required for company billing", variant: "destructive" });
       return;
     }
@@ -232,35 +309,33 @@ export default function EventRegister() {
 
     setSubmitting(true);
     try {
-      // Build tickets and services arrays
-      const tickets = [{ ticket_tier_id: selectedTierId, quantity: ticketQty }];
       const svcItems = Object.entries(serviceQtys)
         .filter(([, qty]) => qty > 0)
         .map(([sid, qty]) => ({ service_id: sid, quantity: qty }));
 
-      // ONE call to create-order Edge Function
       const { data, error } = await supabase.functions.invoke("create-order", {
         body: {
           event_id: event.id,
-          first_name: form.first_name,
-          last_name: form.last_name,
-          email: form.email,
-          phone: form.phone || null,
-          institution: form.institution || null,
-          profile_id: user?.id || null,
+          payer_type: payerType,
+          attendees: attendees.map(a => ({
+            first_name: a.firstName,
+            last_name: a.lastName,
+            email: a.email,
+            phone: contactPhone || null,
+            ticket_tier_id: a.tierId,
+          })),
+          services: svcItems,
           payer_address: street,
           payer_city: city,
           payer_postal_code: postalCode,
           payer_country_code: countryCode,
           payer_country_name: countryName,
-          payer_type: form.payer_type,
-          payer_name: form.payer_type === "company" ? form.company_name : form.payer_name,
-          company_name: form.payer_type === "company" ? form.company_name : undefined,
-          company_oib: form.payer_type === "company" ? form.payer_oib : undefined,
-          billing_email: form.payer_type === "company" ? (form.billing_email || form.email) : form.email,
-          po_number: form.payer_type === "company" ? form.po_number : undefined,
-          tickets,
-          services: svcItems,
+          payer_name: payerType === "company" ? companyName : payerName,
+          company_name: payerType === "company" ? companyName : undefined,
+          company_oib: payerType === "company" ? companyOib : undefined,
+          billing_email: payerType === "company" ? (billingEmail || attendees[0]?.email) : attendees[0]?.email,
+          po_number: payerType === "company" ? poNumber : undefined,
+          profile_id: user?.id || null,
         },
       });
 
@@ -268,21 +343,21 @@ export default function EventRegister() {
         throw new Error(data?.error || error?.message || "Registration failed");
       }
 
-      if (form.payer_type === "company") {
-        // Company flow — call create-invoice-registration for BC processing
+      if (payerType === "company") {
+        // Company flow — call create-invoice-registration
         const { data: invoiceResult, error: invoiceError } = await supabase.functions.invoke(
           "create-invoice-registration",
           {
             body: {
               order_id: data.order_id,
               event_id: event.id,
-              first_name: form.first_name,
-              last_name: form.last_name,
-              email: form.email,
-              phone: form.phone || null,
+              first_name: attendees[0]?.firstName,
+              last_name: attendees[0]?.lastName,
+              email: attendees[0]?.email,
+              phone: contactPhone || null,
               profile_id: user?.id ?? null,
-              company_name: form.company_name,
-              company_oib: form.payer_oib || null,
+              company_name: companyName,
+              company_oib: companyOib || null,
               payer_address: street,
               payer_city: city,
               payer_postal_code: postalCode,
@@ -294,38 +369,35 @@ export default function EventRegister() {
               company_postal_code: postalCode,
               company_country_code: countryCode,
               company_country_name: countryName,
-              payer_type: form.payer_type,
-              billing_email: form.billing_email || form.email,
-              po_number: form.po_number || null,
-              tickets: [{ ticket_tier_id: selectedTierId, quantity: ticketQty }],
-              services: svcItems.map((s) => ({ service_id: s.service_id, quantity: s.quantity })),
+              payer_type: payerType,
+              billing_email: billingEmail || attendees[0]?.email,
+              po_number: poNumber || null,
+              tickets: tiers
+                .filter(t => (ticketQuantities[t.id] ?? 0) > 0)
+                .map(t => ({ ticket_tier_id: t.id, quantity: ticketQuantities[t.id] })),
+              services: svcItems,
             },
           },
         );
 
         if (invoiceError || !invoiceResult?.success) {
-          console.error("BC processing failed:", invoiceError || invoiceResult?.error);
-          setInvoiceSuccessMessage(
-            "Invoice request received! Payment email could not be sent — please contact support.",
-          );
+          setInvoiceSuccessMessage("Invoice request received! Payment email could not be sent — please contact support.");
         } else {
-          setInvoiceSuccessMessage(
-            "Quote created! Payment instructions have been sent to your email.",
-          );
+          setInvoiceSuccessMessage("Quote created! Payment instructions have been sent to your email.");
         }
         setInvoiceSuccess(true);
         return;
       }
 
-      // Individual — show success and redirect to Stripe
+      // Individual — redirect to Stripe
       const successData: SuccessData = {
         attendeeId: data.primary_attendee_id,
-        attendeeName: `${form.first_name} ${form.last_name}`,
+        attendeeName: `${attendees[0]?.firstName} ${attendees[0]?.lastName}`,
         eventName: event.name,
-        tierName: selectedTier?.name ?? "Ticket",
+        tierName: attendees[0]?.tierName ?? "Ticket",
         price: data.total_amount ?? 0,
         currency,
-        payerType: form.payer_type,
+        payerType,
       };
       setSuccess(successData);
       await triggerStripeCheckout(data.primary_attendee_id);
@@ -400,16 +472,14 @@ export default function EventRegister() {
             <p className="mb-6 text-muted-foreground">
               {invoiceSuccessMessage || "Your invoice request has been received! A payment instruction will be sent to your email shortly."}
             </p>
-            <Button onClick={() => navigate(`/event/${slug}`)}>
-              Back to Event
-            </Button>
+            <Button onClick={() => navigate(`/event/${slug}`)}>Back to Event</Button>
           </div>
         </section>
       </div>
     );
   }
 
-  // Success view with QR code (individual/Stripe flow)
+  // ── Success view (Stripe flow) ──
   if (success) {
     return (
       <div className="min-h-screen bg-background">
@@ -463,40 +533,21 @@ export default function EventRegister() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Payment</dt>
-                  <dd>
-                    <Badge variant="secondary">Pending</Badge>
-                  </dd>
+                  <dd><Badge variant="secondary">Pending</Badge></dd>
                 </div>
               </dl>
             </div>
 
             {success.price > 0 ? (
               <div className="space-y-3">
-                <Button
-                  size="lg"
-                  className="w-full text-lg"
-                  onClick={() => triggerStripeCheckout()}
-                  disabled={redirectingToStripe}
-                >
-                  {redirectingToStripe ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CreditCard className="mr-2 h-5 w-5" />
-                  )}
+                <Button size="lg" className="w-full text-lg" onClick={() => triggerStripeCheckout()} disabled={redirectingToStripe}>
+                  {redirectingToStripe ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
                   {redirectingToStripe ? "Redirecting..." : "PAY NOW"}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/event/${slug}/dashboard`)}
-                >
-                  Go to Dashboard
-                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/event/${slug}/dashboard`)}>Go to Dashboard</Button>
               </div>
             ) : (
-              <Button onClick={() => navigate(`/event/${slug}/dashboard`)}>
-                Go to My Dashboard
-              </Button>
+              <Button onClick={() => navigate(`/event/${slug}/dashboard`)}>Go to My Dashboard</Button>
             )}
           </div>
         </section>
@@ -504,18 +555,9 @@ export default function EventRegister() {
     );
   }
 
-  // ── Compute total for company invoice button ──
-  const ticketTotal = (selectedTier?.price ?? 0) * ticketQty;
-  const servicesTotal = Object.entries(serviceQtys).reduce((sum, [sid, qty]) => {
-    const svc = services.find((s) => s.id === sid);
-    return sum + (svc?.price ?? 0) * qty;
-  }, 0);
-  const grandTotal = ticketTotal + servicesTotal;
-
-  // ── CHANGE 3: Reusable address fields block ──
+  // ── Address fields block ──
   const addressFieldsBlock = (
     <div className="space-y-3 mt-3 sm:col-span-2">
-      {/* Street */}
       <div>
         <label className="block text-sm font-medium text-muted-foreground mb-1">
           Street Address <span className="text-destructive">*</span>
@@ -529,7 +571,6 @@ export default function EventRegister() {
           className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
-      {/* City + Postal Code */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-1">
@@ -558,7 +599,6 @@ export default function EventRegister() {
           />
         </div>
       </div>
-      {/* Country Dropdown */}
       <div className="relative" ref={countryRef}>
         <label className="block text-sm font-medium text-muted-foreground mb-1">
           Country <span className="text-destructive">*</span>
@@ -627,42 +667,63 @@ export default function EventRegister() {
             </div>
           ) : (
             <>
-              {/* Ticket Tiers */}
+              {/* ── Ticket Selection with Quantity ── */}
               <div className="mb-10">
-                <h3 className="mb-4 text-lg font-semibold text-foreground">Select Your Ticket</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {tiers.map((tier) => (
-                    <TicketTierCard
-                      key={tier.id}
-                      tier={tier}
-                      selected={selectedTierId === tier.id}
-                      currency={currency}
-                      onSelect={() => setSelectedTierId(tier.id)}
-                    />
-                  ))}
+                <h3 className="mb-4 text-lg font-semibold text-foreground">Select Your Tickets</h3>
+                <div className="space-y-3">
+                  {tiers.map((tier) => {
+                    const qty = ticketQuantities[tier.id] ?? 0;
+                    return (
+                      <div
+                        key={tier.id}
+                        className={`flex items-center justify-between rounded-lg border-2 p-4 transition-colors ${
+                          qty > 0 ? "border-primary bg-primary/5" : "border-border bg-card"
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground">{tier.name}</p>
+                          {tier.description && (
+                            <p className="text-sm text-muted-foreground">{tier.description}</p>
+                          )}
+                          <p className="mt-1 text-sm font-semibold text-primary">
+                            {tier.price > 0 ? `€${Number(tier.price).toFixed(2)}` : "Free"}
+                          </p>
+                          {tier.capacity !== null && (
+                            <p className="text-xs text-muted-foreground">{tier.capacity} spots left</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setTierQty(tier.id, -1)}
+                            disabled={qty === 0}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-8 text-center font-medium text-foreground">{qty}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setTierQty(tier.id, 1)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {tiers.length === 0 && (
+                    <p className="text-muted-foreground">No tickets available at this time.</p>
+                  )}
                 </div>
-                {tiers.length === 0 && (
-                  <p className="text-muted-foreground">No tickets available at this time.</p>
-                )}
               </div>
 
-              {/* Ticket Quantity (company only) */}
-              {form.payer_type === "company" && selectedTier && (
-                <div className="mb-6 flex items-center gap-4">
-                  <Label className="text-sm font-medium text-foreground">Ticket Quantity</Label>
-                  <div className="flex items-center gap-2">
-                    <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setTicketQty(Math.max(1, ticketQty - 1))}>
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-8 text-center font-medium text-foreground">{ticketQty}</span>
-                    <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setTicketQty(ticketQty + 1)}>
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Additional Services */}
+              {/* ── Additional Services ── */}
               {services.length > 0 && (
                 <div className="mb-10">
                   <h3 className="mb-4 text-lg font-semibold text-foreground">Additional Services</h3>
@@ -702,49 +763,81 @@ export default function EventRegister() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Attendee Info */}
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">Your Information</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="first_name">First Name *</Label>
-                      <Input id="first_name" value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} />
+                {/* ── Per-Ticket Attendee Details ── */}
+                {totalTickets > 0 && (
+                  <div>
+                    <h3 className="mb-4 text-lg font-semibold text-foreground">
+                      Attendee Details
+                      {totalTickets > 1 && (
+                        <span className="ml-2 text-sm font-normal text-muted-foreground">
+                          ({totalTickets} tickets)
+                        </span>
+                      )}
+                    </h3>
+                    <div className="space-y-4">
+                      {attendees.map((att, idx) => (
+                        <div key={idx} className="rounded-lg border border-border bg-card p-4">
+                          <p className="mb-3 text-sm font-medium text-primary">
+                            Ticket #{idx + 1} — {att.tierName}
+                          </p>
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            <div>
+                              <Label className="text-xs">First Name *</Label>
+                              <Input
+                                value={att.firstName}
+                                onChange={(e) => updateAttendee(idx, 'firstName', e.target.value)}
+                                placeholder="First name"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Last Name *</Label>
+                              <Input
+                                value={att.lastName}
+                                onChange={(e) => updateAttendee(idx, 'lastName', e.target.value)}
+                                placeholder="Last name"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Email *</Label>
+                              <Input
+                                type="email"
+                                value={att.email}
+                                onChange={(e) => updateAttendee(idx, 'email', e.target.value)}
+                                placeholder="email@example.com"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <Label htmlFor="last_name">Last Name *</Label>
-                      <Input id="last_name" value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input id="email" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
-                    </div>
-                    <div>
-                      <Label htmlFor="institution">Institution</Label>
-                      <Input id="institution" value={form.institution} onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))} />
+
+                    {/* Shared contact phone */}
+                    <div className="mt-4 max-w-xs">
+                      <Label>Contact Phone</Label>
+                      <Input
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        placeholder="+385..."
+                      />
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Billing Info */}
+                {/* ── Billing Information ── */}
                 <div>
                   <h3 className="mb-4 text-lg font-semibold text-foreground">Billing Information</h3>
 
-                  {/* Payer Type Toggle */}
                   <div className="mb-6">
                     <Label className="mb-3 block">Who is paying? *</Label>
                     <RadioGroup
-                      value={form.payer_type}
-                      onValueChange={(v) => setForm((p) => ({ ...p, payer_type: v as "individual" | "company" }))}
+                      value={payerType}
+                      onValueChange={(v) => setPayerType(v as "individual" | "company")}
                       className="grid grid-cols-2 gap-4"
                     >
                       <label
                         htmlFor="type-individual"
                         className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                          form.payer_type === "individual"
+                          payerType === "individual"
                             ? "border-primary bg-primary/5"
                             : "border-border bg-card hover:border-muted-foreground/30"
                         }`}
@@ -758,7 +851,7 @@ export default function EventRegister() {
                       <label
                         htmlFor="type-company"
                         className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                          form.payer_type === "company"
+                          payerType === "company"
                             ? "border-primary bg-primary/5"
                             : "border-border bg-card hover:border-muted-foreground/30"
                         }`}
@@ -775,33 +868,30 @@ export default function EventRegister() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
                       <Label htmlFor="payer_name">Payer Name *</Label>
-                      <Input id="payer_name" value={form.payer_name} onChange={(e) => setForm((p) => ({ ...p, payer_name: e.target.value }))} />
+                      <Input id="payer_name" value={payerName} onChange={(e) => setPayerName(e.target.value)} />
                     </div>
 
-                    {/* ── INDIVIDUAL: address below email ── */}
-                    {form.payer_type === "individual" && addressFieldsBlock}
+                    {payerType === "individual" && addressFieldsBlock}
 
-                    {/* ── COMPANY FIELDS ── */}
-                    {form.payer_type === "company" && (
+                    {payerType === "company" && (
                       <>
                         <div className="sm:col-span-2">
                           <Label htmlFor="company_name">Company Name *</Label>
                           <Input
                             id="company_name"
-                            value={form.company_name}
-                            onChange={(e) => setForm((p) => ({ ...p, company_name: e.target.value }))}
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
                             placeholder="Your company legal name"
                           />
                         </div>
-                        {/* CHANGE 4: Dynamic OIB/VAT label */}
                         <div>
                           <Label htmlFor="payer_oib">
                             {countryCode === 'HR' ? 'OIB' : 'VAT ID'}{countryCode === 'HR' ? ' *' : ''}
                           </Label>
                           <Input
                             id="payer_oib"
-                            value={form.payer_oib}
-                            onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
+                            value={companyOib}
+                            onChange={(e) => setCompanyOib(e.target.value)}
                             placeholder={countryCode === 'HR' ? "e.g. 12345678901" : "e.g. DE123456789"}
                           />
                         </div>
@@ -813,8 +903,8 @@ export default function EventRegister() {
                           <Input
                             id="billing_email"
                             type="email"
-                            value={form.billing_email}
-                            onChange={(e) => setForm((p) => ({ ...p, billing_email: e.target.value }))}
+                            value={billingEmail}
+                            onChange={(e) => setBillingEmail(e.target.value)}
                             placeholder="invoices@company.com"
                           />
                         </div>
@@ -822,8 +912,8 @@ export default function EventRegister() {
                           <Label htmlFor="po_number">PO Number</Label>
                           <Input
                             id="po_number"
-                            value={form.po_number}
-                            onChange={(e) => setForm((p) => ({ ...p, po_number: e.target.value }))}
+                            value={poNumber}
+                            onChange={(e) => setPoNumber(e.target.value)}
                             placeholder="Optional"
                           />
                         </div>
@@ -832,21 +922,27 @@ export default function EventRegister() {
                   </div>
                 </div>
 
-                {/* Summary */}
-                {selectedTier && (
+                {/* ── Order Summary ── */}
+                {totalTickets > 0 && (
                   <div className="rounded-lg border border-border bg-secondary/50 p-5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-foreground">
-                          {selectedTier.name}
-                          {form.payer_type === "company" && ticketQty > 1 ? ` × ${ticketQty}` : ""}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{event.name}</p>
-                      </div>
-                      <p className="text-xl font-bold text-primary">
-                        {ticketTotal > 0 ? `${ticketTotal.toFixed(2)} ${currency}` : "Free"}
-                      </p>
-                    </div>
+                    {tiers
+                      .filter(t => (ticketQuantities[t.id] ?? 0) > 0)
+                      .map(tier => {
+                        const qty = ticketQuantities[tier.id] ?? 0;
+                        const subtotal = (tier.price ?? 0) * qty;
+                        return (
+                          <div key={tier.id} className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-foreground">
+                                {tier.name} × {qty}
+                              </p>
+                            </div>
+                            <p className="text-lg font-bold text-primary">
+                              {subtotal > 0 ? `${subtotal.toFixed(2)} ${currency}` : "Free"}
+                            </p>
+                          </div>
+                        );
+                      })}
                     {Object.entries(serviceQtys)
                       .filter(([, qty]) => qty > 0)
                       .map(([sid, qty]) => {
@@ -859,22 +955,20 @@ export default function EventRegister() {
                           </div>
                         );
                       })}
-                    {servicesTotal > 0 && (
-                      <div className="border-t border-border pt-2 flex items-center justify-between">
-                        <span className="font-semibold text-foreground">Total</span>
-                        <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
-                      </div>
-                    )}
+                    <div className="border-t border-border pt-2 flex items-center justify-between">
+                      <span className="font-semibold text-foreground">Total</span>
+                      <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
+                    </div>
                   </div>
                 )}
 
-                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || !selectedTierId}>
+                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? "Processing..."
-                    : form.payer_type === "company"
+                    : payerType === "company"
                       ? `Request Invoice — ${grandTotal.toFixed(2)} ${currency}`
-                      : "Register & Pay"}
+                      : `Register & Pay — ${grandTotal.toFixed(2)} ${currency}`}
                 </Button>
               </form>
             </>
