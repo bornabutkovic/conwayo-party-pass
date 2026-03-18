@@ -943,18 +943,12 @@ export default function EventRegister() {
                           </div>
                         );
                       })}
-                    {Object.entries(serviceQtys)
-                      .filter(([, qty]) => qty > 0)
-                      .map(([sid, qty]) => {
-                        const svc = services.find((s) => s.id === sid);
-                        if (!svc) return null;
-                        return (
-                          <div key={sid} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">{svc.name} × {qty}</span>
-                            <span className="font-medium text-foreground">{(Number(svc.price) * qty).toFixed(2)} {currency}</span>
-                          </div>
-                        );
-                      })}
+                    {servicesTotal > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Additional services</span>
+                        <span className="font-medium text-foreground">{servicesTotal.toFixed(2)} {currency}</span>
+                      </div>
+                    )}
                     <div className="border-t border-border pt-2 flex items-center justify-between">
                       <span className="font-semibold text-foreground">Total</span>
                       <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
