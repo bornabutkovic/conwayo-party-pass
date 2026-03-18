@@ -196,7 +196,7 @@ export default function EventRegister() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("first_name, last_name, email, phone, institution")
+          .select("first_name, last_name, email, phone, institution, address, city, postal_code, country_code, country_name")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -204,6 +204,14 @@ export default function EventRegister() {
           setPayerName(`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
           setContactPhone(profile.phone ?? "");
           setProfileEmail(profile.email ?? user.email ?? "");
+          // Pre-fill address from profile
+          if (profile.address) setStreet(profile.address);
+          if (profile.city) setCity(profile.city);
+          if (profile.postal_code) setPostalCode(profile.postal_code);
+          if (profile.country_code) {
+            setCountryCode(profile.country_code);
+            setCountryName(profile.country_name ?? profile.country_code);
+          }
           setAttendees(prev => {
             if (prev.length === 0) return prev;
             const updated = [...prev];
@@ -687,11 +695,11 @@ export default function EventRegister() {
           {!authLoading && !user && (
             <div className="mb-6 rounded-lg border border-border bg-card p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm text-foreground font-medium">Already have an account?</p>
-                <p className="text-xs text-muted-foreground">Or continue as guest below</p>
+                <p className="text-sm text-foreground font-medium">Have an account? <span className="text-muted-foreground font-normal">Log in to pre-fill details</span></p>
+                <p className="text-xs text-muted-foreground mt-0.5">Or continue as a guest below ↓</p>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link to={`/event/${slug}/auth`}>
+                <Link to={`/event/${slug}/auth?tab=login`}>
                   <LogIn className="mr-1.5 h-4 w-4" />
                   Log In
                 </Link>
