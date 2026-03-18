@@ -1432,13 +1432,7 @@ export type Database = {
       }
       get_bc_posting_groups: {
         Args: { p_country_code: string; p_payer_type: string }
-        Returns: {
-          bc_customer_code: string
-          customer_posting_group: string
-          gen_bus_posting_group: string
-          vat_bus_posting_group: string
-          zone: string
-        }[]
+        Returns: Json
       }
       get_user_event_status: {
         Args: { p_event_id: string; p_phone: string }
