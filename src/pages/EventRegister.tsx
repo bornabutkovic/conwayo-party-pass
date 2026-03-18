@@ -153,6 +153,10 @@ export default function EventRegister() {
       toast({ title: "Company name is required for company billing", variant: "destructive" });
       return;
     }
+    if (form.payer_type === "company" && (!form.payer_address || !form.company_city || !form.company_postal_code)) {
+      toast({ title: "Street address, city, and postal code are required", variant: "destructive" });
+      return;
+    }
 
     const isCompany = form.payer_type === "company";
 
