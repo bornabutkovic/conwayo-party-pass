@@ -407,6 +407,29 @@ export default function EventRegister() {
         } else {
           setInvoiceSuccessMessage("Quote created! Payment instructions have been sent to your email.");
         }
+        // Build success data for invoice flow too
+        const allAtts: SuccessAttendeeInfo[] = attendees.map(a => {
+          const tier = tiers.find(t => t.id === a.tierId);
+          return {
+            firstName: a.firstName,
+            lastName: a.lastName,
+            email: a.email,
+            tierName: a.tierName,
+            tierPrice: tier?.price ?? 0,
+            services: services.filter(s => a.selectedServiceIds.has(s.id)).map(s => ({ name: s.name, price: Number(s.price) })),
+          };
+        });
+        setSuccess({
+          attendeeId: data.primary_attendee_id,
+          attendeeName: `${attendees[0]?.firstName} ${attendees[0]?.lastName}`,
+          eventName: event.name,
+          tierName: attendees[0]?.tierName ?? "Ticket",
+          price: data.total_amount ?? grandTotal,
+          currency,
+          payerType,
+          allAttendees: allAtts,
+          totalAmount: data.total_amount ?? grandTotal,
+        });
         setInvoiceSuccess(true);
         return;
       }
