@@ -81,11 +81,11 @@ export default function MyTickets() {
   const statusBadge = (status: string | null) => {
     switch (status) {
       case "paid":
-        return <Badge className="bg-green-600 text-white">Paid</Badge>;
+        return <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">Paid</Badge>;
       case "pending":
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pending Payment</Badge>;
+        return <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Pending Payment</Badge>;
       case "issued":
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Invoice Sent</Badge>;
+        return <Badge variant="secondary" className="bg-sky-100 text-sky-800 hover:bg-sky-100">Invoice Sent</Badge>;
       default:
         return <Badge variant="secondary">{status ?? "Unknown"}</Badge>;
     }
