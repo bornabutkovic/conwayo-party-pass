@@ -365,6 +365,8 @@ export default function EventRegister() {
           billing_email: payerType === "company" ? (billingEmail || attendees[0]?.email) : attendees[0]?.email,
           po_number: payerType === "company" ? poNumber : undefined,
           profile_id: user?.id || null,
+          terms_accepted: true,
+          terms_accepted_at: new Date().toISOString(),
         },
       });
 
