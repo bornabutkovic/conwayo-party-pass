@@ -704,7 +704,9 @@ export type Database = {
         Row: {
           attendee_id: string | null
           description: string
+          erp_code: string | null
           id: string
+          item_type: string | null
           order_id: string | null
           price_at_purchase: number | null
           quantity: number | null
@@ -717,7 +719,9 @@ export type Database = {
         Insert: {
           attendee_id?: string | null
           description: string
+          erp_code?: string | null
           id?: string
+          item_type?: string | null
           order_id?: string | null
           price_at_purchase?: number | null
           quantity?: number | null
@@ -730,7 +734,9 @@ export type Database = {
         Update: {
           attendee_id?: string | null
           description?: string
+          erp_code?: string | null
           id?: string
+          item_type?: string | null
           order_id?: string | null
           price_at_purchase?: number | null
           quantity?: number | null
