@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
@@ -14,10 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2 } from "lucide-react";
+import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2, ChevronDown, Search } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Enums } from "@/integrations/supabase/types";
@@ -30,6 +29,108 @@ interface SuccessData {
   price: number;
   currency: string;
   payerType: "individual" | "company";
+}
+
+// Searchable country dropdown component
+function CountryDropdown({
+  value,
+  onChange,
+  id,
+}: {
+  value: string;
+  onChange: (code: string, name: string, zone: string) => void;
+  id: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const selected = COUNTRIES.find((c) => c.code === value);
+
+  const filtered = COUNTRIES.filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.code.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Auto-focus search when opened
+  useEffect(() => {
+    if (open && searchRef.current) {
+      searchRef.current.focus();
+    }
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div
+        id={id}
+        className="flex h-10 w-full cursor-pointer items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+        onClick={() => setOpen(!open)}
+        role="combobox"
+        aria-expanded={open}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpen(!open);
+          }
+        }}
+      >
+        <span>{selected ? selected.name : "Select country"}</span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+      </div>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
+          <div className="flex items-center border-b border-border px-3 py-2">
+            <Search className="mr-2 h-4 w-4 text-muted-foreground" />
+            <input
+              ref={searchRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search country..."
+              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {filtered.map((country) => (
+              <div
+                key={country.code}
+                className={`cursor-pointer px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
+                  country.code === value ? "bg-accent/50 font-medium" : ""
+                }`}
+                onClick={() => {
+                  onChange(country.code, country.name, country.zone);
+                  setOpen(false);
+                  setSearch("");
+                }}
+              >
+                {country.name}
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                No country found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function EventRegister() {
@@ -50,6 +151,14 @@ export default function EventRegister() {
   const [invoiceSuccess, setInvoiceSuccess] = useState(false);
   const [invoiceSuccessMessage, setInvoiceSuccessMessage] = useState("");
 
+  // Shared billing address fields
+  const [billingAddress, setBillingAddress] = useState("");
+  const [billingCity, setBillingCity] = useState("");
+  const [billingPostalCode, setBillingPostalCode] = useState("");
+  const [billingCountryCode, setBillingCountryCode] = useState("HR");
+  const [billingCountryName, setBillingCountryName] = useState("Croatia");
+  const [billingZone, setBillingZone] = useState("HR");
+
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -59,20 +168,16 @@ export default function EventRegister() {
     payer_name: "",
     payer_type: "individual" as "individual" | "company",
     payer_oib: "",
-    // Individual billing address
-    billing_address: "",
-    billing_city: "",
-    billing_postal_code: "",
-    billing_country_code: "HR",
-    // Company billing address
-    payer_address: "",
     company_name: "",
-    company_city: "",
-    company_postal_code: "",
-    company_country_code: "HR",
     billing_email: "",
     po_number: "",
   });
+
+  const handleCountryChange = (code: string, name: string, zone: string) => {
+    setBillingCountryCode(code);
+    setBillingCountryName(name);
+    setBillingZone(zone);
+  };
 
   // Redirect unauthenticated users
   useEffect(() => {
@@ -87,7 +192,6 @@ export default function EventRegister() {
 
     const init = async () => {
       try {
-        // Check for duplicate registration
         const { data: existing } = await supabase
           .from("attendees")
           .select("id")
@@ -101,7 +205,6 @@ export default function EventRegister() {
           return;
         }
 
-        // Auto-fill from profile
         const { data: profile } = await supabase
           .from("profiles")
           .select("first_name, last_name, email, phone, institution")
@@ -155,23 +258,24 @@ export default function EventRegister() {
       toast({ title: "Payer name is required", variant: "destructive" });
       return;
     }
+    // Address validation for both types
+    if (!billingAddress || !billingCity || !billingPostalCode) {
+      toast({ title: "Street address, city, and postal code are required", variant: "destructive" });
+      return;
+    }
+    if (!billingCountryCode) {
+      toast({ title: "Country is required", variant: "destructive" });
+      return;
+    }
     if (form.payer_type === "company" && !form.company_name) {
       toast({ title: "Company name is required for company billing", variant: "destructive" });
       return;
     }
-    if (form.payer_type === "company" && (!form.payer_address || !form.company_city || !form.company_postal_code)) {
-      toast({ title: "Street address, city, and postal code are required for company billing", variant: "destructive" });
-      return;
-    }
-    if (form.payer_type === "individual" && (!form.billing_address || !form.billing_city || !form.billing_postal_code)) {
-      toast({ title: "Street address, city, and postal code are required", variant: "destructive" });
-      return;
-    }
 
     const isCompany = form.payer_type === "company";
+    const bcPostingZone = getBcPostingZone(billingCountryCode, form.payer_type);
 
     // ── COMPANY / INVOICE FLOW ──
-    // Step 1: Create order in Supabase, Step 2: Call edge function for BC processing
     if (isCompany) {
       setSubmitting(true);
       try {
@@ -179,7 +283,6 @@ export default function EventRegister() {
         const vatRate = event.vat_rate ?? 25;
         const ticketTotal = pricePaid * ticketQty;
 
-        // Calculate services total
         let svcTotal = 0;
         const selectedServices = Object.entries(serviceQtys)
           .filter(([, qty]) => qty > 0)
@@ -220,11 +323,11 @@ export default function EventRegister() {
             payer_name: form.company_name,
             payer_type: "company" as Enums<"payer_type">,
             payer_oib: form.payer_oib || null,
-            payer_address: [form.payer_address, form.company_postal_code, form.company_city].filter(Boolean).join(", ") || null,
-            payer_city: form.company_city || null,
-            payer_postal_code: form.company_postal_code || null,
-            payer_country_code: form.company_country_code || "HR",
-            payer_country_name: getCountryName(form.company_country_code),
+            payer_address: billingAddress || null,
+            payer_city: billingCity || null,
+            payer_postal_code: billingPostalCode || null,
+            payer_country_code: billingCountryCode || "HR",
+            payer_country_name: billingCountryName,
             billing_email: form.billing_email || form.email,
             contact_name: `${form.first_name} ${form.last_name}`,
             contact_email: form.email,
@@ -287,7 +390,7 @@ export default function EventRegister() {
           await supabase.from("order_items").insert(orderItemsToInsert);
         }
 
-        // 2. Call edge function for BC quote creation (like create-checkout uses supabase.functions.invoke)
+        // 2. Call edge function for BC quote creation
         const { data: invoiceResult, error: invoiceError } = await supabase.functions.invoke(
           "create-invoice-registration",
           {
@@ -301,12 +404,17 @@ export default function EventRegister() {
               profile_id: user?.id ?? null,
               company_name: form.company_name,
               company_oib: form.payer_oib || null,
-              company_address: form.payer_address || null,
-              company_city: form.company_city || null,
-              company_postal_code: form.company_postal_code || null,
-              company_country_code: form.company_country_code || "HR",
-              company_country_name: getCountryName(form.company_country_code),
-              bc_posting_zone: getBcPostingZone(form.company_country_code, "company"),
+              company_address: billingAddress || null,
+              company_city: billingCity || null,
+              company_postal_code: billingPostalCode || null,
+              company_country_code: billingCountryCode || "HR",
+              company_country_name: billingCountryName,
+              payer_address: billingAddress || null,
+              payer_city: billingCity || null,
+              payer_postal_code: billingPostalCode || null,
+              payer_country_code: billingCountryCode || "HR",
+              payer_country_name: billingCountryName,
+              bc_posting_zone: bcPostingZone,
               payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
@@ -342,10 +450,9 @@ export default function EventRegister() {
       return;
     }
 
-    // ── INDIVIDUAL / STRIPE FLOW → existing Supabase logic ──
+    // ── INDIVIDUAL / STRIPE FLOW ──
     setSubmitting(true);
     try {
-      // Create attendee with pending status
       const { data: attendee, error: attError } = await supabase
         .from("attendees")
         .insert({
@@ -369,7 +476,6 @@ export default function EventRegister() {
       const vatRate = event.vat_rate ?? 25;
       const vatAmount = Number(((pricePaid * vatRate) / (100 + vatRate)).toFixed(2));
 
-      // Create order
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -378,11 +484,11 @@ export default function EventRegister() {
           payer_name: form.payer_name,
           payer_type: form.payer_type as Enums<"payer_type">,
           payer_oib: form.payer_oib || null,
-          payer_address: [form.billing_address, form.billing_postal_code, form.billing_city].filter(Boolean).join(", ") || null,
-          payer_city: form.billing_city || null,
-          payer_postal_code: form.billing_postal_code || null,
-          payer_country_code: form.billing_country_code || "HR",
-          payer_country_name: getCountryName(form.billing_country_code),
+          payer_address: billingAddress || null,
+          payer_city: billingCity || null,
+          payer_postal_code: billingPostalCode || null,
+          payer_country_code: billingCountryCode || "HR",
+          payer_country_name: billingCountryName,
           billing_email: form.email,
           contact_name: `${form.first_name} ${form.last_name}`,
           contact_email: form.email,
@@ -396,7 +502,6 @@ export default function EventRegister() {
 
       if (orderError) throw orderError;
 
-      // Create order item
       const { error: itemError } = await supabase.from("order_items").insert({
         order_id: order.id,
         attendee_id: attendee.id,
@@ -455,6 +560,13 @@ export default function EventRegister() {
             attendeeId: aid,
             eventId: event.id,
             slug,
+            // Address fields for Stripe flow
+            payer_address: billingAddress,
+            payer_city: billingCity,
+            payer_postal_code: billingPostalCode,
+            payer_country_code: billingCountryCode,
+            payer_country_name: billingCountryName,
+            bc_posting_zone: getBcPostingZone(billingCountryCode, form.payer_type),
           }),
         }
       );
@@ -526,7 +638,6 @@ export default function EventRegister() {
               </div>
             )}
 
-            {/* QR Code - blurred for pending */}
             <div className="relative mx-auto mb-6 inline-block rounded-xl border-2 border-primary/20 bg-card p-4">
               <div className="blur-md pointer-events-none select-none">
                 <QRCodeSVG value={success.attendeeId} size={192} level="H" includeMargin />
@@ -604,6 +715,47 @@ export default function EventRegister() {
     return sum + (svc?.price ?? 0) * qty;
   }, 0);
   const grandTotal = ticketTotal + servicesTotal;
+
+  // Shared address fields block
+  const addressFieldsBlock = (
+    <>
+      <div className="sm:col-span-2">
+        <Label htmlFor="billing_address">Street Address <span className="text-destructive">*</span></Label>
+        <Input
+          id="billing_address"
+          value={billingAddress}
+          onChange={(e) => setBillingAddress(e.target.value)}
+          placeholder="Ulica i broj / Street and number"
+        />
+      </div>
+      <div>
+        <Label htmlFor="billing_city">City <span className="text-destructive">*</span></Label>
+        <Input
+          id="billing_city"
+          value={billingCity}
+          onChange={(e) => setBillingCity(e.target.value)}
+          placeholder="Grad / City"
+        />
+      </div>
+      <div>
+        <Label htmlFor="billing_postal_code">Postal Code <span className="text-destructive">*</span></Label>
+        <Input
+          id="billing_postal_code"
+          value={billingPostalCode}
+          onChange={(e) => setBillingPostalCode(e.target.value)}
+          placeholder="Poštanski broj / ZIP"
+        />
+      </div>
+      <div className="sm:col-span-2">
+        <Label htmlFor="billing_country">Country <span className="text-destructive">*</span></Label>
+        <CountryDropdown
+          id="billing_country"
+          value={billingCountryCode}
+          onChange={handleCountryChange}
+        />
+      </div>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -733,7 +885,7 @@ export default function EventRegister() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Attendee Info - auto-filled */}
+                {/* Attendee Info */}
                 <div>
                   <h3 className="mb-4 text-lg font-semibold text-foreground">Your Information</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -834,54 +986,10 @@ export default function EventRegister() {
                       />
                     </div>
 
-                    {/* ── INDIVIDUAL ADDRESS FIELDS ── */}
+                    {/* ── INDIVIDUAL FIELDS ── */}
                     {form.payer_type === "individual" && (
                       <>
-                        <div className="sm:col-span-2">
-                          <Label htmlFor="billing_address">Street Address *</Label>
-                          <Input
-                            id="billing_address"
-                            value={form.billing_address}
-                            onChange={(e) => setForm((p) => ({ ...p, billing_address: e.target.value }))}
-                            placeholder="Ulica i broj / Street and number"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="billing_city">City *</Label>
-                          <Input
-                            id="billing_city"
-                            value={form.billing_city}
-                            onChange={(e) => setForm((p) => ({ ...p, billing_city: e.target.value }))}
-                            placeholder="Grad / City"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="billing_postal_code">Postal Code *</Label>
-                          <Input
-                            id="billing_postal_code"
-                            value={form.billing_postal_code}
-                            onChange={(e) => setForm((p) => ({ ...p, billing_postal_code: e.target.value }))}
-                            placeholder="Poštanski broj / ZIP"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <Label htmlFor="billing_country">Country *</Label>
-                          <Select
-                            value={form.billing_country_code}
-                            onValueChange={(v) => setForm((p) => ({ ...p, billing_country_code: v }))}
-                          >
-                            <SelectTrigger id="billing_country">
-                              <SelectValue placeholder="Select country" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {COUNTRIES.map((c) => (
-                                <SelectItem key={c.code} value={c.code}>
-                                  {c.flag} {c.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {addressFieldsBlock}
                       </>
                     )}
 
@@ -899,60 +1007,18 @@ export default function EventRegister() {
                         </div>
                         <div>
                           <Label htmlFor="payer_oib">
-                            {form.company_country_code === "HR" ? "OIB *" : "VAT ID *"}
+                            {billingCountryCode === "HR" ? "OIB *" : "VAT ID"}
                           </Label>
                           <Input
                             id="payer_oib"
                             value={form.payer_oib}
                             onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
-                            placeholder={form.company_country_code === "HR" ? "e.g. 12345678901" : "e.g. DE123456789"}
+                            placeholder={billingCountryCode === "HR" ? "e.g. 12345678901" : "e.g. DE123456789"}
                           />
                         </div>
-                        <div className="sm:col-span-2">
-                          <Label htmlFor="payer_address">Street Address *</Label>
-                          <Input
-                            id="payer_address"
-                            value={form.payer_address}
-                            onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
-                            placeholder="Ulica i broj / Street and number"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="company_city">City *</Label>
-                          <Input
-                            id="company_city"
-                            value={form.company_city}
-                            onChange={(e) => setForm((p) => ({ ...p, company_city: e.target.value }))}
-                            placeholder="Grad / City"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="company_postal_code">Postal Code *</Label>
-                          <Input
-                            id="company_postal_code"
-                            value={form.company_postal_code}
-                            onChange={(e) => setForm((p) => ({ ...p, company_postal_code: e.target.value }))}
-                            placeholder="Poštanski broj / ZIP"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <Label htmlFor="company_country">Country *</Label>
-                          <Select
-                            value={form.company_country_code}
-                            onValueChange={(v) => setForm((p) => ({ ...p, company_country_code: v }))}
-                          >
-                            <SelectTrigger id="company_country">
-                              <SelectValue placeholder="Select country" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {COUNTRIES.map((c) => (
-                                <SelectItem key={c.code} value={c.code}>
-                                  {c.flag} {c.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+
+                        {addressFieldsBlock}
+
                         <div>
                           <Label htmlFor="billing_email">Billing Email</Label>
                           <Input
@@ -1033,46 +1099,6 @@ export default function EventRegister() {
                       : "Register & Pay"}
                 </Button>
               </form>
-
-              {/* Dev Test Button */}
-              <div className="mt-8 rounded-lg border-2 border-dashed border-destructive/30 bg-destructive/5 p-4">
-                <p className="mb-2 text-xs font-mono text-destructive">DEV ONLY — Test Invoice API</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                  onClick={async () => {
-                    try {
-                      const r = await fetch(
-                        "https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-invoice-registration",
-                        {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            event_id: "67a20761-6f3c-420e-b6fd-3e604f30952a",
-                            first_name: "Test",
-                            last_name: "Korisnik",
-                            email: "brnbutkovic11@gmail.com",
-                            company_name: "Test d.o.o.",
-                            company_oib: "13749207582",
-                            company_address: "Ulica 1, Zagreb",
-                            billing_email: "brnbutkovic11@gmail.com",
-                            tickets: [{ ticket_tier_id: "4d66c2aa-ac19-447e-a13e-5c734522365e", quantity: 1 }],
-                            services: [{ service_id: "0c755ea1-9da8-4d90-888e-b550e10a60c5", quantity: 1 }],
-                          }),
-                        },
-                      );
-                      const data = await r.json();
-                      alert(JSON.stringify(data, null, 2));
-                    } catch (err: any) {
-                      alert("Error: " + err.message);
-                    }
-                  }}
-                >
-                  Test Invoice API
-                </Button>
-              </div>
             </>
           )}
         </div>
