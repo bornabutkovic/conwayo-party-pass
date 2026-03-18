@@ -61,6 +61,8 @@ export default function EventRegister() {
     payer_oib: "",
     payer_address: "",
     company_name: "",
+    company_city: "",
+    company_postal_code: "",
     company_country_code: "HR",
     billing_email: "",
     po_number: "",
