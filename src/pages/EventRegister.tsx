@@ -81,6 +81,7 @@ interface AttendeeRow {
   email: string;
   tierId: string;
   tierName: string;
+  selectedServiceIds: Set<string>;
 }
 
 interface SuccessData {
