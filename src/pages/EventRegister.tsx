@@ -166,12 +166,7 @@ export default function EventRegister() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Redirect unauthenticated users
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate(`/event/${slug}/auth`);
-    }
-  }, [authLoading, user, slug, navigate]);
+  // No longer redirect unauthenticated users — guest checkout is allowed
 
   // Auto-fill from profile
   useEffect(() => {
