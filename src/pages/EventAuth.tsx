@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, UserCircle } from "lucide-react";
 
 const PHONE_CODES = [
   { code: "+385", country: "HR" },
