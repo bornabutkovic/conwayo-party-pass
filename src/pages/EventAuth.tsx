@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, UserCircle } from "lucide-react";
 
 const PHONE_CODES = [
   { code: "+385", country: "HR" },
@@ -252,6 +252,26 @@ export default function EventAuth() {
   const content = (
     <section className="container mx-auto px-4 py-12 md:py-16">
       <div className="mx-auto max-w-md">
+        {/* Guest option for event pages */}
+        {isEventPage && (
+          <div className="mb-6 rounded-lg border border-border bg-card p-5 text-center space-y-3">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <UserCircle className="h-5 w-5" />
+              <span className="text-sm font-medium">Continue without an account</span>
+            </div>
+            <p className="text-xs text-muted-foreground">No registration required — provide your details at checkout</p>
+            <Button variant="outline" className="w-full" onClick={() => navigate(`/event/${slug}/register`)}>
+              Continue as Guest →
+            </Button>
+          </div>
+        )}
+
+        <div className="relative mb-6 flex items-center">
+          <div className="flex-1 border-t border-border" />
+          <span className="px-3 text-xs text-muted-foreground uppercase">or create an account</span>
+          <div className="flex-1 border-t border-border" />
+        </div>
+
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="register">Sign Up</TabsTrigger>
