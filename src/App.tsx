@@ -11,6 +11,7 @@ import EventAuth from "./pages/EventAuth";
 import EventRegister from "./pages/EventRegister";
 import EventDashboard from "./pages/EventDashboard";
 import TicketPage from "./pages/TicketPage";
+import MyTickets from "./pages/MyTickets";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
