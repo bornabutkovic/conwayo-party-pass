@@ -160,6 +160,10 @@ export default function EventRegister() {
       return;
     }
     if (form.payer_type === "company" && (!form.payer_address || !form.company_city || !form.company_postal_code)) {
+      toast({ title: "Street address, city, and postal code are required for company billing", variant: "destructive" });
+      return;
+    }
+    if (form.payer_type === "individual" && (!form.billing_address || !form.billing_city || !form.billing_postal_code)) {
       toast({ title: "Street address, city, and postal code are required", variant: "destructive" });
       return;
     }
