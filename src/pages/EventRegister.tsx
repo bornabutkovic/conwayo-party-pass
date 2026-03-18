@@ -975,7 +975,39 @@ export default function EventRegister() {
                   </div>
                 )}
 
-                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0}>
+                {/* Terms & Conditions */}
+                <div className="space-y-1">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => {
+                        setTermsAccepted(e.target.checked);
+                        if (e.target.checked) setTermsError(false);
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-input text-primary accent-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      I agree to the{" "}
+                      <a
+                        href={event.terms_url || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline hover:text-primary/80"
+                      >
+                        Terms of Purchase
+                      </a>{" "}
+                      and Cancellation Policy
+                      <br />
+                      <span className="text-xs">(Slažem se s Uvjetima kupnje i Politikom povrata)</span>
+                    </span>
+                  </label>
+                  {termsError && !termsAccepted && (
+                    <p className="text-xs text-destructive ml-7">Please accept the Terms of Purchase to continue.</p>
+                  )}
+                </div>
+
+                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0 || !termsAccepted}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? "Processing..."

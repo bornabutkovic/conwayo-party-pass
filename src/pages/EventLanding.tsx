@@ -98,6 +98,30 @@ export default function EventLanding() {
               </div>
             )}
 
+            {/* Cancellation Policy */}
+            <Collapsible>
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border bg-card px-5 py-4 text-left text-sm font-medium text-foreground hover:bg-accent/50 transition-colors [&[data-state=open]>svg]:rotate-180">
+                <span>Cancellation & Refund Policy / Politika povrata i otkazivanja</span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="rounded-b-lg border border-t-0 border-border bg-card px-5 py-4 text-sm text-muted-foreground leading-relaxed space-y-4">
+                  <p>
+                    Otkazivanje kotizacije moguće je najkasnije 14 dana prije početka
+                    događaja uz povrat 50% uplaćenog iznosa. Nakon tog roka povrat
+                    nije moguć, ali kotizacija može biti prenesena na drugu osobu uz
+                    prethodnu pisanu obavijest organizatoru.
+                  </p>
+                  <p>
+                    Cancellations are accepted up to 14 days before the event with a
+                    50% refund. After that date, no refund is available, but the
+                    registration may be transferred to another person with prior
+                    written notice to the organizer.
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
             {/* Register CTA */}
             <div className="text-center">
               <Button asChild size="lg" className="gap-2 text-lg px-10 py-6">
