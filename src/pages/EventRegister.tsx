@@ -4,22 +4,78 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
 import { supabase } from "@/integrations/supabase/client";
-import { COUNTRIES, getBcPostingZone, getCountryName } from "@/lib/countries";
 import { EventHero } from "@/components/event/EventHero";
 import { TicketTierCard } from "@/components/event/TicketTierCard";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
-import { RegistrationSuccess } from "@/components/event/RegistrationSuccess";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2, ChevronDown, Search } from "lucide-react";
+import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Enums } from "@/integrations/supabase/types";
+
+// ── CHANGE 1: Country list & zone helper ──
+const EU_CODES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
+
+const COUNTRIES = [
+  { code: 'HR', name: 'Croatia' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'BG', name: 'Bulgaria' },
+  { code: 'CY', name: 'Cyprus' },
+  { code: 'CZ', name: 'Czech Republic' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'EE', name: 'Estonia' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'FR', name: 'France' },
+  { code: 'GR', name: 'Greece' },
+  { code: 'HU', name: 'Hungary' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'LT', name: 'Lithuania' },
+  { code: 'LU', name: 'Luxembourg' },
+  { code: 'LV', name: 'Latvia' },
+  { code: 'MT', name: 'Malta' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'PL', name: 'Poland' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'RO', name: 'Romania' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'SI', name: 'Slovenia' },
+  { code: 'SK', name: 'Slovakia' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'US', name: 'United States' },
+  { code: 'CH', name: 'Switzerland' },
+  { code: 'NO', name: 'Norway' },
+  { code: 'BA', name: 'Bosnia and Herzegovina' },
+  { code: 'RS', name: 'Serbia' },
+  { code: 'ME', name: 'Montenegro' },
+  { code: 'MK', name: 'North Macedonia' },
+  { code: 'AL', name: 'Albania' },
+  { code: 'TR', name: 'Turkey' },
+  { code: 'RU', name: 'Russia' },
+  { code: 'CN', name: 'China' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'IN', name: 'India' },
+  { code: 'ZA', name: 'South Africa' },
+  { code: 'OTHER', name: 'Other' },
+];
+
+const getZone = (code: string) => {
+  if (code === 'HR') return 'HR';
+  if (EU_CODES.includes(code)) return 'EU';
+  return 'INO';
+};
 
 interface SuccessData {
   attendeeId: string;
@@ -29,108 +85,6 @@ interface SuccessData {
   price: number;
   currency: string;
   payerType: "individual" | "company";
-}
-
-// Searchable country dropdown component
-function CountryDropdown({
-  value,
-  onChange,
-  id,
-}: {
-  value: string;
-  onChange: (code: string, name: string, zone: string) => void;
-  id: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-
-  const selected = COUNTRIES.find((c) => c.code === value);
-
-  const filtered = COUNTRIES.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.code.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Close on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch("");
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  // Auto-focus search when opened
-  useEffect(() => {
-    if (open && searchRef.current) {
-      searchRef.current.focus();
-    }
-  }, [open]);
-
-  return (
-    <div className="relative" ref={ref}>
-      <div
-        id={id}
-        className="flex h-10 w-full cursor-pointer items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-        onClick={() => setOpen(!open)}
-        role="combobox"
-        aria-expanded={open}
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setOpen(!open);
-          }
-        }}
-      >
-        <span>{selected ? selected.name : "Select country"}</span>
-        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-      </div>
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
-          <div className="flex items-center border-b border-border px-3 py-2">
-            <Search className="mr-2 h-4 w-4 text-muted-foreground" />
-            <input
-              ref={searchRef}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search country..."
-              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-          <div className="max-h-60 overflow-y-auto">
-            {filtered.map((country) => (
-              <div
-                key={country.code}
-                className={`cursor-pointer px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
-                  country.code === value ? "bg-accent/50 font-medium" : ""
-                }`}
-                onClick={() => {
-                  onChange(country.code, country.name, country.zone);
-                  setOpen(false);
-                  setSearch("");
-                }}
-              >
-                {country.name}
-              </div>
-            ))}
-            {filtered.length === 0 && (
-              <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                No country found
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
 
 export default function EventRegister() {
@@ -151,14 +105,6 @@ export default function EventRegister() {
   const [invoiceSuccess, setInvoiceSuccess] = useState(false);
   const [invoiceSuccessMessage, setInvoiceSuccessMessage] = useState("");
 
-  // Shared billing address fields
-  const [billingAddress, setBillingAddress] = useState("");
-  const [billingCity, setBillingCity] = useState("");
-  const [billingPostalCode, setBillingPostalCode] = useState("");
-  const [billingCountryCode, setBillingCountryCode] = useState("HR");
-  const [billingCountryName, setBillingCountryName] = useState("Croatia");
-  const [billingZone, setBillingZone] = useState("HR");
-
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -173,11 +119,28 @@ export default function EventRegister() {
     po_number: "",
   });
 
-  const handleCountryChange = (code: string, name: string, zone: string) => {
-    setBillingCountryCode(code);
-    setBillingCountryName(name);
-    setBillingZone(zone);
-  };
+  // ── CHANGE 2: Address state variables ──
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [countryCode, setCountryCode] = useState('HR');
+  const [countryName, setCountryName] = useState('Croatia');
+  const [countrySearch, setCountrySearch] = useState('');
+  const [countryOpen, setCountryOpen] = useState(false);
+
+  const countryRef = useRef<HTMLDivElement>(null);
+
+  // Close country dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (countryRef.current && !countryRef.current.contains(e.target as Node)) {
+        setCountryOpen(false);
+        setCountrySearch('');
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Redirect unauthenticated users
   useEffect(() => {
@@ -258,22 +221,18 @@ export default function EventRegister() {
       toast({ title: "Payer name is required", variant: "destructive" });
       return;
     }
-    // Address validation for both types
-    if (!billingAddress || !billingCity || !billingPostalCode) {
-      toast({ title: "Street address, city, and postal code are required", variant: "destructive" });
-      return;
-    }
-    if (!billingCountryCode) {
-      toast({ title: "Country is required", variant: "destructive" });
-      return;
-    }
     if (form.payer_type === "company" && !form.company_name) {
       toast({ title: "Company name is required for company billing", variant: "destructive" });
       return;
     }
 
+    // ── CHANGE 6: Address validation ──
+    if (!street || !city || !postalCode || !countryCode) {
+      toast({ title: "Please fill in all address fields.", variant: "destructive" });
+      return;
+    }
+
     const isCompany = form.payer_type === "company";
-    const bcPostingZone = getBcPostingZone(billingCountryCode, form.payer_type);
 
     // ── COMPANY / INVOICE FLOW ──
     if (isCompany) {
@@ -294,7 +253,7 @@ export default function EventRegister() {
           });
         const totalAmount = ticketTotal + svcTotal;
 
-        // 1a. Create attendee
+        // Create attendee
         const { data: attendee, error: attError } = await supabase
           .from("attendees")
           .insert({
@@ -314,7 +273,7 @@ export default function EventRegister() {
 
         if (attError) throw attError;
 
-        // 1b. Create order
+        // Create order
         const { data: order, error: orderError } = await supabase
           .from("orders")
           .insert({
@@ -323,11 +282,11 @@ export default function EventRegister() {
             payer_name: form.company_name,
             payer_type: "company" as Enums<"payer_type">,
             payer_oib: form.payer_oib || null,
-            payer_address: billingAddress || null,
-            payer_city: billingCity || null,
-            payer_postal_code: billingPostalCode || null,
-            payer_country_code: billingCountryCode || "HR",
-            payer_country_name: billingCountryName,
+            payer_address: street || null,
+            payer_city: city || null,
+            payer_postal_code: postalCode || null,
+            payer_country_code: countryCode || "HR",
+            payer_country_name: countryName,
             billing_email: form.billing_email || form.email,
             contact_name: `${form.first_name} ${form.last_name}`,
             contact_email: form.email,
@@ -343,7 +302,7 @@ export default function EventRegister() {
 
         if (orderError) throw orderError;
 
-        // 1c. Create order items — tickets
+        // Create order items — tickets
         const orderItemsToInsert: Array<{
           order_id: string;
           attendee_id: string;
@@ -369,7 +328,7 @@ export default function EventRegister() {
           price_at_purchase: pricePaid,
         });
 
-        // 1d. Create order items — services
+        // Create order items — services
         for (const s of selectedServices) {
           const lineTotal = (s.svc?.price ?? 0) * s.quantity;
           const svcVat = Number(((lineTotal * vatRate) / (100 + vatRate)).toFixed(2));
@@ -390,7 +349,7 @@ export default function EventRegister() {
           await supabase.from("order_items").insert(orderItemsToInsert);
         }
 
-        // 2. Call edge function for BC quote creation
+        // ── CHANGE 5: Invoice payload with address fields ──
         const { data: invoiceResult, error: invoiceError } = await supabase.functions.invoke(
           "create-invoice-registration",
           {
@@ -404,17 +363,17 @@ export default function EventRegister() {
               profile_id: user?.id ?? null,
               company_name: form.company_name,
               company_oib: form.payer_oib || null,
-              company_address: billingAddress || null,
-              company_city: billingCity || null,
-              company_postal_code: billingPostalCode || null,
-              company_country_code: billingCountryCode || "HR",
-              company_country_name: billingCountryName,
-              payer_address: billingAddress || null,
-              payer_city: billingCity || null,
-              payer_postal_code: billingPostalCode || null,
-              payer_country_code: billingCountryCode || "HR",
-              payer_country_name: billingCountryName,
-              bc_posting_zone: bcPostingZone,
+              payer_address: street,
+              payer_city: city,
+              payer_postal_code: postalCode,
+              payer_country_code: countryCode,
+              payer_country_name: countryName,
+              bc_posting_zone: getZone(countryCode),
+              company_address: street,
+              company_city: city,
+              company_postal_code: postalCode,
+              company_country_code: countryCode,
+              company_country_name: countryName,
               payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
@@ -484,11 +443,11 @@ export default function EventRegister() {
           payer_name: form.payer_name,
           payer_type: form.payer_type as Enums<"payer_type">,
           payer_oib: form.payer_oib || null,
-          payer_address: billingAddress || null,
-          payer_city: billingCity || null,
-          payer_postal_code: billingPostalCode || null,
-          payer_country_code: billingCountryCode || "HR",
-          payer_country_name: billingCountryName,
+          payer_address: street || null,
+          payer_city: city || null,
+          payer_postal_code: postalCode || null,
+          payer_country_code: countryCode || "HR",
+          payer_country_name: countryName,
           billing_email: form.email,
           contact_name: `${form.first_name} ${form.last_name}`,
           contact_email: form.email,
@@ -548,6 +507,7 @@ export default function EventRegister() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
+      // ── CHANGE 5: Stripe payload with address fields ──
       const res = await fetch(
         `https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-checkout`,
         {
@@ -560,13 +520,12 @@ export default function EventRegister() {
             attendeeId: aid,
             eventId: event.id,
             slug,
-            // Address fields for Stripe flow
-            payer_address: billingAddress,
-            payer_city: billingCity,
-            payer_postal_code: billingPostalCode,
-            payer_country_code: billingCountryCode,
-            payer_country_name: billingCountryName,
-            bc_posting_zone: getBcPostingZone(billingCountryCode, form.payer_type),
+            payer_address: street,
+            payer_city: city,
+            payer_postal_code: postalCode,
+            payer_country_code: countryCode,
+            payer_country_name: countryName,
+            bc_posting_zone: getZone(countryCode),
           }),
         }
       );
@@ -716,45 +675,100 @@ export default function EventRegister() {
   }, 0);
   const grandTotal = ticketTotal + servicesTotal;
 
-  // Shared address fields block
+  // ── CHANGE 3: Reusable address fields block ──
   const addressFieldsBlock = (
-    <>
-      <div className="sm:col-span-2">
-        <Label htmlFor="billing_address">Street Address <span className="text-destructive">*</span></Label>
-        <Input
-          id="billing_address"
-          value={billingAddress}
-          onChange={(e) => setBillingAddress(e.target.value)}
+    <div className="space-y-3 mt-3 sm:col-span-2">
+      {/* Street */}
+      <div>
+        <label className="block text-sm font-medium text-muted-foreground mb-1">
+          Street Address <span className="text-destructive">*</span>
+        </label>
+        <input
+          type="text"
+          value={street}
+          onChange={e => setStreet(e.target.value)}
           placeholder="Ulica i broj / Street and number"
+          required
+          className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
-      <div>
-        <Label htmlFor="billing_city">City <span className="text-destructive">*</span></Label>
-        <Input
-          id="billing_city"
-          value={billingCity}
-          onChange={(e) => setBillingCity(e.target.value)}
-          placeholder="Grad / City"
-        />
+      {/* City + Postal Code */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
+            City <span className="text-destructive">*</span>
+          </label>
+          <input
+            type="text"
+            value={city}
+            onChange={e => setCity(e.target.value)}
+            placeholder="Grad / City"
+            required
+            className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
+            Postal Code <span className="text-destructive">*</span>
+          </label>
+          <input
+            type="text"
+            value={postalCode}
+            onChange={e => setPostalCode(e.target.value)}
+            placeholder="Poštanski broj / ZIP"
+            required
+            className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
       </div>
-      <div>
-        <Label htmlFor="billing_postal_code">Postal Code <span className="text-destructive">*</span></Label>
-        <Input
-          id="billing_postal_code"
-          value={billingPostalCode}
-          onChange={(e) => setBillingPostalCode(e.target.value)}
-          placeholder="Poštanski broj / ZIP"
-        />
+      {/* Country Dropdown */}
+      <div className="relative" ref={countryRef}>
+        <label className="block text-sm font-medium text-muted-foreground mb-1">
+          Country <span className="text-destructive">*</span>
+        </label>
+        <div
+          className="w-full border border-input rounded-lg px-3 py-2 text-sm cursor-pointer flex justify-between items-center bg-background text-foreground"
+          onClick={() => setCountryOpen(!countryOpen)}
+        >
+          <span>{countryName}</span>
+          <span className="text-muted-foreground">▼</span>
+        </div>
+        {countryOpen && (
+          <div className="absolute z-50 w-full bg-popover border border-border rounded-lg shadow-xl mt-1">
+            <div className="p-2 border-b border-border sticky top-0 bg-popover">
+              <input
+                type="text"
+                value={countrySearch}
+                onChange={e => setCountrySearch(e.target.value)}
+                placeholder="Search country..."
+                className="w-full border border-input rounded px-2 py-1 text-sm bg-background text-foreground focus:outline-none"
+                autoFocus
+                onClick={e => e.stopPropagation()}
+              />
+            </div>
+            <div className="max-h-48 overflow-y-auto">
+              {COUNTRIES.filter(c =>
+                c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                c.code.toLowerCase().includes(countrySearch.toLowerCase())
+              ).map(c => (
+                <div
+                  key={c.code}
+                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground ${countryCode === c.code ? 'bg-accent/50 font-medium' : ''}`}
+                  onClick={() => {
+                    setCountryCode(c.code);
+                    setCountryName(c.name);
+                    setCountryOpen(false);
+                    setCountrySearch('');
+                  }}
+                >
+                  {c.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-      <div className="sm:col-span-2">
-        <Label htmlFor="billing_country">Country <span className="text-destructive">*</span></Label>
-        <CountryDropdown
-          id="billing_country"
-          value={billingCountryCode}
-          onChange={handleCountryChange}
-        />
-      </div>
-    </>
+    </div>
   );
 
   return (
@@ -800,23 +814,11 @@ export default function EventRegister() {
                 <div className="mb-6 flex items-center gap-4">
                   <Label className="text-sm font-medium text-foreground">Ticket Quantity</Label>
                   <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setTicketQty(Math.max(1, ticketQty - 1))}
-                    >
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setTicketQty(Math.max(1, ticketQty - 1))}>
                       <Minus className="h-3 w-3" />
                     </Button>
                     <span className="w-8 text-center font-medium text-foreground">{ticketQty}</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setTicketQty(ticketQty + 1)}
-                    >
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setTicketQty(ticketQty + 1)}>
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
@@ -847,33 +849,11 @@ export default function EventRegister() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() =>
-                                setServiceQtys((p) => ({
-                                  ...p,
-                                  [svc.id]: Math.max(0, (p[svc.id] ?? 0) - 1),
-                                }))
-                              }
-                            >
+                            <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setServiceQtys((p) => ({ ...p, [svc.id]: Math.max(0, (p[svc.id] ?? 0) - 1) }))}>
                               <Minus className="h-3 w-3" />
                             </Button>
                             <span className="w-8 text-center font-medium text-foreground">{qty}</span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() =>
-                                setServiceQtys((p) => ({
-                                  ...p,
-                                  [svc.id]: (p[svc.id] ?? 0) + 1,
-                                }))
-                              }
-                            >
+                            <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setServiceQtys((p) => ({ ...p, [svc.id]: (p[svc.id] ?? 0) + 1 }))}>
                               <Plus className="h-3 w-3" />
                             </Button>
                           </div>
@@ -891,44 +871,23 @@ export default function EventRegister() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="first_name">First Name *</Label>
-                      <Input
-                        id="first_name"
-                        value={form.first_name}
-                        onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))}
-                      />
+                      <Input id="first_name" value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} />
                     </div>
                     <div>
                       <Label htmlFor="last_name">Last Name *</Label>
-                      <Input
-                        id="last_name"
-                        value={form.last_name}
-                        onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))}
-                      />
+                      <Input id="last_name" value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} />
                     </div>
                     <div className="sm:col-span-2">
                       <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                      />
+                      <Input id="email" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
                     </div>
                     <div>
                       <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={form.phone}
-                        onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                      />
+                      <Input id="phone" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
                     </div>
                     <div>
                       <Label htmlFor="institution">Institution</Label>
-                      <Input
-                        id="institution"
-                        value={form.institution}
-                        onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
-                      />
+                      <Input id="institution" value={form.institution} onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))} />
                     </div>
                   </div>
                 </div>
@@ -979,19 +938,11 @@ export default function EventRegister() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
                       <Label htmlFor="payer_name">Payer Name *</Label>
-                      <Input
-                        id="payer_name"
-                        value={form.payer_name}
-                        onChange={(e) => setForm((p) => ({ ...p, payer_name: e.target.value }))}
-                      />
+                      <Input id="payer_name" value={form.payer_name} onChange={(e) => setForm((p) => ({ ...p, payer_name: e.target.value }))} />
                     </div>
 
-                    {/* ── INDIVIDUAL FIELDS ── */}
-                    {form.payer_type === "individual" && (
-                      <>
-                        {addressFieldsBlock}
-                      </>
-                    )}
+                    {/* ── INDIVIDUAL: address below email ── */}
+                    {form.payer_type === "individual" && addressFieldsBlock}
 
                     {/* ── COMPANY FIELDS ── */}
                     {form.payer_type === "company" && (
@@ -1005,15 +956,16 @@ export default function EventRegister() {
                             placeholder="Your company legal name"
                           />
                         </div>
+                        {/* CHANGE 4: Dynamic OIB/VAT label */}
                         <div>
                           <Label htmlFor="payer_oib">
-                            {billingCountryCode === "HR" ? "OIB *" : "VAT ID"}
+                            {countryCode === 'HR' ? 'OIB' : 'VAT ID'}{countryCode === 'HR' ? ' *' : ''}
                           </Label>
                           <Input
                             id="payer_oib"
                             value={form.payer_oib}
                             onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
-                            placeholder={billingCountryCode === "HR" ? "e.g. 12345678901" : "e.g. DE123456789"}
+                            placeholder={countryCode === 'HR' ? "e.g. 12345678901" : "e.g. DE123456789"}
                           />
                         </div>
 
@@ -1065,32 +1017,21 @@ export default function EventRegister() {
                         if (!svc) return null;
                         return (
                           <div key={sid} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              {svc.name} × {qty}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {(Number(svc.price) * qty).toFixed(2)} {currency}
-                            </span>
+                            <span className="text-muted-foreground">{svc.name} × {qty}</span>
+                            <span className="font-medium text-foreground">{(Number(svc.price) * qty).toFixed(2)} {currency}</span>
                           </div>
                         );
                       })}
                     {servicesTotal > 0 && (
                       <div className="border-t border-border pt-2 flex items-center justify-between">
                         <span className="font-semibold text-foreground">Total</span>
-                        <span className="text-2xl font-bold text-primary">
-                          {grandTotal.toFixed(2)} {currency}
-                        </span>
+                        <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full text-lg"
-                  disabled={submitting || !selectedTierId}
-                >
+                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || !selectedTierId}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? "Processing..."
