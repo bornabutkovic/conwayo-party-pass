@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { OrderConfirmation } from "@/components/event/OrderConfirmation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // ── Country list & zone helper ──
@@ -84,6 +85,16 @@ interface AttendeeRow {
   selectedServiceIds: Set<string>;
 }
 
+interface SuccessAttendeeInfo {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  tierName: string;
+  tierPrice: number;
+  services: { name: string; price: number }[];
+}
+
 interface SuccessData {
   attendeeId: string;
   attendeeName: string;
@@ -92,6 +103,8 @@ interface SuccessData {
   price: number;
   currency: string;
   payerType: "individual" | "company";
+  allAttendees: SuccessAttendeeInfo[];
+  totalAmount: number;
 }
 
 export default function EventRegister() {
@@ -394,19 +407,70 @@ export default function EventRegister() {
         } else {
           setInvoiceSuccessMessage("Quote created! Payment instructions have been sent to your email.");
         }
+        // Build success data for invoice flow too
+        const allAtts: SuccessAttendeeInfo[] = attendees.map(a => {
+          const tier = tiers.find(t => t.id === a.tierId);
+          return {
+            firstName: a.firstName,
+            lastName: a.lastName,
+            email: a.email,
+            tierName: a.tierName,
+            tierPrice: tier?.price ?? 0,
+            services: services.filter(s => a.selectedServiceIds.has(s.id)).map(s => ({ name: s.name, price: Number(s.price) })),
+          };
+        });
+        setSuccess({
+          attendeeId: data.primary_attendee_id,
+          attendeeName: `${attendees[0]?.firstName} ${attendees[0]?.lastName}`,
+          eventName: event.name,
+          tierName: attendees[0]?.tierName ?? "Ticket",
+          price: data.total_amount ?? grandTotal,
+          currency,
+          payerType,
+          allAttendees: allAtts,
+          totalAmount: data.total_amount ?? grandTotal,
+        });
         setInvoiceSuccess(true);
         return;
       }
 
-      // Individual — redirect to Stripe
+      const allAtts: SuccessAttendeeInfo[] = (data.attendee_ids || []).map((id: string, idx: number) => {
+        const a = attendees[idx];
+        const tier = tiers.find(t => t.id === a?.tierId);
+        return {
+          id,
+          firstName: a?.firstName ?? "",
+          lastName: a?.lastName ?? "",
+          email: a?.email ?? "",
+          tierName: a?.tierName ?? "Ticket",
+          tierPrice: tier?.price ?? 0,
+          services: a ? services.filter(s => a.selectedServiceIds.has(s.id)).map(s => ({ name: s.name, price: Number(s.price) })) : [],
+        };
+      });
+      // Fallback if edge function doesn't return attendee_ids array
+      if (allAtts.length === 0) {
+        attendees.forEach(a => {
+          const tier = tiers.find(t => t.id === a.tierId);
+          allAtts.push({
+            firstName: a.firstName,
+            lastName: a.lastName,
+            email: a.email,
+            tierName: a.tierName,
+            tierPrice: tier?.price ?? 0,
+            services: services.filter(s => a.selectedServiceIds.has(s.id)).map(s => ({ name: s.name, price: Number(s.price) })),
+          });
+        });
+      }
       const successData: SuccessData = {
         attendeeId: data.primary_attendee_id,
         attendeeName: `${attendees[0]?.firstName} ${attendees[0]?.lastName}`,
         eventName: event.name,
         tierName: attendees[0]?.tierName ?? "Ticket",
-        price: data.total_amount ?? 0,
+        price: data.total_amount ?? grandTotal,
         currency,
         payerType,
+        allAttendees: allAtts,
+        totalAmount: data.total_amount ?? grandTotal,
       };
       setSuccess(successData);
       await triggerStripeCheckout(data.primary_attendee_id);
@@ -469,98 +533,44 @@ export default function EventRegister() {
   };
 
   // ── Invoice success view ──
-  if (invoiceSuccess) {
+  if (invoiceSuccess && success) {
     return (
-      <div className="min-h-screen bg-background">
-        <section className="container mx-auto flex min-h-screen items-center justify-center px-4 py-16">
-          <div className="mx-auto max-w-md text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-              <CheckCircle2 className="h-10 w-10 text-primary" />
-            </div>
-            <h2 className="mb-2 text-3xl font-bold text-foreground">Invoice Request Received!</h2>
-            <p className="mb-6 text-muted-foreground">
-              {invoiceSuccessMessage || "Your invoice request has been received! A payment instruction will be sent to your email shortly."}
-            </p>
-            <Button onClick={() => navigate(`/event/${slug}`)}>Back to Event</Button>
-          </div>
-        </section>
-      </div>
+      <OrderConfirmation
+        eventName={event.name}
+        eventDate={event.start_date}
+        eventEndDate={event.end_date}
+        venueName={event.venue_name}
+        locationCity={event.location_city}
+        currency={currency}
+        attendees={success.allAttendees}
+        totalAmount={success.totalAmount}
+        payerType="company"
+        slug={slug!}
+        invoiceMessage={invoiceSuccessMessage}
+        paymentDueDays={event.payment_due_days}
+        billingEmail={billingEmail || attendees[0]?.email}
+        companyName={companyName}
+      />
     );
   }
 
   // ── Success view (Stripe flow) ──
   if (success) {
     return (
-      <div className="min-h-screen bg-background">
-        <section className="container mx-auto flex min-h-screen items-center justify-center px-4 py-16">
-          <div className="mx-auto max-w-md text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-              <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-
-            <h2 className="mb-2 text-3xl font-bold text-foreground">Almost There!</h2>
-            <p className="mb-6 text-muted-foreground">
-              Your registration for <strong>{success.eventName}</strong> is confirmed. Complete your payment to activate your ticket.
-            </p>
-            {redirectingToStripe && (
-              <div className="mb-6 rounded-lg border border-border bg-accent/10 p-4 text-sm text-foreground">
-                <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <p>Redirecting to Stripe Checkout...</p>
-                </div>
-              </div>
-            )}
-
-            <div className="relative mx-auto mb-6 inline-block rounded-xl border-2 border-primary/20 bg-card p-4">
-              <div className="blur-md pointer-events-none select-none">
-                <QRCodeSVG value={success.attendeeId} size={192} level="H" includeMargin />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="rounded-full bg-background/90 px-4 py-2 text-sm font-medium text-muted-foreground">
-                  Waiting for payment
-                </span>
-              </div>
-            </div>
-
-            <div className="mb-8 rounded-lg border border-border bg-card p-6 text-left">
-              <dl className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Name</dt>
-                  <dd className="font-medium text-foreground">{success.attendeeName}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Ticket</dt>
-                  <dd className="font-medium text-foreground">{success.tierName}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Amount</dt>
-                  <dd className="font-bold text-primary">
-                    {success.price > 0 ? `${success.price} ${currency}` : "Free"}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Payment</dt>
-                  <dd><Badge variant="secondary">Pending</Badge></dd>
-                </div>
-              </dl>
-            </div>
-
-            {success.price > 0 ? (
-              <div className="space-y-3">
-                <Button size="lg" className="w-full text-lg" onClick={() => triggerStripeCheckout()} disabled={redirectingToStripe}>
-                  {redirectingToStripe ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-                  {redirectingToStripe ? "Redirecting..." : "PAY NOW"}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate(`/event/${slug}/dashboard`)}>Go to Dashboard</Button>
-              </div>
-            ) : (
-              <Button onClick={() => navigate(`/event/${slug}/dashboard`)}>Go to My Dashboard</Button>
-            )}
-          </div>
-        </section>
-      </div>
+      <OrderConfirmation
+        eventName={event.name}
+        eventDate={event.start_date}
+        eventEndDate={event.end_date}
+        venueName={event.venue_name}
+        locationCity={event.location_city}
+        currency={currency}
+        attendees={success.allAttendees}
+        totalAmount={success.totalAmount}
+        payerType="individual"
+        slug={slug!}
+        redirectingToStripe={redirectingToStripe}
+        onPayNow={() => triggerStripeCheckout()}
+      />
     );
   }
 
