@@ -434,15 +434,43 @@ export default function EventRegister() {
         return;
       }
 
-      // Individual — redirect to Stripe
+      const allAtts: SuccessAttendeeInfo[] = (data.attendee_ids || []).map((id: string, idx: number) => {
+        const a = attendees[idx];
+        const tier = tiers.find(t => t.id === a?.tierId);
+        return {
+          id,
+          firstName: a?.firstName ?? "",
+          lastName: a?.lastName ?? "",
+          email: a?.email ?? "",
+          tierName: a?.tierName ?? "Ticket",
+          tierPrice: tier?.price ?? 0,
+          services: a ? services.filter(s => a.selectedServiceIds.has(s.id)).map(s => ({ name: s.name, price: Number(s.price) })) : [],
+        };
+      });
+      // Fallback if edge function doesn't return attendee_ids array
+      if (allAtts.length === 0) {
+        attendees.forEach(a => {
+          const tier = tiers.find(t => t.id === a.tierId);
+          allAtts.push({
+            firstName: a.firstName,
+            lastName: a.lastName,
+            email: a.email,
+            tierName: a.tierName,
+            tierPrice: tier?.price ?? 0,
+            services: services.filter(s => a.selectedServiceIds.has(s.id)).map(s => ({ name: s.name, price: Number(s.price) })),
+          });
+        });
+      }
       const successData: SuccessData = {
         attendeeId: data.primary_attendee_id,
         attendeeName: `${attendees[0]?.firstName} ${attendees[0]?.lastName}`,
         eventName: event.name,
         tierName: attendees[0]?.tierName ?? "Ticket",
-        price: data.total_amount ?? 0,
+        price: data.total_amount ?? grandTotal,
         currency,
         payerType,
+        allAttendees: allAtts,
+        totalAmount: data.total_amount ?? grandTotal,
       };
       setSuccess(successData);
       await triggerStripeCheckout(data.primary_attendee_id);
