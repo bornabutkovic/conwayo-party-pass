@@ -81,6 +81,7 @@ interface AttendeeRow {
   email: string;
   tierId: string;
   tierName: string;
+  selectedServiceIds: Set<string>;
 }
 
 interface SuccessData {
@@ -116,9 +117,6 @@ export default function EventRegister() {
 
   // Contact phone (shared)
   const [contactPhone, setContactPhone] = useState("");
-
-  // Service quantities
-  const [serviceQtys, setServiceQtys] = useState<Record<string, number>>({});
 
   // Billing form
   const [payerType, setPayerType] = useState<"individual" | "company">("individual");
@@ -228,7 +226,7 @@ export default function EventRegister() {
         if (existing && existing.tierId === tier.id) {
           newRows.push(existing);
         } else {
-          newRows.push({ firstName: "", lastName: "", email: "", tierId: tier.id, tierName: tier.name });
+          newRows.push({ firstName: "", lastName: "", email: "", tierId: tier.id, tierName: tier.name, selectedServiceIds: new Set() });
         }
       }
     }
@@ -269,13 +267,28 @@ export default function EventRegister() {
     });
   };
 
+  const toggleAttendeeService = (index: number, serviceId: string) => {
+    setAttendees(prev => {
+      const updated = [...prev];
+      const newSet = new Set(updated[index].selectedServiceIds);
+      if (newSet.has(serviceId)) {
+        newSet.delete(serviceId);
+      } else {
+        newSet.add(serviceId);
+      }
+      updated[index] = { ...updated[index], selectedServiceIds: newSet };
+      return updated;
+    });
+  };
+
   // Compute totals
   const ticketTotal = tiers.reduce((sum, tier) => {
     return sum + (tier.price ?? 0) * (ticketQuantities[tier.id] ?? 0);
   }, 0);
-  const servicesTotal = Object.entries(serviceQtys).reduce((sum, [sid, qty]) => {
-    const svc = services.find((s) => s.id === sid);
-    return sum + (svc?.price ?? 0) * qty;
+  const servicesTotal = attendees.reduce((sum, att) => {
+    return sum + services
+      .filter(s => att.selectedServiceIds.has(s.id))
+      .reduce((s, svc) => s + Number(svc.price), 0);
   }, 0);
   const grandTotal = ticketTotal + servicesTotal;
 
@@ -309,10 +322,6 @@ export default function EventRegister() {
 
     setSubmitting(true);
     try {
-      const svcItems = Object.entries(serviceQtys)
-        .filter(([, qty]) => qty > 0)
-        .map(([sid, qty]) => ({ service_id: sid, quantity: qty }));
-
       const { data, error } = await supabase.functions.invoke("create-order", {
         body: {
           event_id: event.id,
@@ -323,8 +332,8 @@ export default function EventRegister() {
             email: a.email,
             phone: contactPhone || null,
             ticket_tier_id: a.tierId,
+            services: Array.from(a.selectedServiceIds).map(sid => ({ service_id: sid, quantity: 1 })),
           })),
-          services: svcItems,
           payer_address: street,
           payer_city: city,
           payer_postal_code: postalCode,
@@ -375,7 +384,7 @@ export default function EventRegister() {
               tickets: tiers
                 .filter(t => (ticketQuantities[t.id] ?? 0) > 0)
                 .map(t => ({ ticket_tier_id: t.id, quantity: ticketQuantities[t.id] })),
-              services: svcItems,
+              services: [],
             },
           },
         );
@@ -723,44 +732,6 @@ export default function EventRegister() {
                 </div>
               </div>
 
-              {/* ── Additional Services ── */}
-              {services.length > 0 && (
-                <div className="mb-10">
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">Additional Services</h3>
-                  <div className="space-y-3">
-                    {services.map((svc) => {
-                      const qty = serviceQtys[svc.id] ?? 0;
-                      return (
-                        <div
-                          key={svc.id}
-                          className={`flex items-center justify-between rounded-lg border-2 p-4 transition-colors ${
-                            qty > 0 ? "border-primary bg-primary/5" : "border-border bg-card"
-                          }`}
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{svc.name}</p>
-                            {svc.description && (
-                              <p className="text-sm text-muted-foreground">{svc.description}</p>
-                            )}
-                            <p className="mt-1 text-sm font-semibold text-primary">
-                              €{Number(svc.price).toFixed(2)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setServiceQtys((p) => ({ ...p, [svc.id]: Math.max(0, (p[svc.id] ?? 0) - 1) }))}>
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center font-medium text-foreground">{qty}</span>
-                            <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setServiceQtys((p) => ({ ...p, [svc.id]: (p[svc.id] ?? 0) + 1 }))}>
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* ── Per-Ticket Attendee Details ── */}
@@ -807,6 +778,35 @@ export default function EventRegister() {
                               />
                             </div>
                           </div>
+
+                          {/* Per-attendee services */}
+                          {services.length > 0 && (
+                            <div className="mt-4 border-t border-border pt-3">
+                              <p className="mb-2 text-xs font-medium text-muted-foreground">Additional options for this attendee:</p>
+                              <div className="space-y-2">
+                                {services.map(svc => {
+                                  const checked = att.selectedServiceIds.has(svc.id);
+                                  return (
+                                    <label
+                                      key={svc.id}
+                                      className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
+                                        checked ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => toggleAttendeeService(idx, svc.id)}
+                                        className="h-4 w-4 rounded border-input text-primary accent-primary"
+                                      />
+                                      <span className="flex-1 text-foreground">{svc.name}</span>
+                                      <span className="font-medium text-primary">€{Number(svc.price).toFixed(2)}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -943,18 +943,12 @@ export default function EventRegister() {
                           </div>
                         );
                       })}
-                    {Object.entries(serviceQtys)
-                      .filter(([, qty]) => qty > 0)
-                      .map(([sid, qty]) => {
-                        const svc = services.find((s) => s.id === sid);
-                        if (!svc) return null;
-                        return (
-                          <div key={sid} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">{svc.name} × {qty}</span>
-                            <span className="font-medium text-foreground">{(Number(svc.price) * qty).toFixed(2)} {currency}</span>
-                          </div>
-                        );
-                      })}
+                    {servicesTotal > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Additional services</span>
+                        <span className="font-medium text-foreground">{servicesTotal.toFixed(2)} {currency}</span>
+                      </div>
+                    )}
                     <div className="border-t border-border pt-2 flex items-center justify-between">
                       <span className="font-semibold text-foreground">Total</span>
                       <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
