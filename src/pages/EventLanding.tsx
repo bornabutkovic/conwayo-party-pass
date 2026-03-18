@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useEventFull } from "@/hooks/useEvent";
-import { EventBrandedHeader } from "@/components/event/EventBrandedHeader";
+import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
