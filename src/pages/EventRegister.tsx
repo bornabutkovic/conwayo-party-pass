@@ -84,6 +84,16 @@ interface AttendeeRow {
   selectedServiceIds: Set<string>;
 }
 
+interface SuccessAttendeeInfo {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  tierName: string;
+  tierPrice: number;
+  services: { name: string; price: number }[];
+}
+
 interface SuccessData {
   attendeeId: string;
   attendeeName: string;
@@ -92,6 +102,8 @@ interface SuccessData {
   price: number;
   currency: string;
   payerType: "individual" | "company";
+  allAttendees: SuccessAttendeeInfo[];
+  totalAmount: number;
 }
 
 export default function EventRegister() {
