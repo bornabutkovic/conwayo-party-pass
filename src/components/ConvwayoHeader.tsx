@@ -9,7 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, LogOut, Ticket, ClipboardList, User, ChevronDown } from "lucide-react";
+import { LogIn, LogOut, Ticket, ChevronDown } from "lucide-react";
+import conwayoLogo from "@/assets/conwayo-logo.png";
 
 export function ConvwayoHeader() {
   const { user, loading, signOut } = useAuth();
@@ -26,20 +27,23 @@ export function ConvwayoHeader() {
   const displayName = firstName ? `${firstName} ${lastName}`.trim() : user?.email?.split("@")[0] || "User";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 glass">
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">C</span>
-          </div>
-          <span className="text-lg font-bold tracking-tight text-foreground font-display">
-            Convwayo
-          </span>
+        <Link to="/" className="flex items-center gap-2.5">
+          <img
+            src={conwayoLogo}
+            alt="Conwayo"
+            className="h-9 w-auto"
+          />
         </Link>
 
         <div className="flex items-center gap-3">
           {!loading && !user && (
-            <Button variant="outline" size="sm" asChild>
+            <Button
+              asChild
+              size="sm"
+              className="gradient-brand border-0 text-white font-semibold shadow-brand hover:shadow-brand-hover transition-all duration-300 hover:scale-105"
+            >
               <Link to="/auth">
                 <LogIn className="mr-1.5 h-4 w-4" />
                 Log In
@@ -50,9 +54,9 @@ export function ConvwayoHeader() {
           {!loading && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1.5 hover:bg-accent transition-colors">
+                <button className="flex items-center gap-2 rounded-full border border-border/50 glass px-2.5 py-1.5 hover:shadow-brand transition-all duration-200">
                   <Avatar className="h-7 w-7">
-                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                    <AvatarFallback className="text-xs gradient-brand text-white font-semibold">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
@@ -62,7 +66,7 @@ export function ConvwayoHeader() {
                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 glass">
                 <DropdownMenuItem onClick={() => navigate("/my-tickets")}>
                   <Ticket className="mr-2 h-4 w-4" />
                   My Tickets
