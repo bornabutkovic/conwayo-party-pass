@@ -68,7 +68,7 @@ export default function Index() {
               return (
                 <Link
                   key={event.slug}
-                  to={`/event/${event.slug}/register`}
+                  to={`/event/${event.slug}`}
                   className="group rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
                 >
                   <div className="mb-4">
