@@ -261,7 +261,7 @@ export default function EventRegister() {
     [ticketQuantities]
   );
 
-  if (authLoading || eventLoading) return <EventPageSkeleton />;
+  if (eventLoading) return <EventPageSkeleton />;
   if (eventError || !event) return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
 
   const currency = event.currency ?? "EUR";
