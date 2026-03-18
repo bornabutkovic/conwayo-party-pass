@@ -184,6 +184,48 @@ export type Database = {
         }
         Relationships: []
       }
+      bc_items: {
+        Row: {
+          base_unit_of_measure: string | null
+          blocked: boolean | null
+          description: string
+          description2: string | null
+          gen_prod_posting_group: string | null
+          id: number
+          no: string
+          synced_at: string | null
+          type: string | null
+          unit_price: number | null
+          vat_prod_posting_group: string | null
+        }
+        Insert: {
+          base_unit_of_measure?: string | null
+          blocked?: boolean | null
+          description: string
+          description2?: string | null
+          gen_prod_posting_group?: string | null
+          id?: number
+          no: string
+          synced_at?: string | null
+          type?: string | null
+          unit_price?: number | null
+          vat_prod_posting_group?: string | null
+        }
+        Update: {
+          base_unit_of_measure?: string | null
+          blocked?: boolean | null
+          description?: string
+          description2?: string | null
+          gen_prod_posting_group?: string | null
+          id?: number
+          no?: string
+          synced_at?: string | null
+          type?: string | null
+          unit_price?: number | null
+          vat_prod_posting_group?: string | null
+        }
+        Relationships: []
+      }
       bc_payment_terms: {
         Row: {
           code: string
@@ -1216,6 +1258,7 @@ export type Database = {
       get_bc_posting_groups: {
         Args: { p_country_code: string; p_payer_type: string }
         Returns: {
+          bc_customer_code: string
           customer_posting_group: string
           gen_bus_posting_group: string
           vat_bus_posting_group: string
