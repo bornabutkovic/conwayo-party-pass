@@ -196,7 +196,7 @@ export default function EventRegister() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("first_name, last_name, email, phone, institution")
+          .select("first_name, last_name, email, phone, institution, address, city, postal_code, country_code, country_name")
           .eq("id", user.id)
           .maybeSingle();
 
