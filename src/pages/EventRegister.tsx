@@ -695,11 +695,11 @@ export default function EventRegister() {
           {!authLoading && !user && (
             <div className="mb-6 rounded-lg border border-border bg-card p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm text-foreground font-medium">Already have an account?</p>
-                <p className="text-xs text-muted-foreground">Or continue as guest below</p>
+                <p className="text-sm text-foreground font-medium">Have an account? <span className="text-muted-foreground font-normal">Log in to pre-fill details</span></p>
+                <p className="text-xs text-muted-foreground mt-0.5">Or continue as a guest below ↓</p>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link to={`/event/${slug}/auth`}>
+                <Link to={`/event/${slug}/auth?tab=login`}>
                   <LogIn className="mr-1.5 h-4 w-4" />
                   Log In
                 </Link>
