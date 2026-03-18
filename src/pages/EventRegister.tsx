@@ -322,10 +322,6 @@ export default function EventRegister() {
 
     setSubmitting(true);
     try {
-      const svcItems = Object.entries(serviceQtys)
-        .filter(([, qty]) => qty > 0)
-        .map(([sid, qty]) => ({ service_id: sid, quantity: qty }));
-
       const { data, error } = await supabase.functions.invoke("create-order", {
         body: {
           event_id: event.id,
@@ -336,8 +332,8 @@ export default function EventRegister() {
             email: a.email,
             phone: contactPhone || null,
             ticket_tier_id: a.tierId,
+            services: Array.from(a.selectedServiceIds).map(sid => ({ service_id: sid, quantity: 1 })),
           })),
-          services: svcItems,
           payer_address: street,
           payer_city: city,
           payer_postal_code: postalCode,
