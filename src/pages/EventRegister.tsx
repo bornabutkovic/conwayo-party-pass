@@ -384,7 +384,7 @@ export default function EventRegister() {
               tickets: tiers
                 .filter(t => (ticketQuantities[t.id] ?? 0) > 0)
                 .map(t => ({ ticket_tier_id: t.id, quantity: ticketQuantities[t.id] })),
-              services: svcItems,
+              services: [],
             },
           },
         );
