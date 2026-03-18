@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useEventFull } from "@/hooks/useEvent";
-import { EventBrandedHeader } from "@/components/event/EventBrandedHeader";
+import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
@@ -77,7 +77,7 @@ export default function EventLanding() {
           color: event.branding_text_color ?? undefined,
         }}
       >
-        <EventBrandedHeader event={event} />
+        <ConvwayoHeader showBackToEvents />
 
         {/* SECTION 1 — HERO */}
         <section className="relative overflow-hidden text-white" style={{ height: 320 }}>
