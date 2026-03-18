@@ -334,6 +334,11 @@ export default function EventRegister() {
       toast({ title: "Please fill in your complete address (street, city, postal code).", variant: "destructive" });
       return;
     }
+    if (!termsAccepted) {
+      setTermsError(true);
+      toast({ title: "Please accept the Terms of Purchase to continue.", variant: "destructive" });
+      return;
+    }
 
     setSubmitting(true);
     try {
