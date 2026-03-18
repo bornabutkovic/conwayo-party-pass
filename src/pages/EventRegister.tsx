@@ -217,7 +217,7 @@ export default function EventRegister() {
       toast({ title: "Please select a ticket tier", variant: "destructive" });
       return;
     }
-    if (!form.payer_name) {
+    if (!form.payer_name && form.payer_type === "individual") {
       toast({ title: "Payer name is required", variant: "destructive" });
       return;
     }
@@ -225,136 +225,56 @@ export default function EventRegister() {
       toast({ title: "Company name is required for company billing", variant: "destructive" });
       return;
     }
-
-    // ── CHANGE 6: Address validation ──
-    if (!street || !city || !postalCode || !countryCode) {
-      toast({ title: "Please fill in all address fields.", variant: "destructive" });
+    if (!street.trim() || !city.trim() || !postalCode.trim()) {
+      toast({ title: "Please fill in your complete address (street, city, postal code).", variant: "destructive" });
       return;
     }
 
-    const isCompany = form.payer_type === "company";
+    setSubmitting(true);
+    try {
+      // Build tickets and services arrays
+      const tickets = [{ ticket_tier_id: selectedTierId, quantity: ticketQty }];
+      const svcItems = Object.entries(serviceQtys)
+        .filter(([, qty]) => qty > 0)
+        .map(([sid, qty]) => ({ service_id: sid, quantity: qty }));
 
-    // ── COMPANY / INVOICE FLOW ──
-    if (isCompany) {
-      setSubmitting(true);
-      try {
-        const pricePaid = selectedTier?.price ?? 0;
-        const vatRate = event.vat_rate ?? 25;
-        const ticketTotal = pricePaid * ticketQty;
+      // ONE call to create-order Edge Function
+      const { data, error } = await supabase.functions.invoke("create-order", {
+        body: {
+          event_id: event.id,
+          first_name: form.first_name,
+          last_name: form.last_name,
+          email: form.email,
+          phone: form.phone || null,
+          institution: form.institution || null,
+          profile_id: user?.id || null,
+          payer_address: street,
+          payer_city: city,
+          payer_postal_code: postalCode,
+          payer_country_code: countryCode,
+          payer_country_name: countryName,
+          payer_type: form.payer_type,
+          payer_name: form.payer_type === "company" ? form.company_name : form.payer_name,
+          company_name: form.payer_type === "company" ? form.company_name : undefined,
+          company_oib: form.payer_type === "company" ? form.payer_oib : undefined,
+          billing_email: form.payer_type === "company" ? (form.billing_email || form.email) : form.email,
+          po_number: form.payer_type === "company" ? form.po_number : undefined,
+          tickets,
+          services: svcItems,
+        },
+      });
 
-        let svcTotal = 0;
-        const selectedServices = Object.entries(serviceQtys)
-          .filter(([, qty]) => qty > 0)
-          .map(([sid, qty]) => {
-            const svc = services.find((s) => s.id === sid);
-            const linePrice = (svc?.price ?? 0) * qty;
-            svcTotal += linePrice;
-            return { service_id: sid, quantity: qty, svc };
-          });
-        const totalAmount = ticketTotal + svcTotal;
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || "Registration failed");
+      }
 
-        // Create attendee
-        const { data: attendee, error: attError } = await supabase
-          .from("attendees")
-          .insert({
-            event_id: event.id,
-            ticket_tier_id: selectedTierId,
-            first_name: form.first_name,
-            last_name: form.last_name,
-            email: form.email,
-            phone: form.phone || null,
-            institution: form.institution || null,
-            profile_id: user?.id ?? null,
-            status: "pending",
-            payment_status: "pending",
-          })
-          .select("id")
-          .single();
-
-        if (attError) throw attError;
-
-        // Create order
-        const { data: order, error: orderError } = await supabase
-          .from("orders")
-          .insert({
-            event_id: event.id,
-            attendee_id: attendee.id,
-            payer_name: form.company_name,
-            payer_type: "company" as Enums<"payer_type">,
-            payer_oib: form.payer_oib || null,
-            payer_address: street || null,
-            payer_city: city || null,
-            payer_postal_code: postalCode || null,
-            payer_country_code: countryCode || "HR",
-            payer_country_name: countryName,
-            billing_email: form.billing_email || form.email,
-            contact_name: `${form.first_name} ${form.last_name}`,
-            contact_email: form.email,
-            contact_phone: form.phone || null,
-            po_number: form.po_number || null,
-            payment_method: "invoice",
-            status: "draft",
-            total_amount: totalAmount,
-            is_group_order: ticketQty > 1,
-          })
-          .select("id, order_number")
-          .single();
-
-        if (orderError) throw orderError;
-
-        // Create order items — tickets
-        const orderItemsToInsert: Array<{
-          order_id: string;
-          attendee_id: string;
-          description: string;
-          quantity: number;
-          unit_price: number;
-          total_price: number;
-          vat_amount: number;
-          price_at_purchase: number;
-          ticket_type_id?: string;
-          service_id?: string;
-        }> = [];
-        const ticketVat = Number(((ticketTotal * vatRate) / (100 + vatRate)).toFixed(2));
-        orderItemsToInsert.push({
-          order_id: order.id,
-          attendee_id: attendee.id,
-          ticket_type_id: selectedTierId,
-          description: selectedTier?.name ?? "Ticket",
-          quantity: ticketQty,
-          unit_price: pricePaid,
-          total_price: ticketTotal,
-          vat_amount: ticketVat,
-          price_at_purchase: pricePaid,
-        });
-
-        // Create order items — services
-        for (const s of selectedServices) {
-          const lineTotal = (s.svc?.price ?? 0) * s.quantity;
-          const svcVat = Number(((lineTotal * vatRate) / (100 + vatRate)).toFixed(2));
-          orderItemsToInsert.push({
-            order_id: order.id,
-            attendee_id: attendee.id,
-            service_id: s.service_id,
-            description: s.svc?.name ?? "Service",
-            quantity: s.quantity,
-            unit_price: s.svc?.price ?? 0,
-            total_price: lineTotal,
-            vat_amount: svcVat,
-            price_at_purchase: s.svc?.price ?? 0,
-          });
-        }
-
-        if (orderItemsToInsert.length > 0) {
-          await supabase.from("order_items").insert(orderItemsToInsert);
-        }
-
-        // ── CHANGE 5: Invoice payload with address fields ──
+      if (form.payer_type === "company") {
+        // Company flow — call create-invoice-registration for BC processing
         const { data: invoiceResult, error: invoiceError } = await supabase.functions.invoke(
           "create-invoice-registration",
           {
             body: {
-              order_id: order.id,
+              order_id: data.order_id,
               event_id: event.id,
               first_name: form.first_name,
               last_name: form.last_name,
@@ -377,11 +297,8 @@ export default function EventRegister() {
               payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
-              tickets: [{ ticket_tier_id: selectedTierId, quantity: ticketQty }]
-                .filter((t) => t.quantity > 0),
-              services: selectedServices
-                .filter((s) => s.quantity > 0)
-                .map((s) => ({ service_id: s.service_id, quantity: s.quantity })),
+              tickets: [{ ticket_tier_id: selectedTierId, quantity: ticketQty }],
+              services: svcItems.map((s) => ({ service_id: s.service_id, quantity: s.quantity })),
             },
           },
         );
@@ -393,104 +310,25 @@ export default function EventRegister() {
           );
         } else {
           setInvoiceSuccessMessage(
-            `Quote created! Payment instructions have been sent to your email.`,
+            "Quote created! Payment instructions have been sent to your email.",
           );
         }
         setInvoiceSuccess(true);
-      } catch (err: any) {
-        toast({
-          title: "Something went wrong. Please try again or contact support.",
-          description: err.message,
-          variant: "destructive",
-        });
-      } finally {
-        setSubmitting(false);
+        return;
       }
-      return;
-    }
 
-    // ── INDIVIDUAL / STRIPE FLOW ──
-    setSubmitting(true);
-    try {
-      const { data: attendee, error: attError } = await supabase
-        .from("attendees")
-        .insert({
-          event_id: event.id,
-          ticket_tier_id: selectedTierId,
-          first_name: form.first_name,
-          last_name: form.last_name,
-          email: form.email,
-          phone: form.phone || null,
-          institution: form.institution || null,
-          profile_id: user!.id,
-          status: "approved",
-          payment_status: "pending",
-        })
-        .select("id, price_paid")
-        .single();
-
-      if (attError) throw attError;
-
-      const pricePaid = attendee.price_paid ?? selectedTier?.price ?? 0;
-      const vatRate = event.vat_rate ?? 25;
-      const vatAmount = Number(((pricePaid * vatRate) / (100 + vatRate)).toFixed(2));
-
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          event_id: event.id,
-          attendee_id: attendee.id,
-          payer_name: form.payer_name,
-          payer_type: form.payer_type as Enums<"payer_type">,
-          payer_oib: form.payer_oib || null,
-          payer_address: street || null,
-          payer_city: city || null,
-          payer_postal_code: postalCode || null,
-          payer_country_code: countryCode || "HR",
-          payer_country_name: countryName,
-          billing_email: form.email,
-          contact_name: `${form.first_name} ${form.last_name}`,
-          contact_email: form.email,
-          contact_phone: form.phone || null,
-          payment_method: "stripe",
-          status: "draft",
-          total_amount: pricePaid,
-        })
-        .select("id")
-        .single();
-
-      if (orderError) throw orderError;
-
-      const { error: itemError } = await supabase.from("order_items").insert({
-        order_id: order.id,
-        attendee_id: attendee.id,
-        ticket_type_id: selectedTierId,
-        description: selectedTier?.name ?? "Ticket",
-        quantity: 1,
-        unit_price: pricePaid,
-        total_price: pricePaid,
-        vat_amount: vatAmount,
-        price_at_purchase: pricePaid,
-      });
-
-      if (itemError) throw itemError;
-
+      // Individual — show success and redirect to Stripe
       const successData: SuccessData = {
-        attendeeId: attendee.id,
+        attendeeId: data.primary_attendee_id,
         attendeeName: `${form.first_name} ${form.last_name}`,
         eventName: event.name,
         tierName: selectedTier?.name ?? "Ticket",
-        price: pricePaid,
+        price: data.total_amount ?? 0,
         currency,
         payerType: form.payer_type,
       };
-
-      if (pricePaid > 0) {
-        setSuccess(successData);
-        await triggerStripeCheckout(attendee.id);
-      } else {
-        setSuccess(successData);
-      }
+      setSuccess(successData);
+      await triggerStripeCheckout(data.primary_attendee_id);
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
     } finally {
@@ -507,7 +345,6 @@ export default function EventRegister() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      // ── CHANGE 5: Stripe payload with address fields ──
       const res = await fetch(
         `https://yqusqfdaikkvvjflgmmh.supabase.co/functions/v1/create-checkout`,
         {
@@ -527,7 +364,7 @@ export default function EventRegister() {
             payer_country_name: countryName,
             bc_posting_zone: getZone(countryCode),
           }),
-        }
+        },
       );
 
       const result = await res.json();
