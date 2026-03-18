@@ -789,9 +789,12 @@ export type Database = {
           is_group_order: boolean | null
           order_number: number
           payer_address: string | null
+          payer_city: string | null
           payer_country_code: string | null
+          payer_country_name: string | null
           payer_name: string
           payer_oib: string | null
+          payer_postal_code: string | null
           payer_type: Database["public"]["Enums"]["payer_type"]
           payment_method: string | null
           pdf_url: string | null
@@ -817,9 +820,12 @@ export type Database = {
           is_group_order?: boolean | null
           order_number?: number
           payer_address?: string | null
+          payer_city?: string | null
           payer_country_code?: string | null
+          payer_country_name?: string | null
           payer_name: string
           payer_oib?: string | null
+          payer_postal_code?: string | null
           payer_type: Database["public"]["Enums"]["payer_type"]
           payment_method?: string | null
           pdf_url?: string | null
@@ -845,9 +851,12 @@ export type Database = {
           is_group_order?: boolean | null
           order_number?: number
           payer_address?: string | null
+          payer_city?: string | null
           payer_country_code?: string | null
+          payer_country_name?: string | null
           payer_name?: string
           payer_oib?: string | null
+          payer_postal_code?: string | null
           payer_type?: Database["public"]["Enums"]["payer_type"]
           payment_method?: string | null
           pdf_url?: string | null
