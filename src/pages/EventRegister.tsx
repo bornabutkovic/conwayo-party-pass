@@ -204,6 +204,14 @@ export default function EventRegister() {
           setPayerName(`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
           setContactPhone(profile.phone ?? "");
           setProfileEmail(profile.email ?? user.email ?? "");
+          // Pre-fill address from profile
+          if (profile.address) setStreet(profile.address);
+          if (profile.city) setCity(profile.city);
+          if (profile.postal_code) setPostalCode(profile.postal_code);
+          if (profile.country_code) {
+            setCountryCode(profile.country_code);
+            setCountryName(profile.country_name ?? profile.country_code);
+          }
           setAttendees(prev => {
             if (prev.length === 0) return prev;
             const updated = [...prev];
