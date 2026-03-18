@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2 } from "lucide-react";
+import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2, LogIn } from "lucide-react";
+import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { OrderConfirmation } from "@/components/event/OrderConfirmation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -166,16 +167,17 @@ export default function EventRegister() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Redirect unauthenticated users
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate(`/event/${slug}/auth`);
-    }
-  }, [authLoading, user, slug, navigate]);
+  // No longer redirect unauthenticated users — guest checkout is allowed
 
-  // Auto-fill from profile
+  // Auto-fill from profile (only if logged in)
   useEffect(() => {
-    if (authLoading || eventLoading || !user || !event) return;
+    if (authLoading || eventLoading || !event) return;
+
+    // If not logged in, just stop loading
+    if (!user) {
+      setProfileLoading(false);
+      return;
+    }
 
     const init = async () => {
       try {
@@ -202,7 +204,6 @@ export default function EventRegister() {
           setPayerName(`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
           setContactPhone(profile.phone ?? "");
           setProfileEmail(profile.email ?? user.email ?? "");
-          // Pre-fill first attendee if empty
           setAttendees(prev => {
             if (prev.length === 0) return prev;
             const updated = [...prev];
@@ -261,7 +262,7 @@ export default function EventRegister() {
     [ticketQuantities]
   );
 
-  if (authLoading || eventLoading) return <EventPageSkeleton />;
+  if (eventLoading) return <EventPageSkeleton />;
   if (eventError || !event) return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
 
   const currency = event.currency ?? "EUR";
@@ -505,7 +506,7 @@ export default function EventRegister() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` }),
           },
           body: JSON.stringify({
             attendeeId: aid,
@@ -682,6 +683,36 @@ export default function EventRegister() {
 
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="mx-auto max-w-2xl">
+          {/* Guest / Logged-in banner */}
+          {!authLoading && !user && (
+            <div className="mb-6 rounded-lg border border-border bg-card p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground font-medium">Already have an account?</p>
+                <p className="text-xs text-muted-foreground">Or continue as guest below</p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/event/${slug}/auth`}>
+                  <LogIn className="mr-1.5 h-4 w-4" />
+                  Log In
+                </Link>
+              </Button>
+            </div>
+          )}
+
+          {!authLoading && user && (
+            <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                {(user.user_metadata?.first_name?.charAt(0) ?? user.email?.charAt(0) ?? "?").toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Logged in as {user.user_metadata?.first_name || user.email?.split("@")[0]}
+                </p>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+          )}
+
           <h2 className="mb-8 text-3xl font-bold text-foreground">Complete Registration</h2>
 
           {profileLoading ? (
