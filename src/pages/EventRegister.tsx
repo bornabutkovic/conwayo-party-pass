@@ -302,6 +302,8 @@ export default function EventRegister() {
               company_city: form.company_city || null,
               company_postal_code: form.company_postal_code || null,
               company_country_code: form.company_country_code || "HR",
+              company_country_name: getCountryName(form.company_country_code),
+              bc_posting_zone: getBcPostingZone(form.company_country_code, "company"),
               payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
