@@ -778,6 +778,35 @@ export default function EventRegister() {
                               />
                             </div>
                           </div>
+
+                          {/* Per-attendee services */}
+                          {services.length > 0 && (
+                            <div className="mt-4 border-t border-border pt-3">
+                              <p className="mb-2 text-xs font-medium text-muted-foreground">Additional options for this attendee:</p>
+                              <div className="space-y-2">
+                                {services.map(svc => {
+                                  const checked = att.selectedServiceIds.has(svc.id);
+                                  return (
+                                    <label
+                                      key={svc.id}
+                                      className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
+                                        checked ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => toggleAttendeeService(idx, svc.id)}
+                                        className="h-4 w-4 rounded border-input text-primary accent-primary"
+                                      />
+                                      <span className="flex-1 text-foreground">{svc.name}</span>
+                                      <span className="font-medium text-primary">€{Number(svc.price).toFixed(2)}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
