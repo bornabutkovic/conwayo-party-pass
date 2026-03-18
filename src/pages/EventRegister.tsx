@@ -148,6 +148,8 @@ export default function EventRegister() {
   const [countrySearch, setCountrySearch] = useState('');
   const [countryOpen, setCountryOpen] = useState(false);
   const countryRef = useRef<HTMLDivElement>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState(false);
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
@@ -332,6 +334,11 @@ export default function EventRegister() {
       toast({ title: "Please fill in your complete address (street, city, postal code).", variant: "destructive" });
       return;
     }
+    if (!termsAccepted) {
+      setTermsError(true);
+      toast({ title: "Please accept the Terms of Purchase to continue.", variant: "destructive" });
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -358,6 +365,8 @@ export default function EventRegister() {
           billing_email: payerType === "company" ? (billingEmail || attendees[0]?.email) : attendees[0]?.email,
           po_number: payerType === "company" ? poNumber : undefined,
           profile_id: user?.id || null,
+          terms_accepted: true,
+          terms_accepted_at: new Date().toISOString(),
         },
       });
 
@@ -966,7 +975,39 @@ export default function EventRegister() {
                   </div>
                 )}
 
-                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0}>
+                {/* Terms & Conditions */}
+                <div className="space-y-1">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => {
+                        setTermsAccepted(e.target.checked);
+                        if (e.target.checked) setTermsError(false);
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-input text-primary accent-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      I agree to the{" "}
+                      <a
+                        href={event.terms_url || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline hover:text-primary/80"
+                      >
+                        Terms of Purchase
+                      </a>{" "}
+                      and Cancellation Policy
+                      <br />
+                      <span className="text-xs">(Slažem se s Uvjetima kupnje i Politikom povrata)</span>
+                    </span>
+                  </label>
+                  {termsError && !termsAccepted && (
+                    <p className="text-xs text-destructive ml-7">Please accept the Terms of Purchase to continue.</p>
+                  )}
+                </div>
+
+                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0 || !termsAccepted}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? "Processing..."

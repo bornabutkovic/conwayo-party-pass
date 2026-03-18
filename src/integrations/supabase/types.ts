@@ -417,14 +417,18 @@ export type Database = {
           branding_primary_color: string | null
           branding_secondary_color: string | null
           branding_text_color: string | null
+          cancellation_policy: string | null
           created_at: string | null
           currency: string | null
+          description: string | null
           early_bird_deadline: string | null
           end_date: string | null
           event_id: string | null
+          event_type: string | null
           id: string
           institution_id: string | null
           institution_uuid: string | null
+          location_address: string | null
           location_city: string | null
           location_country: string | null
           location_postal_code: string | null
@@ -441,6 +445,7 @@ export type Database = {
           support_phone: string | null
           supported_languages: string[] | null
           tax_location: string | null
+          terms_url: string | null
           vat_rate: number | null
           venue_name: string | null
           website_url: string | null
@@ -459,14 +464,18 @@ export type Database = {
           branding_primary_color?: string | null
           branding_secondary_color?: string | null
           branding_text_color?: string | null
+          cancellation_policy?: string | null
           created_at?: string | null
           currency?: string | null
+          description?: string | null
           early_bird_deadline?: string | null
           end_date?: string | null
           event_id?: string | null
+          event_type?: string | null
           id?: string
           institution_id?: string | null
           institution_uuid?: string | null
+          location_address?: string | null
           location_city?: string | null
           location_country?: string | null
           location_postal_code?: string | null
@@ -483,6 +492,7 @@ export type Database = {
           support_phone?: string | null
           supported_languages?: string[] | null
           tax_location?: string | null
+          terms_url?: string | null
           vat_rate?: number | null
           venue_name?: string | null
           website_url?: string | null
@@ -501,14 +511,18 @@ export type Database = {
           branding_primary_color?: string | null
           branding_secondary_color?: string | null
           branding_text_color?: string | null
+          cancellation_policy?: string | null
           created_at?: string | null
           currency?: string | null
+          description?: string | null
           early_bird_deadline?: string | null
           end_date?: string | null
           event_id?: string | null
+          event_type?: string | null
           id?: string
           institution_id?: string | null
           institution_uuid?: string | null
+          location_address?: string | null
           location_city?: string | null
           location_country?: string | null
           location_postal_code?: string | null
@@ -525,6 +539,7 @@ export type Database = {
           support_phone?: string | null
           supported_languages?: string[] | null
           tax_location?: string | null
+          terms_url?: string | null
           vat_rate?: number | null
           venue_name?: string | null
           website_url?: string | null
@@ -620,12 +635,17 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string | null
+          facebook_url: string | null
           id: string | null
+          instagram_url: string | null
           invoice_email: string
+          linkedin_url: string | null
           name: string
           oib: string
+          phone: string | null
           postal_code: string | null
           stripe_connect_id: string | null
+          website: string | null
         }
         Insert: {
           address: string
@@ -636,12 +656,17 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          facebook_url?: string | null
           id?: string | null
+          instagram_url?: string | null
           invoice_email: string
+          linkedin_url?: string | null
           name: string
           oib: string
+          phone?: string | null
           postal_code?: string | null
           stripe_connect_id?: string | null
+          website?: string | null
         }
         Update: {
           address?: string
@@ -652,12 +677,17 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          facebook_url?: string | null
           id?: string | null
+          instagram_url?: string | null
           invoice_email?: string
+          linkedin_url?: string | null
           name?: string
           oib?: string
+          phone?: string | null
           postal_code?: string | null
           stripe_connect_id?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -806,6 +836,9 @@ export type Database = {
           pdf_url: string | null
           po_number: string | null
           status: Database["public"]["Enums"]["payment_status"] | null
+          terms_accepted: boolean | null
+          terms_accepted_at: string | null
+          terms_ip: string | null
           total_amount: number | null
           vat_bus_posting_group: string | null
         }
@@ -837,6 +870,9 @@ export type Database = {
           pdf_url?: string | null
           po_number?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
+          terms_accepted?: boolean | null
+          terms_accepted_at?: string | null
+          terms_ip?: string | null
           total_amount?: number | null
           vat_bus_posting_group?: string | null
         }
@@ -868,6 +904,9 @@ export type Database = {
           pdf_url?: string | null
           po_number?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
+          terms_accepted?: boolean | null
+          terms_accepted_at?: string | null
+          terms_ip?: string | null
           total_amount?: number | null
           vat_bus_posting_group?: string | null
         }
