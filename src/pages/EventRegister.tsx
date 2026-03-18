@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
 import { supabase } from "@/integrations/supabase/client";
-import { COUNTRIES } from "@/lib/countries";
+import { COUNTRIES, getBcPostingZone, getCountryName } from "@/lib/countries";
 import { EventHero } from "@/components/event/EventHero";
 import { TicketTierCard } from "@/components/event/TicketTierCard";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
@@ -59,6 +59,12 @@ export default function EventRegister() {
     payer_name: "",
     payer_type: "individual" as "individual" | "company",
     payer_oib: "",
+    // Individual billing address
+    billing_address: "",
+    billing_city: "",
+    billing_postal_code: "",
+    billing_country_code: "HR",
+    // Company billing address
     payer_address: "",
     company_name: "",
     company_city: "",
@@ -154,6 +160,10 @@ export default function EventRegister() {
       return;
     }
     if (form.payer_type === "company" && (!form.payer_address || !form.company_city || !form.company_postal_code)) {
+      toast({ title: "Street address, city, and postal code are required for company billing", variant: "destructive" });
+      return;
+    }
+    if (form.payer_type === "individual" && (!form.billing_address || !form.billing_city || !form.billing_postal_code)) {
       toast({ title: "Street address, city, and postal code are required", variant: "destructive" });
       return;
     }
@@ -211,7 +221,10 @@ export default function EventRegister() {
             payer_type: "company" as Enums<"payer_type">,
             payer_oib: form.payer_oib || null,
             payer_address: [form.payer_address, form.company_postal_code, form.company_city].filter(Boolean).join(", ") || null,
+            payer_city: form.company_city || null,
+            payer_postal_code: form.company_postal_code || null,
             payer_country_code: form.company_country_code || "HR",
+            payer_country_name: getCountryName(form.company_country_code),
             billing_email: form.billing_email || form.email,
             contact_name: `${form.first_name} ${form.last_name}`,
             contact_email: form.email,
@@ -292,6 +305,8 @@ export default function EventRegister() {
               company_city: form.company_city || null,
               company_postal_code: form.company_postal_code || null,
               company_country_code: form.company_country_code || "HR",
+              company_country_name: getCountryName(form.company_country_code),
+              bc_posting_zone: getBcPostingZone(form.company_country_code, "company"),
               payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
               po_number: form.po_number || null,
@@ -363,7 +378,16 @@ export default function EventRegister() {
           payer_name: form.payer_name,
           payer_type: form.payer_type as Enums<"payer_type">,
           payer_oib: form.payer_oib || null,
-          payer_address: form.payer_address || null,
+          payer_address: [form.billing_address, form.billing_postal_code, form.billing_city].filter(Boolean).join(", ") || null,
+          payer_city: form.billing_city || null,
+          payer_postal_code: form.billing_postal_code || null,
+          payer_country_code: form.billing_country_code || "HR",
+          payer_country_name: getCountryName(form.billing_country_code),
+          billing_email: form.email,
+          contact_name: `${form.first_name} ${form.last_name}`,
+          contact_email: form.email,
+          contact_phone: form.phone || null,
+          payment_method: "stripe",
           status: "draft",
           total_amount: pricePaid,
         })
@@ -810,6 +834,58 @@ export default function EventRegister() {
                       />
                     </div>
 
+                    {/* ── INDIVIDUAL ADDRESS FIELDS ── */}
+                    {form.payer_type === "individual" && (
+                      <>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="billing_address">Street Address *</Label>
+                          <Input
+                            id="billing_address"
+                            value={form.billing_address}
+                            onChange={(e) => setForm((p) => ({ ...p, billing_address: e.target.value }))}
+                            placeholder="Ulica i broj / Street and number"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="billing_city">City *</Label>
+                          <Input
+                            id="billing_city"
+                            value={form.billing_city}
+                            onChange={(e) => setForm((p) => ({ ...p, billing_city: e.target.value }))}
+                            placeholder="Grad / City"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="billing_postal_code">Postal Code *</Label>
+                          <Input
+                            id="billing_postal_code"
+                            value={form.billing_postal_code}
+                            onChange={(e) => setForm((p) => ({ ...p, billing_postal_code: e.target.value }))}
+                            placeholder="Poštanski broj / ZIP"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="billing_country">Country *</Label>
+                          <Select
+                            value={form.billing_country_code}
+                            onValueChange={(v) => setForm((p) => ({ ...p, billing_country_code: v }))}
+                          >
+                            <SelectTrigger id="billing_country">
+                              <SelectValue placeholder="Select country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COUNTRIES.map((c) => (
+                                <SelectItem key={c.code} value={c.code}>
+                                  {c.flag} {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── COMPANY FIELDS ── */}
                     {form.payer_type === "company" && (
                       <>
                         <div className="sm:col-span-2">
@@ -822,16 +898,18 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="payer_oib">OIB / VAT ID *</Label>
+                          <Label htmlFor="payer_oib">
+                            {form.company_country_code === "HR" ? "OIB *" : "VAT ID *"}
+                          </Label>
                           <Input
                             id="payer_oib"
                             value={form.payer_oib}
                             onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
-                            placeholder="e.g. 12345678901"
+                            placeholder={form.company_country_code === "HR" ? "e.g. 12345678901" : "e.g. DE123456789"}
                           />
                         </div>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="payer_address">Street Address / Ulica i broj *</Label>
+                          <Label htmlFor="payer_address">Street Address *</Label>
                           <Input
                             id="payer_address"
                             value={form.payer_address}
@@ -840,7 +918,7 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="company_city">City / Grad *</Label>
+                          <Label htmlFor="company_city">City *</Label>
                           <Input
                             id="company_city"
                             value={form.company_city}
@@ -849,7 +927,7 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="company_postal_code">Postal Code / Poštanski broj *</Label>
+                          <Label htmlFor="company_postal_code">Postal Code *</Label>
                           <Input
                             id="company_postal_code"
                             value={form.company_postal_code}
@@ -858,7 +936,7 @@ export default function EventRegister() {
                           />
                         </div>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="company_country">Country / Država *</Label>
+                          <Label htmlFor="company_country">Country *</Label>
                           <Select
                             value={form.company_country_code}
                             onValueChange={(v) => setForm((p) => ({ ...p, company_country_code: v }))}
@@ -869,7 +947,7 @@ export default function EventRegister() {
                             <SelectContent>
                               {COUNTRIES.map((c) => (
                                 <SelectItem key={c.code} value={c.code}>
-                                  {c.name}
+                                  {c.flag} {c.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
