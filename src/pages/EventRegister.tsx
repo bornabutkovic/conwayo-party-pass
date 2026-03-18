@@ -148,6 +148,8 @@ export default function EventRegister() {
   const [countrySearch, setCountrySearch] = useState('');
   const [countryOpen, setCountryOpen] = useState(false);
   const countryRef = useRef<HTMLDivElement>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState(false);
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
