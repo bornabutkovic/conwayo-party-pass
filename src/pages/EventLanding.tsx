@@ -8,7 +8,8 @@ import { EventNotFound } from "@/components/event/EventNotFound";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, MapPin, Ticket, ArrowRight } from "lucide-react";
+import { CalendarDays, MapPin, Ticket, ArrowRight, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 
 export default function EventLanding() {
