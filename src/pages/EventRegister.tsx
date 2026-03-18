@@ -61,6 +61,8 @@ export default function EventRegister() {
     payer_oib: "",
     payer_address: "",
     company_name: "",
+    company_city: "",
+    company_postal_code: "",
     company_country_code: "HR",
     billing_email: "",
     po_number: "",
@@ -151,6 +153,10 @@ export default function EventRegister() {
       toast({ title: "Company name is required for company billing", variant: "destructive" });
       return;
     }
+    if (form.payer_type === "company" && (!form.payer_address || !form.company_city || !form.company_postal_code)) {
+      toast({ title: "Street address, city, and postal code are required", variant: "destructive" });
+      return;
+    }
 
     const isCompany = form.payer_type === "company";
 
@@ -204,7 +210,8 @@ export default function EventRegister() {
             payer_name: form.company_name,
             payer_type: "company" as Enums<"payer_type">,
             payer_oib: form.payer_oib || null,
-            payer_address: form.payer_address || null,
+            payer_address: [form.payer_address, form.company_postal_code, form.company_city].filter(Boolean).join(", ") || null,
+            payer_country_code: form.company_country_code || "HR",
             billing_email: form.billing_email || form.email,
             contact_name: `${form.first_name} ${form.last_name}`,
             contact_email: form.email,
@@ -282,6 +289,8 @@ export default function EventRegister() {
               company_name: form.company_name,
               company_oib: form.payer_oib || null,
               company_address: form.payer_address || null,
+              company_city: form.company_city || null,
+              company_postal_code: form.company_postal_code || null,
               company_country_code: form.company_country_code || "HR",
               payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
@@ -821,15 +830,34 @@ export default function EventRegister() {
                             placeholder="e.g. 12345678901"
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="payer_address">Company Address</Label>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="payer_address">Street Address / Ulica i broj *</Label>
                           <Input
                             id="payer_address"
                             value={form.payer_address}
                             onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
+                            placeholder="Ulica i broj / Street and number"
                           />
                         </div>
                         <div>
+                          <Label htmlFor="company_city">City / Grad *</Label>
+                          <Input
+                            id="company_city"
+                            value={form.company_city}
+                            onChange={(e) => setForm((p) => ({ ...p, company_city: e.target.value }))}
+                            placeholder="Grad / City"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="company_postal_code">Postal Code / Poštanski broj *</Label>
+                          <Input
+                            id="company_postal_code"
+                            value={form.company_postal_code}
+                            onChange={(e) => setForm((p) => ({ ...p, company_postal_code: e.target.value }))}
+                            placeholder="Poštanski broj / ZIP"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
                           <Label htmlFor="company_country">Country / Država *</Label>
                           <Select
                             value={form.company_country_code}
