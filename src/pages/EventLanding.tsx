@@ -77,7 +77,7 @@ export default function EventLanding() {
           color: event.branding_text_color ?? undefined,
         }}
       >
-        <EventBrandedHeader event={event} />
+        <ConvwayoHeader showBackToEvents />
 
         {/* SECTION 1 — HERO */}
         <section className="relative overflow-hidden text-white" style={{ height: 320 }}>

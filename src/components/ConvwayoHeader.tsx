@@ -9,10 +9,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, LogOut, Ticket, ChevronDown } from "lucide-react";
+import { LogIn, LogOut, Ticket, ChevronDown, ArrowLeft } from "lucide-react";
 import conwayoLogo from "@/assets/conwayo-logo.png";
 
-export function ConvwayoHeader() {
+interface ConvwayoHeaderProps {
+  showBackToEvents?: boolean;
+}
+
+export function ConvwayoHeader({ showBackToEvents = false }: ConvwayoHeaderProps) {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -38,6 +42,16 @@ export function ConvwayoHeader() {
         </Link>
 
         <div className="flex items-center gap-3">
+          {showBackToEvents && (
+            <Link
+              to="/"
+              className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              All Events
+            </Link>
+          )}
+
           {!loading && !user && (
             <Button
               asChild

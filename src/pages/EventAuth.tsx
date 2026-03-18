@@ -428,7 +428,7 @@ export default function EventAuth() {
 
   return (
     <div className="min-h-screen bg-background">
-      {isEventPage ? <EventHero event={event!} /> : <ConvwayoHeader />}
+      <ConvwayoHeader showBackToEvents={isEventPage} />
       {content}
     </div>
   );
