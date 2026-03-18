@@ -682,6 +682,36 @@ export default function EventRegister() {
 
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="mx-auto max-w-2xl">
+          {/* Guest / Logged-in banner */}
+          {!authLoading && !user && (
+            <div className="mb-6 rounded-lg border border-border bg-card p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground font-medium">Already have an account?</p>
+                <p className="text-xs text-muted-foreground">Or continue as guest below</p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/event/${slug}/auth`}>
+                  <LogIn className="mr-1.5 h-4 w-4" />
+                  Log In
+                </Link>
+              </Button>
+            </div>
+          )}
+
+          {!authLoading && user && (
+            <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                {(user.user_metadata?.first_name?.charAt(0) ?? user.email?.charAt(0) ?? "?").toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Logged in as {user.user_metadata?.first_name || user.email?.split("@")[0]}
+                </p>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+          )}
+
           <h2 className="mb-8 text-3xl font-bold text-foreground">Complete Registration</h2>
 
           {profileLoading ? (
