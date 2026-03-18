@@ -1041,12 +1041,18 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           billing_email: string | null
+          city: string | null
           company_name: string | null
           company_oib: string | null
+          country_code: string | null
+          country_name: string | null
           created_at: string | null
+          date_of_birth: string | null
           email: string | null
           first_name: string | null
+          gender: string | null
           id: string
           institution: string | null
           institution_id: string | null
@@ -1054,17 +1060,24 @@ export type Database = {
           last_name: string | null
           oib: string | null
           phone: string | null
+          postal_code: string | null
           role: string | null
           telegram_id: string | null
           whatsapp_id: string | null
         }
         Insert: {
+          address?: string | null
           billing_email?: string | null
+          city?: string | null
           company_name?: string | null
           company_oib?: string | null
+          country_code?: string | null
+          country_name?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
           first_name?: string | null
+          gender?: string | null
           id?: string
           institution?: string | null
           institution_id?: string | null
@@ -1072,17 +1085,24 @@ export type Database = {
           last_name?: string | null
           oib?: string | null
           phone?: string | null
+          postal_code?: string | null
           role?: string | null
           telegram_id?: string | null
           whatsapp_id?: string | null
         }
         Update: {
+          address?: string | null
           billing_email?: string | null
+          city?: string | null
           company_name?: string | null
           company_oib?: string | null
+          country_code?: string | null
+          country_name?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
           first_name?: string | null
+          gender?: string | null
           id?: string
           institution?: string | null
           institution_id?: string | null
@@ -1090,6 +1110,7 @@ export type Database = {
           last_name?: string | null
           oib?: string | null
           phone?: string | null
+          postal_code?: string | null
           role?: string | null
           telegram_id?: string | null
           whatsapp_id?: string | null
