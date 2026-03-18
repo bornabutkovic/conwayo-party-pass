@@ -732,44 +732,6 @@ export default function EventRegister() {
                 </div>
               </div>
 
-              {/* ── Additional Services ── */}
-              {services.length > 0 && (
-                <div className="mb-10">
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">Additional Services</h3>
-                  <div className="space-y-3">
-                    {services.map((svc) => {
-                      const qty = serviceQtys[svc.id] ?? 0;
-                      return (
-                        <div
-                          key={svc.id}
-                          className={`flex items-center justify-between rounded-lg border-2 p-4 transition-colors ${
-                            qty > 0 ? "border-primary bg-primary/5" : "border-border bg-card"
-                          }`}
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{svc.name}</p>
-                            {svc.description && (
-                              <p className="text-sm text-muted-foreground">{svc.description}</p>
-                            )}
-                            <p className="mt-1 text-sm font-semibold text-primary">
-                              €{Number(svc.price).toFixed(2)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setServiceQtys((p) => ({ ...p, [svc.id]: Math.max(0, (p[svc.id] ?? 0) - 1) }))}>
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center font-medium text-foreground">{qty}</span>
-                            <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setServiceQtys((p) => ({ ...p, [svc.id]: (p[svc.id] ?? 0) + 1 }))}>
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* ── Per-Ticket Attendee Details ── */}
