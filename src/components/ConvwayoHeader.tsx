@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, LogOut, Ticket, ChevronDown } from "lucide-react";
+import { LogIn, LogOut, Ticket, ClipboardList, User, ChevronDown } from "lucide-react";
 
 export function ConvwayoHeader() {
   const { user, loading, signOut } = useAuth();
@@ -20,11 +20,10 @@ export function ConvwayoHeader() {
     navigate("/");
   };
 
-  // Extract name from user metadata
   const firstName = user?.user_metadata?.first_name || "";
   const lastName = user?.user_metadata?.last_name || "";
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || user?.email?.charAt(0).toUpperCase() || "?";
-  const displayName = firstName || user?.email?.split("@")[0] || "User";
+  const displayName = firstName ? `${firstName} ${lastName}`.trim() : user?.email?.split("@")[0] || "User";
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-md">

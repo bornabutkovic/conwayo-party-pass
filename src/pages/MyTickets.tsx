@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Ticket, Calendar, ExternalLink } from "lucide-react";
+import { Ticket, Calendar, MapPin, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 
 interface AttendeeWithRelations {
@@ -19,7 +19,15 @@ interface AttendeeWithRelations {
   ticket_sent_at: string | null;
   created_at: string | null;
   ticket_tiers: { name: string; price: number } | null;
-  events: { name: string; start_date: string | null; slug: string } | null;
+  events: {
+    name: string;
+    start_date: string | null;
+    end_date: string | null;
+    slug: string;
+    venue_name: string | null;
+    location_city: string | null;
+    branding_primary_color: string | null;
+  } | null;
 }
 
 export default function MyTickets() {
@@ -31,7 +39,7 @@ export default function MyTickets() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate("/event/auth-redirect", { replace: true });
+      navigate("/auth?tab=login", { replace: true });
       return;
     }
 
@@ -41,7 +49,7 @@ export default function MyTickets() {
         .select(`
           id, first_name, last_name, email, payment_status, ticket_sent_at, created_at,
           ticket_tiers(name, price),
-          events(name, start_date, slug)
+          events(name, start_date, end_date, slug, venue_name, location_city, branding_primary_color)
         `)
         .eq("email", user.email!)
         .order("created_at", { ascending: false });
@@ -72,7 +80,7 @@ export default function MyTickets() {
 
   // Group by event
   const grouped = attendees.reduce<Record<string, AttendeeWithRelations[]>>((acc, att) => {
-    const key = att.events?.name ?? "Unknown Event";
+    const key = att.events?.slug ?? att.events?.name ?? "unknown";
     if (!acc[key]) acc[key] = [];
     acc[key].push(att);
     return acc;
@@ -81,11 +89,11 @@ export default function MyTickets() {
   const statusBadge = (status: string | null) => {
     switch (status) {
       case "paid":
-        return <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">Paid</Badge>;
+        return <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">✅ Paid</Badge>;
       case "pending":
-        return <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Pending Payment</Badge>;
+        return <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">⏳ Pending Payment</Badge>;
       case "issued":
-        return <Badge variant="secondary" className="bg-sky-100 text-sky-800 hover:bg-sky-100">Invoice Sent</Badge>;
+        return <Badge variant="secondary" className="bg-sky-100 text-sky-800 hover:bg-sky-100">📄 Invoice Sent</Badge>;
       default:
         return <Badge variant="secondary">{status ?? "Unknown"}</Badge>;
     }
@@ -109,35 +117,43 @@ export default function MyTickets() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {Object.entries(grouped).map(([eventName, atts]) => {
+            {Object.entries(grouped).map(([key, atts]) => {
               const event = atts[0]?.events;
               return (
-                <Card key={eventName}>
+                <Card key={key}>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      {eventName}
+                      🎪 {event?.name ?? "Unknown Event"}
                     </CardTitle>
-                    {event?.start_date && (
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(event.start_date), "d MMM yyyy")}
-                      </p>
-                    )}
+                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                      {event?.start_date && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {format(new Date(event.start_date), "MMM d, yyyy")}
+                        </span>
+                      )}
+                      {event?.location_city && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {event.venue_name ? `${event.venue_name}, ${event.location_city}` : event.location_city}
+                        </span>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {atts.map((att) => (
                       <div
                         key={att.id}
-                        className="flex items-center justify-between rounded-lg border border-border p-3"
+                        className="flex items-center justify-between rounded-lg border border-border p-4"
                       >
-                        <div>
+                        <div className="space-y-1">
                           <p className="font-medium text-foreground">
-                            {att.first_name} {att.last_name}
+                            {att.ticket_tiers?.name ?? "Ticket"}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {att.ticket_tiers?.name ?? "Ticket"} — €{Number(att.ticket_tiers?.price ?? 0).toFixed(2)}
+                            {att.first_name} {att.last_name}
                           </p>
-                          <div className="mt-1">{statusBadge(att.payment_status)}</div>
+                          <div>{statusBadge(att.payment_status)}</div>
                         </div>
                         <div>
                           {att.payment_status === "paid" ? (
@@ -150,7 +166,7 @@ export default function MyTickets() {
                           ) : att.payment_status === "pending" ? (
                             <Button size="sm" asChild>
                               <Link to={`/ticket/${att.id}`}>
-                                Complete Payment
+                                Complete Payment →
                               </Link>
                             </Button>
                           ) : null}
