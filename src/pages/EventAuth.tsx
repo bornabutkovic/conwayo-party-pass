@@ -256,7 +256,7 @@ export default function EventAuth() {
         {isEventPage && (
           <div className="mb-6 rounded-lg border border-border bg-card p-5 text-center space-y-3">
             <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <User className="h-5 w-5" />
+              <UserCircle className="h-5 w-5" />
               <span className="text-sm font-medium">Continue without an account</span>
             </div>
             <p className="text-xs text-muted-foreground">No registration required — provide your details at checkout</p>
