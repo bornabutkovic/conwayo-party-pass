@@ -831,6 +831,58 @@ export default function EventRegister() {
                       />
                     </div>
 
+                    {/* ── INDIVIDUAL ADDRESS FIELDS ── */}
+                    {form.payer_type === "individual" && (
+                      <>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="billing_address">Street Address *</Label>
+                          <Input
+                            id="billing_address"
+                            value={form.billing_address}
+                            onChange={(e) => setForm((p) => ({ ...p, billing_address: e.target.value }))}
+                            placeholder="Ulica i broj / Street and number"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="billing_city">City *</Label>
+                          <Input
+                            id="billing_city"
+                            value={form.billing_city}
+                            onChange={(e) => setForm((p) => ({ ...p, billing_city: e.target.value }))}
+                            placeholder="Grad / City"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="billing_postal_code">Postal Code *</Label>
+                          <Input
+                            id="billing_postal_code"
+                            value={form.billing_postal_code}
+                            onChange={(e) => setForm((p) => ({ ...p, billing_postal_code: e.target.value }))}
+                            placeholder="Poštanski broj / ZIP"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="billing_country">Country *</Label>
+                          <Select
+                            value={form.billing_country_code}
+                            onValueChange={(v) => setForm((p) => ({ ...p, billing_country_code: v }))}
+                          >
+                            <SelectTrigger id="billing_country">
+                              <SelectValue placeholder="Select country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COUNTRIES.map((c) => (
+                                <SelectItem key={c.code} value={c.code}>
+                                  {c.flag} {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── COMPANY FIELDS ── */}
                     {form.payer_type === "company" && (
                       <>
                         <div className="sm:col-span-2">
@@ -843,16 +895,18 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="payer_oib">OIB / VAT ID *</Label>
+                          <Label htmlFor="payer_oib">
+                            {form.company_country_code === "HR" ? "OIB *" : "VAT ID *"}
+                          </Label>
                           <Input
                             id="payer_oib"
                             value={form.payer_oib}
                             onChange={(e) => setForm((p) => ({ ...p, payer_oib: e.target.value }))}
-                            placeholder="e.g. 12345678901"
+                            placeholder={form.company_country_code === "HR" ? "e.g. 12345678901" : "e.g. DE123456789"}
                           />
                         </div>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="payer_address">Street Address / Ulica i broj *</Label>
+                          <Label htmlFor="payer_address">Street Address *</Label>
                           <Input
                             id="payer_address"
                             value={form.payer_address}
@@ -861,7 +915,7 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="company_city">City / Grad *</Label>
+                          <Label htmlFor="company_city">City *</Label>
                           <Input
                             id="company_city"
                             value={form.company_city}
@@ -870,7 +924,7 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="company_postal_code">Postal Code / Poštanski broj *</Label>
+                          <Label htmlFor="company_postal_code">Postal Code *</Label>
                           <Input
                             id="company_postal_code"
                             value={form.company_postal_code}
@@ -879,7 +933,7 @@ export default function EventRegister() {
                           />
                         </div>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="company_country">Country / Država *</Label>
+                          <Label htmlFor="company_country">Country *</Label>
                           <Select
                             value={form.company_country_code}
                             onValueChange={(v) => setForm((p) => ({ ...p, company_country_code: v }))}
@@ -890,7 +944,7 @@ export default function EventRegister() {
                             <SelectContent>
                               {COUNTRIES.map((c) => (
                                 <SelectItem key={c.code} value={c.code}>
-                                  {c.name}
+                                  {c.flag} {c.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
