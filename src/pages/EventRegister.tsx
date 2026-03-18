@@ -226,7 +226,7 @@ export default function EventRegister() {
         if (existing && existing.tierId === tier.id) {
           newRows.push(existing);
         } else {
-          newRows.push({ firstName: "", lastName: "", email: "", tierId: tier.id, tierName: tier.name });
+          newRows.push({ firstName: "", lastName: "", email: "", tierId: tier.id, tierName: tier.name, selectedServiceIds: new Set() });
         }
       }
     }
