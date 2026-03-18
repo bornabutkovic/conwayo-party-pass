@@ -827,15 +827,34 @@ export default function EventRegister() {
                             placeholder="e.g. 12345678901"
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="payer_address">Company Address</Label>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="payer_address">Street Address / Ulica i broj *</Label>
                           <Input
                             id="payer_address"
                             value={form.payer_address}
                             onChange={(e) => setForm((p) => ({ ...p, payer_address: e.target.value }))}
+                            placeholder="Ulica i broj / Street and number"
                           />
                         </div>
                         <div>
+                          <Label htmlFor="company_city">City / Grad *</Label>
+                          <Input
+                            id="company_city"
+                            value={form.company_city}
+                            onChange={(e) => setForm((p) => ({ ...p, company_city: e.target.value }))}
+                            placeholder="Grad / City"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="company_postal_code">Postal Code / Poštanski broj *</Label>
+                          <Input
+                            id="company_postal_code"
+                            value={form.company_postal_code}
+                            onChange={(e) => setForm((p) => ({ ...p, company_postal_code: e.target.value }))}
+                            placeholder="Poštanski broj / ZIP"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
                           <Label htmlFor="company_country">Country / Država *</Label>
                           <Select
                             value={form.company_country_code}
