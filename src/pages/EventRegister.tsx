@@ -288,6 +288,8 @@ export default function EventRegister() {
               company_name: form.company_name,
               company_oib: form.payer_oib || null,
               company_address: form.payer_address || null,
+              company_city: form.company_city || null,
+              company_postal_code: form.company_postal_code || null,
               company_country_code: form.company_country_code || "HR",
               payer_type: form.payer_type,
               billing_email: form.billing_email || form.email,
