@@ -267,13 +267,28 @@ export default function EventRegister() {
     });
   };
 
+  const toggleAttendeeService = (index: number, serviceId: string) => {
+    setAttendees(prev => {
+      const updated = [...prev];
+      const newSet = new Set(updated[index].selectedServiceIds);
+      if (newSet.has(serviceId)) {
+        newSet.delete(serviceId);
+      } else {
+        newSet.add(serviceId);
+      }
+      updated[index] = { ...updated[index], selectedServiceIds: newSet };
+      return updated;
+    });
+  };
+
   // Compute totals
   const ticketTotal = tiers.reduce((sum, tier) => {
     return sum + (tier.price ?? 0) * (ticketQuantities[tier.id] ?? 0);
   }, 0);
-  const servicesTotal = Object.entries(serviceQtys).reduce((sum, [sid, qty]) => {
-    const svc = services.find((s) => s.id === sid);
-    return sum + (svc?.price ?? 0) * qty;
+  const servicesTotal = attendees.reduce((sum, att) => {
+    return sum + services
+      .filter(s => att.selectedServiceIds.has(s.id))
+      .reduce((s, svc) => s + Number(svc.price), 0);
   }, 0);
   const grandTotal = ticketTotal + servicesTotal;
 
