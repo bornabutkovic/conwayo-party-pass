@@ -59,6 +59,12 @@ export default function EventRegister() {
     payer_name: "",
     payer_type: "individual" as "individual" | "company",
     payer_oib: "",
+    // Individual billing address
+    billing_address: "",
+    billing_city: "",
+    billing_postal_code: "",
+    billing_country_code: "HR",
+    // Company billing address
     payer_address: "",
     company_name: "",
     company_city: "",
