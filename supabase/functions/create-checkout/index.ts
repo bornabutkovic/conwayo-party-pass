@@ -30,6 +30,17 @@ Deno.serve(async (req) => {
 
     const orderId = body.orderId;
     const eventId = body.eventId;
+    const payerType = body.payer_type || "individual";
+    const companyName = body.company_name || "";
+    const companyOib = body.company_oib || "";
+    const billingEmailInput = body.billing_email || "";
+    const payerName = body.payer_name || "";
+    const payerCity = body.payer_city || "";
+    const payerPostalCode = body.payer_postal_code || "";
+    const payerCountryCode = body.payer_country_code || "";
+    const poNumber = body.po_number || "";
+    const contactPhone = body.contact_phone || "";
+    const payerAddress = body.payer_address || "";
 
     if (!orderId && !body.attendeeId) throw new Error("Missing orderId or attendeeId");
 
@@ -192,16 +203,53 @@ Deno.serve(async (req) => {
 
     const primaryAttendeeId = order.attendee_id ?? "unknown";
 
+    // Build ticket summary for metadata
+    const ticketSummary = orderItems.map((i: any) => `${i.quantity}x ${i.description}`).join(", ");
+    const ticketCountTotal = orderItems.reduce((s: number, i: any) => s + (i.quantity ?? 1), 0);
+    const amountTotalMinor = Math.round(totalAmount * 100);
+
+    // Determine customer email: for company, use billing_email; otherwise attendee email
+    const sessionCustomerEmail = (payerType === "company" && billingEmailInput && isValidEmail(billingEmailInput))
+      ? billingEmailInput
+      : customerEmail;
+
     try {
       const session = await stripe.checkout.sessions.create({
         ui_mode: "hosted",
         mode: "payment",
-        customer_email: customerEmail,
+        customer_email: sessionCustomerEmail,
+        ...(payerType === "company" ? {
+          billing_address_collection: "required" as const,
+          phone_number_collection: { enabled: true },
+        } : {}),
+        client_reference_id: orderId,
         line_items: validLineItems,
         metadata: {
           order_id: orderId,
           event_id: eventId,
           attendee_id: primaryAttendeeId,
+          payer_type: payerType,
+          source: "attendee_portal",
+          payment_purpose: "event_registration",
+          app_flow: "attendee_portal",
+          created_from: payerType === "company" ? "lovable_company_checkout" : "lovable_individual_checkout",
+          currency: currency.toUpperCase(),
+          amount_total_minor: String(amountTotalMinor),
+          ticket_count_total: String(ticketCountTotal),
+          ticket_summary: ticketSummary.substring(0, 500),
+          // Company-specific metadata
+          ...(payerType === "company" ? {
+            company_name: (companyName || "").substring(0, 500),
+            company_oib: companyOib,
+            company_address: payerAddress.substring(0, 500),
+            payer_name: (payerName || companyName || "").substring(0, 500),
+            billing_email: billingEmailInput,
+            payer_city: payerCity,
+            payer_postal_code: payerPostalCode,
+            payer_country_code: payerCountryCode,
+            po_number: poNumber,
+            phone: contactPhone,
+          } : {}),
         },
         success_url: `${origin}/ticket/${primaryAttendeeId}?payment=success`,
         cancel_url: `${origin}/ticket/${primaryAttendeeId}?payment=cancelled`,

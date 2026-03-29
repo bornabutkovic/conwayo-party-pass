@@ -37,10 +37,13 @@ Deno.serve(async (req) => {
       if (orderId) {
         // ─── Unified order flow (source of truth) ───
         // 1. Update the order to paid
+        const payerType = session.metadata?.payer_type || "individual";
         const { error: orderError } = await adminClient
           .from("orders")
           .update({ status: "paid", payment_method: "stripe" })
           .eq("id", orderId);
+
+        console.log(`Order ${orderId} marked as paid (payer_type: ${payerType})`);
 
         if (orderError) console.error("Failed to update order:", orderError);
 
