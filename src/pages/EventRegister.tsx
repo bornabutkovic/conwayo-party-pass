@@ -1115,7 +1115,7 @@ export default function EventRegister() {
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? "Processing..."
-                    : payerType === "company"
+                    : payerType === "company" && companyPaymentMethod === "invoice"
                       ? `Request Invoice — ${grandTotal.toFixed(2)} ${currency}`
                       : `Register & Pay — ${grandTotal.toFixed(2)} ${currency}`}
                 </Button>
