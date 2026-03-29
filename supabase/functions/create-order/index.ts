@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
       company_oib,
       billing_email,
       po_number,
+      payment_method,
       tickets = [],
       services = [],
     } = body;
@@ -144,7 +145,7 @@ Deno.serve(async (req) => {
         contact_email: email,
         contact_phone: phone || null,
         po_number: po_number || null,
-        payment_method: isCompany ? "invoice" : "stripe",
+        payment_method: payment_method || (isCompany ? "invoice" : "stripe"),
         status: "draft",
         total_amount: totalAmount,
         is_group_order: (primaryTicket?.quantity ?? 1) > 1,
