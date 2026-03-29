@@ -139,6 +139,7 @@ export default function EventRegister() {
   const [companyOib, setCompanyOib] = useState("");
   const [billingEmail, setBillingEmail] = useState("");
   const [poNumber, setPoNumber] = useState("");
+  const [companyPaymentMethod, setCompanyPaymentMethod] = useState<"stripe" | "invoice">("stripe");
 
   // Address
   const [street, setStreet] = useState('');
@@ -373,6 +374,7 @@ export default function EventRegister() {
           company_oib: payerType === "company" ? companyOib : undefined,
           billing_email: payerType === "company" ? (billingEmail || attendees[0]?.email) : attendees[0]?.email,
           po_number: payerType === "company" ? poNumber : undefined,
+          payment_method: payerType === "company" ? companyPaymentMethod : "stripe",
           profile_id: user?.id || null,
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
@@ -383,8 +385,8 @@ export default function EventRegister() {
         throw new Error(data?.error || error?.message || "Registration failed");
       }
 
-      if (payerType === "company") {
-        // Company flow — call create-invoice-registration
+      if (payerType === "company" && companyPaymentMethod === "invoice") {
+        // Company INVOICE flow — call create-invoice-registration
         const { data: invoiceResult, error: invoiceError } = await supabase.functions.invoke(
           "create-invoice-registration",
           {
@@ -425,7 +427,6 @@ export default function EventRegister() {
         } else {
           setInvoiceSuccessMessage("Quote created! Payment instructions have been sent to your email.");
         }
-        // Build success data for invoice flow too
         const allAtts: SuccessAttendeeInfo[] = attendees.map(a => {
           const tier = tiers.find(t => t.id === a.tierId);
           return {
@@ -519,13 +520,24 @@ export default function EventRegister() {
           body: JSON.stringify({
             attendeeId: aid,
             eventId: event.id,
+            orderId: success?.attendeeId ? undefined : undefined, // will be set below
             slug,
+            payer_type: payerType,
             payer_address: street,
             payer_city: city,
             payer_postal_code: postalCode,
             payer_country_code: countryCode,
             payer_country_name: countryName,
             bc_posting_zone: getZone(countryCode),
+            // Company billing metadata
+            ...(payerType === "company" ? {
+              company_name: companyName,
+              company_oib: companyOib,
+              billing_email: billingEmail || attendees[0]?.email,
+              payer_name: companyName,
+              po_number: poNumber || undefined,
+              contact_phone: contactPhone || undefined,
+            } : {}),
           }),
         },
       );
