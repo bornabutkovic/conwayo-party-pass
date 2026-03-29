@@ -492,7 +492,7 @@ export default function EventRegister() {
         totalAmount: data.total_amount ?? grandTotal,
       };
       setSuccess(successData);
-      await triggerStripeCheckout(data.primary_attendee_id);
+      await triggerStripeCheckout(data.primary_attendee_id, data.order_id);
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
     } finally {
@@ -500,7 +500,7 @@ export default function EventRegister() {
     }
   };
 
-  const triggerStripeCheckout = async (attendeeId?: string) => {
+  const triggerStripeCheckout = async (attendeeId?: string, orderId?: string) => {
     const aid = attendeeId || success?.attendeeId;
     if (!aid || !event) return;
 
