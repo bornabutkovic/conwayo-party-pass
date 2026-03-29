@@ -520,7 +520,7 @@ export default function EventRegister() {
           body: JSON.stringify({
             attendeeId: aid,
             eventId: event.id,
-            orderId: success?.attendeeId ? undefined : undefined, // will be set below
+            orderId: orderId || undefined,
             slug,
             payer_type: payerType,
             payer_address: street,
