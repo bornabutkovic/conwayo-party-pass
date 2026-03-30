@@ -58,12 +58,15 @@ export function useEventFull(slug: string) {
       }
       if (!event) throw new Error("Event not found");
 
-      // Fetch active ticket tiers separately to avoid filter issues
+      // Fetch active ticket tiers within their sales window
+      const now = new Date().toISOString();
       const { data: tiers } = await supabase
         .from("ticket_tiers")
         .select("*")
         .eq("event_id", event.id)
         .eq("status", "active")
+        .or(`sales_start.is.null,sales_start.lte.${now}`)
+        .or(`sales_end.is.null,sales_end.gte.${now}`)
         .order("price", { ascending: true });
 
       return {
@@ -93,11 +96,14 @@ export function useTicketTiers(eventId: string | undefined) {
   return useQuery({
     queryKey: ["ticket_tiers", eventId],
     queryFn: async () => {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("ticket_tiers")
         .select("*")
         .eq("event_id", eventId!)
         .eq("status", "active")
+        .or(`sales_start.is.null,sales_start.lte.${now}`)
+        .or(`sales_end.is.null,sales_end.gte.${now}`)
         .order("price", { ascending: true });
       if (error) throw error;
       return data as TicketTier[];
