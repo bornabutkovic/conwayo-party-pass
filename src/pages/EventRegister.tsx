@@ -274,6 +274,20 @@ export default function EventRegister() {
   if (eventLoading) return <EventPageSkeleton />;
   if (eventError || !event) return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
 
+  if (event.status !== "active") {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <ConvwayoHeader showBackToEvents />
+        <div className="flex flex-1 items-center justify-center px-4">
+          <div className="text-center space-y-3">
+            <h1 className="text-2xl font-bold text-foreground">This event is not currently available</h1>
+            <p className="text-muted-foreground">Registration is not open for this event.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const currency = event.currency ?? "EUR";
 
   const setTierQty = (tierId: string, delta: number) => {
