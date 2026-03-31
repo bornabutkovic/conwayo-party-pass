@@ -4,10 +4,12 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export type Event = Tables<"events">;
 export type TicketTier = Tables<"ticket_tiers">;
+export type EventService = Tables<"event_services">;
 
 export interface EventWithRelations extends Event {
   institutions: Tables<"institutions"> | null;
   ticket_tiers: TicketTier[];
+  event_services: EventService[];
 }
 
 export function useEvent(slug: string) {
