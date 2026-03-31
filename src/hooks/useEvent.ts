@@ -4,10 +4,12 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export type Event = Tables<"events">;
 export type TicketTier = Tables<"ticket_tiers">;
+export type EventService = Tables<"event_services">;
 
 export interface EventWithRelations extends Event {
   institutions: Tables<"institutions"> | null;
   ticket_tiers: TicketTier[];
+  event_services: EventService[];
 }
 
 export function useEvent(slug: string) {
@@ -69,9 +71,18 @@ export function useEventFull(slug: string) {
         .or(`sales_end.is.null,sales_end.gte.${now}`)
         .order("price", { ascending: true });
 
+      // Fetch active services
+      const { data: services } = await supabase
+        .from("event_services")
+        .select("*")
+        .eq("event_id", event.id)
+        .eq("status", "active")
+        .order("price", { ascending: true });
+
       return {
         ...event,
         ticket_tiers: (tiers ?? []) as TicketTier[],
+        event_services: (services ?? []) as EventService[],
       } as EventWithRelations;
     },
     enabled: !!slug,
