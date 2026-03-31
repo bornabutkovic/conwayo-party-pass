@@ -73,6 +73,7 @@ export default function EventLanding() {
 
   const currency = event.currency ?? "EUR";
   const tiers = event.ticket_tiers ?? [];
+  const services = event.event_services ?? [];
   const institution = event.institutions;
   const primaryColor = event.branding_primary_color ?? "#6366f1";
   const bannerUrl = event.branding_banner_url;
