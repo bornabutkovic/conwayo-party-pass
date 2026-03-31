@@ -282,6 +282,43 @@ export default function EventLanding() {
               </section>
             )}
 
+            {/* SECTION 4b — ADDITIONAL SERVICES */}
+            {services.length > 0 && (
+              <section>
+                <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
+                  <ShieldCheck className="h-6 w-6" />
+                  Dodatne usluge / Additional Services
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {services.map((service) => (
+                    <Card key={service.id} className="border-border">
+                      <CardContent className="p-5">
+                        <h3 className="text-lg font-semibold text-card-foreground">
+                          {service.name}
+                        </h3>
+                        {service.description && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {service.description}
+                          </p>
+                        )}
+                        <p className="mt-3 text-2xl font-bold text-primary">
+                          {service.price === 0
+                            ? "Besplatno / Free"
+                            : `${Number(service.price).toFixed(2)} ${currency}`}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Cijena uključuje PDV / Price includes VAT
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                <p className="mt-4 text-sm text-muted-foreground text-center">
+                  Dodatne usluge možete odabrati tijekom procesa registracije. / Additional services can be selected during registration.
+                </p>
+              </section>
+            )}
+
             {/* SECTION 5 — ORGANIZER */}
             <section>
               <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-foreground">

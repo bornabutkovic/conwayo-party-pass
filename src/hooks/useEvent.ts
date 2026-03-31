@@ -71,9 +71,18 @@ export function useEventFull(slug: string) {
         .or(`sales_end.is.null,sales_end.gte.${now}`)
         .order("price", { ascending: true });
 
+      // Fetch active services
+      const { data: services } = await supabase
+        .from("event_services")
+        .select("*")
+        .eq("event_id", event.id)
+        .eq("status", "active")
+        .order("price", { ascending: true });
+
       return {
         ...event,
         ticket_tiers: (tiers ?? []) as TicketTier[],
+        event_services: (services ?? []) as EventService[],
       } as EventWithRelations;
     },
     enabled: !!slug,
