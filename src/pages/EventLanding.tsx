@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useEventFull } from "@/hooks/useEvent";
+import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
