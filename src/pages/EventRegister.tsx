@@ -254,7 +254,7 @@ export default function EventRegister() {
         if (profile) {
           // Only overwrite fields that are still empty (sessionStorage may have restored values)
           setPayerName(prev => prev || `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
-          setContactPhone(prev => prev || profile.phone ?? "");
+          setContactPhone(prev => prev || (profile.phone ?? ""));
           setProfileEmail(profile.email ?? user.email ?? "");
           // Pre-fill address from profile only if empty
           if (profile.address) setStreet(prev => prev || profile.address!);
