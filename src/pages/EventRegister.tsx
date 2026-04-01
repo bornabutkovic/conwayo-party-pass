@@ -120,6 +120,7 @@ export default function EventRegister() {
   const [submitting, setSubmitting] = useState(false);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [invoiceSuccess, setInvoiceSuccess] = useState(false);
   const [invoiceSuccessMessage, setInvoiceSuccessMessage] = useState("");
 
