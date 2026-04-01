@@ -156,6 +156,55 @@ export default function EventRegister() {
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
+  const restoredFromStorageRef = useRef(false);
+
+  // ── Restore checkout state from sessionStorage on mount ──
+  useEffect(() => {
+    if (!slug || restoredFromStorageRef.current) return;
+    restoredFromStorageRef.current = true;
+    try {
+      const saved = sessionStorage.getItem(`checkout_state_${slug}`);
+      if (!saved) return;
+      const s = JSON.parse(saved);
+      if (s.ticketQuantities) setTicketQuantities(s.ticketQuantities);
+      if (s.attendees) {
+        setAttendees(s.attendees.map((a: any) => ({
+          ...a,
+          selectedServiceIds: new Set(a.selectedServiceIds ?? []),
+        })));
+      }
+      if (s.payerType) setPayerType(s.payerType);
+      if (s.payerName) setPayerName(s.payerName);
+      if (s.companyName) setCompanyName(s.companyName);
+      if (s.companyOib) setCompanyOib(s.companyOib);
+      if (s.billingEmail) setBillingEmail(s.billingEmail);
+      if (s.poNumber) setPoNumber(s.poNumber);
+      if (s.companyPaymentMethod) setCompanyPaymentMethod(s.companyPaymentMethod);
+      if (s.street) setStreet(s.street);
+      if (s.city) setCity(s.city);
+      if (s.postalCode) setPostalCode(s.postalCode);
+      if (s.countryCode) setCountryCode(s.countryCode);
+      if (s.countryName) setCountryName(s.countryName);
+      if (s.contactPhone) setContactPhone(s.contactPhone);
+    } catch { /* ignore corrupt data */ }
+  }, [slug]);
+
+  // ── Save checkout state to sessionStorage on changes ──
+  useEffect(() => {
+    if (!slug || !restoredFromStorageRef.current) return;
+    try {
+      const state = {
+        ticketQuantities,
+        attendees: attendees.map(a => ({
+          ...a,
+          selectedServiceIds: Array.from(a.selectedServiceIds),
+        })),
+        payerType, payerName, companyName, companyOib, billingEmail, poNumber, companyPaymentMethod,
+        street, city, postalCode, countryCode, countryName, contactPhone,
+      };
+      sessionStorage.setItem(`checkout_state_${slug}`, JSON.stringify(state));
+    } catch { /* storage full, ignore */ }
+  }, [slug, ticketQuantities, attendees, payerType, payerName, companyName, companyOib, billingEmail, poNumber, companyPaymentMethod, street, city, postalCode, countryCode, countryName, contactPhone]);
 
   // Close country dropdown on outside click
   useEffect(() => {
