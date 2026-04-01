@@ -252,16 +252,17 @@ export default function EventRegister() {
           .maybeSingle();
 
         if (profile) {
-          setPayerName(`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
-          setContactPhone(profile.phone ?? "");
+          // Only overwrite fields that are still empty (sessionStorage may have restored values)
+          setPayerName(prev => prev || `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
+          setContactPhone(prev => prev || profile.phone ?? "");
           setProfileEmail(profile.email ?? user.email ?? "");
-          // Pre-fill address from profile
-          if (profile.address) setStreet(profile.address);
-          if (profile.city) setCity(profile.city);
-          if (profile.postal_code) setPostalCode(profile.postal_code);
+          // Pre-fill address from profile only if empty
+          if (profile.address) setStreet(prev => prev || profile.address!);
+          if (profile.city) setCity(prev => prev || profile.city!);
+          if (profile.postal_code) setPostalCode(prev => prev || profile.postal_code!);
           if (profile.country_code) {
-            setCountryCode(profile.country_code);
-            setCountryName(profile.country_name ?? profile.country_code);
+            setCountryCode(prev => prev === 'HR' && !sessionStorage.getItem(`checkout_state_${slug}`) ? profile.country_code! : prev);
+            setCountryName(prev => prev === 'Croatia' && !sessionStorage.getItem(`checkout_state_${slug}`) ? (profile.country_name ?? profile.country_code!) : prev);
           }
           setAttendees(prev => {
             if (prev.length === 0) return prev;
