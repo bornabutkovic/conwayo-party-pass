@@ -79,6 +79,44 @@ export type Database = {
           },
         ]
       }
+      admin_users: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          institution_id: string | null
+          invited_by: string | null
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          institution_id?: string | null
+          invited_by?: string | null
+          role?: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          institution_id?: string | null
+          invited_by?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_users_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendees: {
         Row: {
           badge_printed: boolean | null
@@ -1572,6 +1610,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_users_with_institutions: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          institution_id: string | null
+          institution_name: string | null
+          invited_by: string | null
+          role: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_users_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendee_invoice_summary: {
         Row: {
           attendee_id: string | null
@@ -1853,6 +1912,19 @@ export type Database = {
           role_input: string
         }
         Returns: string
+      }
+      get_admin_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          institution_id: string
+          institution_name: string
+          invited_by: string
+          role: string
+        }[]
       }
       get_bc_posting_groups: {
         Args: { p_country_code: string; p_payer_type: string }
