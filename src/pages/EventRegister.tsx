@@ -473,6 +473,7 @@ export default function EventRegister() {
           totalAmount: data.total_amount ?? grandTotal,
         });
         setInvoiceSuccess(true);
+        if (slug) sessionStorage.removeItem(`checkout_state_${slug}`);
         return;
       }
 
