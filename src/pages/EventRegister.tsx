@@ -120,6 +120,7 @@ export default function EventRegister() {
   const [submitting, setSubmitting] = useState(false);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [invoiceSuccess, setInvoiceSuccess] = useState(false);
   const [invoiceSuccessMessage, setInvoiceSuccessMessage] = useState("");
 
@@ -155,6 +156,55 @@ export default function EventRegister() {
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
+  const restoredFromStorageRef = useRef(false);
+
+  // ── Restore checkout state from sessionStorage on mount ──
+  useEffect(() => {
+    if (!slug || restoredFromStorageRef.current) return;
+    restoredFromStorageRef.current = true;
+    try {
+      const saved = sessionStorage.getItem(`checkout_state_${slug}`);
+      if (!saved) return;
+      const s = JSON.parse(saved);
+      if (s.ticketQuantities) setTicketQuantities(s.ticketQuantities);
+      if (s.attendees) {
+        setAttendees(s.attendees.map((a: any) => ({
+          ...a,
+          selectedServiceIds: new Set(a.selectedServiceIds ?? []),
+        })));
+      }
+      if (s.payerType) setPayerType(s.payerType);
+      if (s.payerName) setPayerName(s.payerName);
+      if (s.companyName) setCompanyName(s.companyName);
+      if (s.companyOib) setCompanyOib(s.companyOib);
+      if (s.billingEmail) setBillingEmail(s.billingEmail);
+      if (s.poNumber) setPoNumber(s.poNumber);
+      if (s.companyPaymentMethod) setCompanyPaymentMethod(s.companyPaymentMethod);
+      if (s.street) setStreet(s.street);
+      if (s.city) setCity(s.city);
+      if (s.postalCode) setPostalCode(s.postalCode);
+      if (s.countryCode) setCountryCode(s.countryCode);
+      if (s.countryName) setCountryName(s.countryName);
+      if (s.contactPhone) setContactPhone(s.contactPhone);
+    } catch { /* ignore corrupt data */ }
+  }, [slug]);
+
+  // ── Save checkout state to sessionStorage on changes ──
+  useEffect(() => {
+    if (!slug || !restoredFromStorageRef.current) return;
+    try {
+      const state = {
+        ticketQuantities,
+        attendees: attendees.map(a => ({
+          ...a,
+          selectedServiceIds: Array.from(a.selectedServiceIds),
+        })),
+        payerType, payerName, companyName, companyOib, billingEmail, poNumber, companyPaymentMethod,
+        street, city, postalCode, countryCode, countryName, contactPhone,
+      };
+      sessionStorage.setItem(`checkout_state_${slug}`, JSON.stringify(state));
+    } catch { /* storage full, ignore */ }
+  }, [slug, ticketQuantities, attendees, payerType, payerName, companyName, companyOib, billingEmail, poNumber, companyPaymentMethod, street, city, postalCode, countryCode, countryName, contactPhone]);
 
   // Close country dropdown on outside click
   useEffect(() => {
@@ -202,16 +252,17 @@ export default function EventRegister() {
           .maybeSingle();
 
         if (profile) {
-          setPayerName(`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
-          setContactPhone(profile.phone ?? "");
+          // Only overwrite fields that are still empty (sessionStorage may have restored values)
+          setPayerName(prev => prev || `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim());
+          setContactPhone(prev => prev || (profile.phone ?? ""));
           setProfileEmail(profile.email ?? user.email ?? "");
-          // Pre-fill address from profile
-          if (profile.address) setStreet(profile.address);
-          if (profile.city) setCity(profile.city);
-          if (profile.postal_code) setPostalCode(profile.postal_code);
+          // Pre-fill address from profile only if empty
+          if (profile.address) setStreet(prev => prev || profile.address!);
+          if (profile.city) setCity(prev => prev || profile.city!);
+          if (profile.postal_code) setPostalCode(prev => prev || profile.postal_code!);
           if (profile.country_code) {
-            setCountryCode(profile.country_code);
-            setCountryName(profile.country_name ?? profile.country_code);
+            setCountryCode(prev => prev === 'HR' && !sessionStorage.getItem(`checkout_state_${slug}`) ? profile.country_code! : prev);
+            setCountryName(prev => prev === 'Croatia' && !sessionStorage.getItem(`checkout_state_${slug}`) ? (profile.country_name ?? profile.country_code!) : prev);
           }
           setAttendees(prev => {
             if (prev.length === 0) return prev;
@@ -472,6 +523,7 @@ export default function EventRegister() {
           totalAmount: data.total_amount ?? grandTotal,
         });
         setInvoiceSuccess(true);
+        if (slug) sessionStorage.removeItem(`checkout_state_${slug}`);
         return;
       }
 
@@ -513,8 +565,11 @@ export default function EventRegister() {
         allAttendees: allAtts,
         totalAmount: data.total_amount ?? grandTotal,
       };
+      setCurrentOrderId(data.order_id);
       setSuccess(successData);
-      await triggerStripeCheckout(data.primary_attendee_id, data.order_id);
+      // Clear sessionStorage after successful order creation
+      if (slug) sessionStorage.removeItem(`checkout_state_${slug}`);
+      // Don't auto-redirect to Stripe — user clicks PAY NOW on OrderConfirmation
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
     } finally {
@@ -525,6 +580,8 @@ export default function EventRegister() {
   const triggerStripeCheckout = async (attendeeId?: string, orderId?: string) => {
     const aid = attendeeId || success?.attendeeId;
     if (!aid || !event) return;
+
+    const oid = orderId || currentOrderId || undefined;
 
     setRedirectingToStripe(true);
     try {
@@ -542,7 +599,7 @@ export default function EventRegister() {
           body: JSON.stringify({
             attendeeId: aid,
             eventId: event.id,
-            orderId: orderId || undefined,
+            orderId: oid,
             slug,
             payer_type: payerType,
             payer_address: street,
