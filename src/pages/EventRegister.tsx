@@ -530,6 +530,8 @@ export default function EventRegister() {
     const aid = attendeeId || success?.attendeeId;
     if (!aid || !event) return;
 
+    const oid = orderId || currentOrderId || undefined;
+
     setRedirectingToStripe(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -546,7 +548,7 @@ export default function EventRegister() {
           body: JSON.stringify({
             attendeeId: aid,
             eventId: event.id,
-            orderId: orderId || undefined,
+            orderId: oid,
             slug,
             payer_type: payerType,
             payer_address: street,
