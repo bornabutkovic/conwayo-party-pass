@@ -514,8 +514,11 @@ export default function EventRegister() {
         allAttendees: allAtts,
         totalAmount: data.total_amount ?? grandTotal,
       };
+      setCurrentOrderId(data.order_id);
       setSuccess(successData);
-      await triggerStripeCheckout(data.primary_attendee_id, data.order_id);
+      // Clear sessionStorage after successful order creation
+      if (slug) sessionStorage.removeItem(`checkout_state_${slug}`);
+      // Don't auto-redirect to Stripe — user clicks PAY NOW on OrderConfirmation
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
     } finally {
