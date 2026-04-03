@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
@@ -54,6 +55,10 @@ Cancellations are accepted up to 14 days before the event with a 50% refund. Aft
 export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
   const { data: event, isLoading, error } = useEventFull(slug ?? "");
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [slug]);
 
   if (isLoading) return <EventPageSkeleton />;
   if (error || !event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
