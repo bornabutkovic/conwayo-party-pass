@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
