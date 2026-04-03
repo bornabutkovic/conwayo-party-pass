@@ -5,7 +5,6 @@ import { EventBrandingProvider } from "@/components/event/EventBrandingProvider"
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -26,9 +25,12 @@ import {
   Monitor,
   Users,
   ShieldCheck,
+  Zap,
+  MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { hr } from "date-fns/locale";
+import { QRCodeSVG } from "qrcode.react";
 
 function formatDateHr(dateStr: string | null) {
   if (!dateStr) return null;
@@ -83,6 +85,8 @@ export default function EventLanding() {
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
   const isVirtual = event.event_type === "virtual";
 
+  const whatsappUrl = `https://wa.me/385916059712?text=Prijava%20za%3A%20${slug}`;
+
   return (
     <EventBrandingProvider event={event}>
       <div
@@ -94,8 +98,63 @@ export default function EventLanding() {
       >
         <ConvwayoHeader showBackToEvents />
 
-        {/* SECTION 1 — HERO */}
-        <section className="relative overflow-hidden text-white" style={{ height: 320 }}>
+        {/* SECTION 0 — WHATSAPP AI REGISTRATION QR */}
+        <section
+          className="relative overflow-hidden"
+          style={{ backgroundColor: "#1a1a2e" }}
+        >
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute -top-20 -left-20 h-64 w-64 rounded-full" style={{ backgroundColor: "#25D366" }} />
+            <div className="absolute -bottom-16 -right-16 h-48 w-48 rounded-full" style={{ backgroundColor: "#25D366" }} />
+          </div>
+          <div className="container relative mx-auto px-4 py-8 md:py-10">
+            <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 md:flex-row md:items-center md:gap-10">
+              {/* QR Code */}
+              <div className="shrink-0 rounded-2xl bg-white p-4 shadow-lg">
+                <QRCodeSVG
+                  value={whatsappUrl}
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor="#1a1a2e"
+                  level="M"
+                />
+              </div>
+
+              {/* Text */}
+              <div className="text-center md:text-left">
+                <div className="mb-2 flex items-center justify-center gap-2 md:justify-start">
+                  <Zap className="h-5 w-5" style={{ color: "#25D366" }} />
+                  <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#25D366" }}>
+                    AI powered
+                  </span>
+                </div>
+                <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">
+                  AI Registration
+                </h2>
+                <p className="mb-4 text-base text-white/70">
+                  Skeniraj i prijavi se via WhatsApp
+                  <br />
+                  <span className="text-sm text-white/50">Scan to register via WhatsApp</span>
+                </p>
+                <div className="flex items-center justify-center gap-2 md:justify-start">
+                  <MessageCircle className="h-5 w-5" style={{ color: "#25D366" }} />
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium underline underline-offset-2"
+                    style={{ color: "#25D366" }}
+                  >
+                    Otvori WhatsApp chat / Open WhatsApp
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 1 — HERO (clean, no text) */}
+        <section className="relative overflow-hidden" style={{ height: 280 }}>
           {bannerUrl ? (
             <div className="absolute inset-0">
               <img
@@ -103,7 +162,7 @@ export default function EventLanding() {
                 alt={`${event.name} banner`}
                 className="h-full w-full object-cover"
               />
-              <div className="absolute inset-0 bg-black/45" />
+              <div className="absolute inset-0 bg-black/30" />
             </div>
           ) : (
             <div className="absolute inset-0" style={{ backgroundColor: primaryColor }}>
@@ -111,39 +170,15 @@ export default function EventLanding() {
               <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
             </div>
           )}
-          <div className="container relative mx-auto flex h-full flex-col justify-end px-4 pb-8">
-            <div className="max-w-3xl">
-              {event.status === "active" && (
-                <Badge variant="secondary" className="mb-3 text-sm font-medium">
-                  Registration Open
-                </Badge>
-              )}
-              <h1 className="mb-4 text-3xl font-bold tracking-tight drop-shadow-lg md:text-5xl">
+        </section>
+
+        {/* SECTION 1b — EVENT TITLE */}
+        <section className="bg-card border-b border-border">
+          <div className="container mx-auto px-4 py-8 md:py-10">
+            <div className="mx-auto max-w-4xl">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-5xl">
                 {event.name}
               </h1>
-              <div className="flex flex-wrap gap-5 text-white/90 text-sm">
-                {event.start_date && (
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4" />
-                    <span>
-                      {formatDateHr(event.start_date)}
-                      {event.end_date && ` – ${formatDateHr(event.end_date)}`}
-                    </span>
-                  </div>
-                )}
-                {!isVirtual && locationParts.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{locationParts.join(", ")}</span>
-                  </div>
-                )}
-                {isVirtual && (
-                  <div className="flex items-center gap-2">
-                    <Monitor className="h-4 w-4" />
-                    <span>Virtual Event – Online</span>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </section>
