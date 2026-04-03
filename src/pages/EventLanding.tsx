@@ -250,6 +250,30 @@ export default function EventLanding() {
                       </CardContent>
                     </Card>
                   ))}
+
+                  {/* WhatsApp AI Registration tile */}
+                  <Card className="border-border">
+                    <CardContent className="flex flex-col items-center p-5">
+                      <div className="rounded-lg border border-border bg-white p-2">
+                        <QRCodeSVG
+                          value={whatsappUrl}
+                          size={160}
+                          bgColor="#ffffff"
+                          fgColor="#18181b"
+                          level="M"
+                        />
+                      </div>
+                      <div className="mt-3 flex items-center gap-1.5">
+                        <MessageCircle className="h-4 w-4" style={{ color: "#25D366" }} />
+                        <h3 className="text-lg font-semibold text-card-foreground">
+                          AI Registration
+                        </h3>
+                      </div>
+                      <p className="mt-1 text-center text-sm text-muted-foreground">
+                        Skeniraj QR kod za prijavu via WhatsApp
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
                 <div className="mt-6 text-center">
                   <Button asChild size="lg" className="gap-2 px-10 py-6 text-lg">
