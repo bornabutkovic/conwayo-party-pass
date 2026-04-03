@@ -98,61 +98,6 @@ export default function EventLanding() {
       >
         <ConvwayoHeader showBackToEvents />
 
-        {/* SECTION 0 — WHATSAPP AI REGISTRATION QR */}
-        <section
-          className="relative overflow-hidden"
-          style={{ backgroundColor: "#1a1a2e" }}
-        >
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute -top-20 -left-20 h-64 w-64 rounded-full" style={{ backgroundColor: "#25D366" }} />
-            <div className="absolute -bottom-16 -right-16 h-48 w-48 rounded-full" style={{ backgroundColor: "#25D366" }} />
-          </div>
-          <div className="container relative mx-auto px-4 py-8 md:py-10">
-            <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 md:flex-row md:items-center md:gap-10">
-              {/* QR Code */}
-              <div className="shrink-0 rounded-2xl bg-white p-4 shadow-lg">
-                <QRCodeSVG
-                  value={whatsappUrl}
-                  size={200}
-                  bgColor="#ffffff"
-                  fgColor="#1a1a2e"
-                  level="M"
-                />
-              </div>
-
-              {/* Text */}
-              <div className="text-center md:text-left">
-                <div className="mb-2 flex items-center justify-center gap-2 md:justify-start">
-                  <Zap className="h-5 w-5" style={{ color: "#25D366" }} />
-                  <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#25D366" }}>
-                    AI powered
-                  </span>
-                </div>
-                <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">
-                  AI Registration
-                </h2>
-                <p className="mb-4 text-base text-white/70">
-                  Skeniraj i prijavi se via WhatsApp
-                  <br />
-                  <span className="text-sm text-white/50">Scan to register via WhatsApp</span>
-                </p>
-                <div className="flex items-center justify-center gap-2 md:justify-start">
-                  <MessageCircle className="h-5 w-5" style={{ color: "#25D366" }} />
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium underline underline-offset-2"
-                    style={{ color: "#25D366" }}
-                  >
-                    Otvori WhatsApp chat / Open WhatsApp
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* SECTION 1 — HERO (clean, no text) */}
         <section className="relative overflow-hidden" style={{ height: 280 }}>
           {bannerUrl ? (
