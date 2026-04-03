@@ -249,25 +249,38 @@ export default function EventLanding() {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
 
-                  {/* WhatsApp AI Registration tile */}
-                  <Card className="border-border">
-                    <CardContent className="flex flex-col items-center p-5">
-                      <div className="rounded-lg border border-border bg-white p-2">
-                        <QRCodeSVG
-                          value={whatsappUrl}
-                          size={160}
-                          bgColor="#ffffff"
-                          fgColor="#18181b"
-                          level="M"
-                        />
-                      </div>
-                      <div className="mt-3 flex items-center gap-1.5">
-                        <MessageCircle className="h-4 w-4" style={{ color: "#25D366" }} />
-                        <h3 className="text-lg font-semibold text-card-foreground">
-                          AI Registration
-                        </h3>
-                      </div>
+                {/* WhatsApp AI Registration section */}
+                <Card className="mt-6 border-border">
+                  <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-start">
+                    <div className="shrink-0 rounded-lg border border-border bg-white p-2">
+                      <QRCodeSVG
+                        value={whatsappUrl}
+                        size={160}
+                        bgColor="#ffffff"
+                        fgColor="#18181b"
+                        level="M"
+                      />
+                    </div>
+                    <div className="text-center sm:text-left">
+                      <h3 className="text-2xl font-bold text-foreground">AI Registration</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Prijavi se brzo i jednostavno putem WhatsApp AI agenta
+                      </p>
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: "#25D366" }}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        Otvori WhatsApp
+                      </a>
+                    </div>
+                  </CardContent>
+                </Card>
                       <p className="mt-1 text-center text-sm text-muted-foreground">
                         Skeniraj QR kod za prijavu via WhatsApp
                       </p>
