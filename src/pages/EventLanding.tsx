@@ -281,12 +281,6 @@ export default function EventLanding() {
                     </div>
                   </CardContent>
                 </Card>
-                      <p className="mt-1 text-center text-sm text-muted-foreground">
-                        Skeniraj QR kod za prijavu via WhatsApp
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
                 <div className="mt-6 text-center">
                   <Button asChild size="lg" className="gap-2 px-10 py-6 text-lg">
                     <Link to={`/event/${slug}/register`}>
