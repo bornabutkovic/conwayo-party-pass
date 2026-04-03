@@ -25,7 +25,6 @@ import {
   Monitor,
   Users,
   ShieldCheck,
-  Zap,
   MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
