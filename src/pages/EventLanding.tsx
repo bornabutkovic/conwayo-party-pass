@@ -56,6 +56,10 @@ export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
   const { data: event, isLoading, error } = useEventFull(slug ?? "");
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [slug]);
+
   if (isLoading) return <EventPageSkeleton />;
   if (error || !event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
 
