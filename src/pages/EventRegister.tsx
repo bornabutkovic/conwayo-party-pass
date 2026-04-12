@@ -114,6 +114,7 @@ export default function EventRegister() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { lang, t } = useLanguage();
   const { data: event, isLoading: eventLoading, error: eventError } = useEvent(slug ?? "");
   const { data: tiers = [] } = useTicketTiers(event?.id);
   const { data: services = [] } = useEventServices(event?.id);
@@ -333,8 +334,8 @@ export default function EventRegister() {
         <ConvwayoHeader showBackToEvents />
         <div className="flex flex-1 items-center justify-center px-4">
           <div className="text-center space-y-3">
-            <h1 className="text-2xl font-bold text-foreground">This event is not currently available</h1>
-            <p className="text-muted-foreground">Registration is not open for this event.</p>
+            <h1 className="text-2xl font-bold text-foreground">{t("event.notAvailable")}</h1>
+            <p className="text-muted-foreground">{t("event.notAvailableDesc")}</p>
           </div>
         </div>
       </div>
@@ -788,13 +789,13 @@ export default function EventRegister() {
           {!authLoading && !user && (
             <div className="mb-6 rounded-lg border border-border bg-card p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm text-foreground font-medium">Have an account? <span className="text-muted-foreground font-normal">Log in to pre-fill details</span></p>
-                <p className="text-xs text-muted-foreground mt-0.5">Or continue as a guest below ↓</p>
+                <p className="text-sm text-foreground font-medium">{t("register.haveAccount")} <span className="text-muted-foreground font-normal">{t("register.loginPrefill")}</span></p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("register.guestBelow")}</p>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/event/${slug}/auth?tab=login`}>
                   <LogIn className="mr-1.5 h-4 w-4" />
-                  Log In
+                  {t("nav.logIn")}
                 </Link>
               </Button>
             </div>
