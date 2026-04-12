@@ -902,11 +902,11 @@ export default function EventRegister() {
                       {attendees.map((att, idx) => (
                         <div key={idx} className="rounded-lg border border-border bg-card p-4">
                           <p className="mb-3 text-sm font-medium text-primary">
-                            Ticket #{idx + 1} — {att.tierName}
+                            {t("register.ticket")} #{idx + 1} — {tr((tiers.find(t2 => t2.id === att.tierId)?.translations ?? null) as Record<string, any> | null, lang, "name", att.tierName)}
                           </p>
                           <div className="grid gap-3 sm:grid-cols-3">
                             <div>
-                              <Label className="text-xs">First Name *</Label>
+                              <Label className="text-xs">{t("register.firstName")} *</Label>
                               <Input
                                 value={att.firstName}
                                 onChange={(e) => updateAttendee(idx, 'firstName', e.target.value)}
@@ -914,7 +914,7 @@ export default function EventRegister() {
                               />
                             </div>
                             <div>
-                              <Label className="text-xs">Last Name *</Label>
+                              <Label className="text-xs">{t("register.lastName")} *</Label>
                               <Input
                                 value={att.lastName}
                                 onChange={(e) => updateAttendee(idx, 'lastName', e.target.value)}
@@ -922,7 +922,7 @@ export default function EventRegister() {
                               />
                             </div>
                             <div>
-                              <Label className="text-xs">Email *</Label>
+                              <Label className="text-xs">{t("register.email")} *</Label>
                               <Input
                                 type="email"
                                 value={att.email}
@@ -935,7 +935,7 @@ export default function EventRegister() {
                           {/* Per-attendee services */}
                           {services.length > 0 && (
                             <div className="mt-4 border-t border-border pt-3">
-                              <p className="mb-2 text-xs font-medium text-muted-foreground">Additional options for this attendee:</p>
+                              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("register.additionalOptions")}</p>
                               <div className="space-y-2">
                                 {services.map(svc => {
                                   const checked = att.selectedServiceIds.has(svc.id);
@@ -952,7 +952,7 @@ export default function EventRegister() {
                                         onChange={() => toggleAttendeeService(idx, svc.id)}
                                         className="h-4 w-4 rounded border-input text-primary accent-primary"
                                       />
-                                      <span className="flex-1 text-foreground">{svc.name}</span>
+                                      <span className="flex-1 text-foreground">{tr(svc.translations as Record<string, any> | null, lang, "name", svc.name)}</span>
                                       <span className="font-medium text-primary">€{Number(svc.price).toFixed(2)}</span>
                                     </label>
                                   );
