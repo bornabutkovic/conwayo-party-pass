@@ -780,7 +780,7 @@ export default function EventRegister() {
   return (
     <div className="min-h-screen bg-background">
       <ConvwayoHeader showBackToEvents />
-
+      <EventHero event={event} />
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="mx-auto max-w-2xl">
           {/* Guest / Logged-in banner */}
