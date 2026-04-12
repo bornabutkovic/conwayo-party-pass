@@ -193,6 +193,13 @@ export default function EventLanding() {
                   value={event.support_phone}
                 />
               )}
+
+              {/* Event Type */}
+              <DetailItem
+                icon={<EventTypeIcon className="h-5 w-5 text-primary" />}
+                label="Tip / Event Type"
+                value={eventType.label}
+              />
             </div>
           </div>
         </section>
