@@ -966,7 +966,7 @@ export default function EventRegister() {
 
                     {/* Shared contact phone */}
                     <div className="mt-4 max-w-xs">
-                      <Label>Contact Phone</Label>
+                      <Label>{t("register.contactPhone")}</Label>
                       <Input
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
@@ -978,10 +978,10 @@ export default function EventRegister() {
 
                 {/* ── Billing Information ── */}
                 <div>
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">Billing Information</h3>
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">{t("register.billingInfo")}</h3>
 
                   <div className="mb-6">
-                    <Label className="mb-3 block">Who is paying? *</Label>
+                    <Label className="mb-3 block">{t("register.whoPaying")} *</Label>
                     <RadioGroup
                       value={payerType}
                       onValueChange={(v) => setPayerType(v as "individual" | "company")}
@@ -998,7 +998,7 @@ export default function EventRegister() {
                         <RadioGroupItem value="individual" id="type-individual" />
                         <div className="flex items-center gap-2">
                           <UserIcon className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">Individual</span>
+                          <span className="font-medium text-foreground">{t("register.individual")}</span>
                         </div>
                       </label>
                       <label
@@ -1012,7 +1012,7 @@ export default function EventRegister() {
                         <RadioGroupItem value="company" id="type-company" />
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">Company</span>
+                          <span className="font-medium text-foreground">{t("register.company")}</span>
                         </div>
                       </label>
                     </RadioGroup>
@@ -1020,7 +1020,7 @@ export default function EventRegister() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
-                      <Label htmlFor="payer_name">Payer Name *</Label>
+                      <Label htmlFor="payer_name">{t("register.payerName")} *</Label>
                       <Input id="payer_name" value={payerName} onChange={(e) => setPayerName(e.target.value)} />
                     </div>
 
@@ -1029,7 +1029,7 @@ export default function EventRegister() {
                     {payerType === "company" && (
                       <>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="company_name">Company Name *</Label>
+                          <Label htmlFor="company_name">{t("register.companyName")} *</Label>
                           <Input
                             id="company_name"
                             value={companyName}
@@ -1052,7 +1052,7 @@ export default function EventRegister() {
                         {addressFieldsBlock}
 
                         <div>
-                          <Label htmlFor="billing_email">Billing Email *</Label>
+                          <Label htmlFor="billing_email">{t("register.billingEmail")} *</Label>
                           <Input
                             id="billing_email"
                             type="email"
@@ -1062,18 +1062,18 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="po_number">PO Number</Label>
+                          <Label htmlFor="po_number">{t("register.poNumber")}</Label>
                           <Input
                             id="po_number"
                             value={poNumber}
                             onChange={(e) => setPoNumber(e.target.value)}
-                            placeholder="Optional"
+                            placeholder={t("register.optional")}
                           />
                         </div>
 
                         {/* Company Payment Method */}
                         <div className="sm:col-span-2 mt-2">
-                          <Label className="mb-3 block">Payment Method *</Label>
+                          <Label className="mb-3 block">{t("register.paymentMethod")} *</Label>
                           <RadioGroup
                             value={companyPaymentMethod}
                             onValueChange={(v) => setCompanyPaymentMethod(v as "stripe" | "invoice")}
@@ -1091,8 +1091,8 @@ export default function EventRegister() {
                               <div className="flex items-center gap-2">
                                 <CreditCard className="h-4 w-4 text-muted-foreground" />
                                 <div>
-                                  <span className="font-medium text-foreground">Card Payment</span>
-                                  <p className="text-xs text-muted-foreground">Pay now via Stripe</p>
+                                  <span className="font-medium text-foreground">{t("register.cardPayment")}</span>
+                                  <p className="text-xs text-muted-foreground">{t("register.cardPaymentDesc")}</p>
                                 </div>
                               </div>
                             </label>
@@ -1108,8 +1108,8 @@ export default function EventRegister() {
                               <div className="flex items-center gap-2">
                                 <Building2 className="h-4 w-4 text-muted-foreground" />
                                 <div>
-                                  <span className="font-medium text-foreground">Bank Transfer</span>
-                                  <p className="text-xs text-muted-foreground">Pay via invoice</p>
+                                  <span className="font-medium text-foreground">{t("register.bankTransfer")}</span>
+                                  <p className="text-xs text-muted-foreground">{t("register.bankTransferDesc")}</p>
                                 </div>
                               </div>
                             </label>
