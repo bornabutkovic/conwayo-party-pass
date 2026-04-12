@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
+import { useLanguage, tr } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { EventHero } from "@/components/event/EventHero";
@@ -113,6 +114,7 @@ export default function EventRegister() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { lang, t } = useLanguage();
   const { data: event, isLoading: eventLoading, error: eventError } = useEvent(slug ?? "");
   const { data: tiers = [] } = useTicketTiers(event?.id);
   const { data: services = [] } = useEventServices(event?.id);
@@ -332,8 +334,8 @@ export default function EventRegister() {
         <ConvwayoHeader showBackToEvents />
         <div className="flex flex-1 items-center justify-center px-4">
           <div className="text-center space-y-3">
-            <h1 className="text-2xl font-bold text-foreground">This event is not currently available</h1>
-            <p className="text-muted-foreground">Registration is not open for this event.</p>
+            <h1 className="text-2xl font-bold text-foreground">{t("event.notAvailable")}</h1>
+            <p className="text-muted-foreground">{t("event.notAvailableDesc")}</p>
           </div>
         </div>
       </div>
@@ -689,7 +691,7 @@ export default function EventRegister() {
     <div className="space-y-3 mt-3 sm:col-span-2">
       <div>
         <label className="block text-sm font-medium text-muted-foreground mb-1">
-          Street Address <span className="text-destructive">*</span>
+          {t("register.streetAddress")} <span className="text-destructive">*</span>
         </label>
         <input
           type="text"
@@ -703,7 +705,7 @@ export default function EventRegister() {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-1">
-            City <span className="text-destructive">*</span>
+            {t("register.city")} <span className="text-destructive">*</span>
           </label>
           <input
             type="text"
@@ -716,7 +718,7 @@ export default function EventRegister() {
         </div>
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Postal Code <span className="text-destructive">*</span>
+            {t("register.postalCode")} <span className="text-destructive">*</span>
           </label>
           <input
             type="text"
@@ -730,7 +732,7 @@ export default function EventRegister() {
       </div>
       <div className="relative" ref={countryRef}>
         <label className="block text-sm font-medium text-muted-foreground mb-1">
-          Country <span className="text-destructive">*</span>
+          {t("register.country")} <span className="text-destructive">*</span>
         </label>
         <div
           className="w-full border border-input rounded-lg px-3 py-2 text-sm cursor-pointer flex justify-between items-center bg-background text-foreground"
@@ -746,7 +748,7 @@ export default function EventRegister() {
                 type="text"
                 value={countrySearch}
                 onChange={e => setCountrySearch(e.target.value)}
-                placeholder="Search country..."
+                placeholder={t("register.searchCountry")}
                 className="w-full border border-input rounded px-2 py-1 text-sm bg-background text-foreground focus:outline-none"
                 autoFocus
                 onClick={e => e.stopPropagation()}
@@ -787,13 +789,13 @@ export default function EventRegister() {
           {!authLoading && !user && (
             <div className="mb-6 rounded-lg border border-border bg-card p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm text-foreground font-medium">Have an account? <span className="text-muted-foreground font-normal">Log in to pre-fill details</span></p>
-                <p className="text-xs text-muted-foreground mt-0.5">Or continue as a guest below ↓</p>
+                <p className="text-sm text-foreground font-medium">{t("register.haveAccount")} <span className="text-muted-foreground font-normal">{t("register.loginPrefill")}</span></p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("register.guestBelow")}</p>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/event/${slug}/auth?tab=login`}>
                   <LogIn className="mr-1.5 h-4 w-4" />
-                  Log In
+                  {t("nav.logIn")}
                 </Link>
               </Button>
             </div>
@@ -806,14 +808,14 @@ export default function EventRegister() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Logged in as {user.user_metadata?.first_name || user.email?.split("@")[0]}
+                  {t("register.loggedInAs")} {user.user_metadata?.first_name || user.email?.split("@")[0]}
                 </p>
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
             </div>
           )}
 
-          <h2 className="mb-8 text-3xl font-bold text-foreground">Complete Registration</h2>
+          <h2 className="mb-8 text-3xl font-bold text-foreground">{t("register.completeTitle")}</h2>
 
           {profileLoading ? (
             <div className="space-y-4">
@@ -828,10 +830,12 @@ export default function EventRegister() {
             <>
               {/* ── Ticket Selection with Quantity ── */}
               <div className="mb-10">
-                <h3 className="mb-4 text-lg font-semibold text-foreground">Select Your Tickets</h3>
+                <h3 className="mb-4 text-lg font-semibold text-foreground">{t("register.selectTickets")}</h3>
                 <div className="space-y-3">
                   {tiers.map((tier) => {
                     const qty = ticketQuantities[tier.id] ?? 0;
+                    const tierName = tr(tier.translations as Record<string, any> | null, lang, "name", tier.name);
+                    const tierDesc = tr(tier.translations as Record<string, any> | null, lang, "description", tier.description);
                     return (
                       <div
                         key={tier.id}
@@ -840,15 +844,15 @@ export default function EventRegister() {
                         }`}
                       >
                         <div className="flex-1">
-                          <p className="font-medium text-foreground">{tier.name}</p>
-                          {tier.description && (
-                            <p className="text-sm text-muted-foreground">{tier.description}</p>
+                          <p className="font-medium text-foreground">{tierName}</p>
+                          {tierDesc && (
+                            <p className="text-sm text-muted-foreground">{tierDesc}</p>
                           )}
                           <p className="mt-1 text-sm font-semibold text-primary">
-                            {tier.price > 0 ? `€${Number(tier.price).toFixed(2)}` : "Free"}
+                            {tier.price > 0 ? `€${Number(tier.price).toFixed(2)}` : t("event.freeLabel")}
                           </p>
                           {tier.capacity !== null && (
-                            <p className="text-xs text-muted-foreground">{tier.capacity} spots left</p>
+                            <p className="text-xs text-muted-foreground">{tier.capacity} {t("event.spotsLeft").toLowerCase()}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -877,7 +881,7 @@ export default function EventRegister() {
                     );
                   })}
                   {tiers.length === 0 && (
-                    <p className="text-muted-foreground">No tickets available at this time.</p>
+                    <p className="text-muted-foreground">{t("register.noTickets")}</p>
                   )}
                 </div>
               </div>
@@ -887,10 +891,10 @@ export default function EventRegister() {
                 {totalTickets > 0 && (
                   <div>
                     <h3 className="mb-4 text-lg font-semibold text-foreground">
-                      Attendee Details
+                      {t("register.attendeeDetails")}
                       {totalTickets > 1 && (
                         <span className="ml-2 text-sm font-normal text-muted-foreground">
-                          ({totalTickets} tickets)
+                          ({totalTickets} {t("register.tickets")})
                         </span>
                       )}
                     </h3>
@@ -898,11 +902,11 @@ export default function EventRegister() {
                       {attendees.map((att, idx) => (
                         <div key={idx} className="rounded-lg border border-border bg-card p-4">
                           <p className="mb-3 text-sm font-medium text-primary">
-                            Ticket #{idx + 1} — {att.tierName}
+                            {t("register.ticket")} #{idx + 1} — {tr((tiers.find(t2 => t2.id === att.tierId)?.translations ?? null) as Record<string, any> | null, lang, "name", att.tierName)}
                           </p>
                           <div className="grid gap-3 sm:grid-cols-3">
                             <div>
-                              <Label className="text-xs">First Name *</Label>
+                              <Label className="text-xs">{t("register.firstName")} *</Label>
                               <Input
                                 value={att.firstName}
                                 onChange={(e) => updateAttendee(idx, 'firstName', e.target.value)}
@@ -910,7 +914,7 @@ export default function EventRegister() {
                               />
                             </div>
                             <div>
-                              <Label className="text-xs">Last Name *</Label>
+                              <Label className="text-xs">{t("register.lastName")} *</Label>
                               <Input
                                 value={att.lastName}
                                 onChange={(e) => updateAttendee(idx, 'lastName', e.target.value)}
@@ -918,7 +922,7 @@ export default function EventRegister() {
                               />
                             </div>
                             <div>
-                              <Label className="text-xs">Email *</Label>
+                              <Label className="text-xs">{t("register.email")} *</Label>
                               <Input
                                 type="email"
                                 value={att.email}
@@ -931,7 +935,7 @@ export default function EventRegister() {
                           {/* Per-attendee services */}
                           {services.length > 0 && (
                             <div className="mt-4 border-t border-border pt-3">
-                              <p className="mb-2 text-xs font-medium text-muted-foreground">Additional options for this attendee:</p>
+                              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("register.additionalOptions")}</p>
                               <div className="space-y-2">
                                 {services.map(svc => {
                                   const checked = att.selectedServiceIds.has(svc.id);
@@ -948,7 +952,7 @@ export default function EventRegister() {
                                         onChange={() => toggleAttendeeService(idx, svc.id)}
                                         className="h-4 w-4 rounded border-input text-primary accent-primary"
                                       />
-                                      <span className="flex-1 text-foreground">{svc.name}</span>
+                                      <span className="flex-1 text-foreground">{tr(svc.translations as Record<string, any> | null, lang, "name", svc.name)}</span>
                                       <span className="font-medium text-primary">€{Number(svc.price).toFixed(2)}</span>
                                     </label>
                                   );
@@ -962,7 +966,7 @@ export default function EventRegister() {
 
                     {/* Shared contact phone */}
                     <div className="mt-4 max-w-xs">
-                      <Label>Contact Phone</Label>
+                      <Label>{t("register.contactPhone")}</Label>
                       <Input
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
@@ -974,10 +978,10 @@ export default function EventRegister() {
 
                 {/* ── Billing Information ── */}
                 <div>
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">Billing Information</h3>
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">{t("register.billingInfo")}</h3>
 
                   <div className="mb-6">
-                    <Label className="mb-3 block">Who is paying? *</Label>
+                    <Label className="mb-3 block">{t("register.whoPaying")} *</Label>
                     <RadioGroup
                       value={payerType}
                       onValueChange={(v) => setPayerType(v as "individual" | "company")}
@@ -994,7 +998,7 @@ export default function EventRegister() {
                         <RadioGroupItem value="individual" id="type-individual" />
                         <div className="flex items-center gap-2">
                           <UserIcon className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">Individual</span>
+                          <span className="font-medium text-foreground">{t("register.individual")}</span>
                         </div>
                       </label>
                       <label
@@ -1008,7 +1012,7 @@ export default function EventRegister() {
                         <RadioGroupItem value="company" id="type-company" />
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">Company</span>
+                          <span className="font-medium text-foreground">{t("register.company")}</span>
                         </div>
                       </label>
                     </RadioGroup>
@@ -1016,7 +1020,7 @@ export default function EventRegister() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
-                      <Label htmlFor="payer_name">Payer Name *</Label>
+                      <Label htmlFor="payer_name">{t("register.payerName")} *</Label>
                       <Input id="payer_name" value={payerName} onChange={(e) => setPayerName(e.target.value)} />
                     </div>
 
@@ -1025,7 +1029,7 @@ export default function EventRegister() {
                     {payerType === "company" && (
                       <>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="company_name">Company Name *</Label>
+                          <Label htmlFor="company_name">{t("register.companyName")} *</Label>
                           <Input
                             id="company_name"
                             value={companyName}
@@ -1048,7 +1052,7 @@ export default function EventRegister() {
                         {addressFieldsBlock}
 
                         <div>
-                          <Label htmlFor="billing_email">Billing Email *</Label>
+                          <Label htmlFor="billing_email">{t("register.billingEmail")} *</Label>
                           <Input
                             id="billing_email"
                             type="email"
@@ -1058,18 +1062,18 @@ export default function EventRegister() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="po_number">PO Number</Label>
+                          <Label htmlFor="po_number">{t("register.poNumber")}</Label>
                           <Input
                             id="po_number"
                             value={poNumber}
                             onChange={(e) => setPoNumber(e.target.value)}
-                            placeholder="Optional"
+                            placeholder={t("register.optional")}
                           />
                         </div>
 
                         {/* Company Payment Method */}
                         <div className="sm:col-span-2 mt-2">
-                          <Label className="mb-3 block">Payment Method *</Label>
+                          <Label className="mb-3 block">{t("register.paymentMethod")} *</Label>
                           <RadioGroup
                             value={companyPaymentMethod}
                             onValueChange={(v) => setCompanyPaymentMethod(v as "stripe" | "invoice")}
@@ -1087,8 +1091,8 @@ export default function EventRegister() {
                               <div className="flex items-center gap-2">
                                 <CreditCard className="h-4 w-4 text-muted-foreground" />
                                 <div>
-                                  <span className="font-medium text-foreground">Card Payment</span>
-                                  <p className="text-xs text-muted-foreground">Pay now via Stripe</p>
+                                  <span className="font-medium text-foreground">{t("register.cardPayment")}</span>
+                                  <p className="text-xs text-muted-foreground">{t("register.cardPaymentDesc")}</p>
                                 </div>
                               </div>
                             </label>
@@ -1104,8 +1108,8 @@ export default function EventRegister() {
                               <div className="flex items-center gap-2">
                                 <Building2 className="h-4 w-4 text-muted-foreground" />
                                 <div>
-                                  <span className="font-medium text-foreground">Bank Transfer</span>
-                                  <p className="text-xs text-muted-foreground">Pay via invoice</p>
+                                  <span className="font-medium text-foreground">{t("register.bankTransfer")}</span>
+                                  <p className="text-xs text-muted-foreground">{t("register.bankTransferDesc")}</p>
                                 </div>
                               </div>
                             </label>
@@ -1139,12 +1143,12 @@ export default function EventRegister() {
                       })}
                     {servicesTotal > 0 && (
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Additional services</span>
+                        <span className="text-muted-foreground">{t("register.additionalServices")}</span>
                         <span className="font-medium text-foreground">{servicesTotal.toFixed(2)} {currency}</span>
                       </div>
                     )}
                     <div className="border-t border-border pt-2 flex items-center justify-between">
-                      <span className="font-semibold text-foreground">Total</span>
+                      <span className="font-semibold text-foreground">{t("register.total")}</span>
                       <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
                     </div>
                   </div>
@@ -1163,32 +1167,30 @@ export default function EventRegister() {
                       className="mt-1 h-4 w-4 rounded border-input text-primary accent-primary"
                     />
                     <span className="text-sm text-muted-foreground">
-                      I agree to the{" "}
+                      {t("register.termsAgree")}{" "}
                       <a
                         href={event.terms_url || "#"}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary underline hover:text-primary/80"
                       >
-                        Terms of Purchase
+                        {t("register.termsPurchase")}
                       </a>{" "}
-                      and Cancellation Policy
-                      <br />
-                      <span className="text-xs">(Slažem se s Uvjetima kupnje i Politikom povrata)</span>
+                      {t("register.termsAndCancellation")}
                     </span>
                   </label>
                   {termsError && !termsAccepted && (
-                    <p className="text-xs text-destructive ml-7">Please accept the Terms of Purchase to continue.</p>
+                    <p className="text-xs text-destructive ml-7">{t("register.termsError")}</p>
                   )}
                 </div>
 
                 <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0 || !termsAccepted}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
-                    ? "Processing..."
+                    ? t("register.processing")
                     : payerType === "company" && companyPaymentMethod === "invoice"
-                      ? `Request Invoice — ${grandTotal.toFixed(2)} ${currency}`
-                      : `Register & Pay — ${grandTotal.toFixed(2)} ${currency}`}
+                      ? `${t("register.requestInvoice")} — ${grandTotal.toFixed(2)} ${currency}`
+                      : `${t("register.registerAndPay")} — ${grandTotal.toFixed(2)} ${currency}`}
                 </Button>
               </form>
             </>

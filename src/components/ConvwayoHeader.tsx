@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -18,6 +19,7 @@ interface ConvwayoHeaderProps {
 
 export function ConvwayoHeader({ showBackToEvents = false }: ConvwayoHeaderProps) {
   const { user, loading, signOut } = useAuth();
+  const { lang, setLang, t } = useLanguage();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -42,13 +44,37 @@ export function ConvwayoHeader({ showBackToEvents = false }: ConvwayoHeaderProps
         </Link>
 
         <div className="flex items-center gap-3">
+          {/* Language switcher */}
+          <div className="flex items-center rounded-md border border-border/50 overflow-hidden text-xs font-medium">
+            <button
+              onClick={() => setLang("hr")}
+              className={`px-2.5 py-1.5 transition-colors ${
+                lang === "hr"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              HR
+            </button>
+            <button
+              onClick={() => setLang("en")}
+              className={`px-2.5 py-1.5 transition-colors ${
+                lang === "en"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              EN
+            </button>
+          </div>
+
           {showBackToEvents && (
             <Link
               to="/"
               className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              All Events
+              {t("nav.allEvents")}
             </Link>
           )}
 
@@ -60,7 +86,7 @@ export function ConvwayoHeader({ showBackToEvents = false }: ConvwayoHeaderProps
             >
               <Link to="/auth">
                 <LogIn className="mr-1.5 h-4 w-4" />
-                Log In
+                {t("nav.logIn")}
               </Link>
             </Button>
           )}
@@ -83,12 +109,12 @@ export function ConvwayoHeader({ showBackToEvents = false }: ConvwayoHeaderProps
               <DropdownMenuContent align="end" className="w-48 glass">
                 <DropdownMenuItem onClick={() => navigate("/my-tickets")}>
                   <Ticket className="mr-2 h-4 w-4" />
-                  My Tickets
+                  {t("nav.myTickets")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Log Out
+                  {t("nav.logOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
+import { useLanguage, tr } from "@/hooks/useLanguage";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
@@ -29,23 +30,28 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
-import { hr } from "date-fns/locale";
+import { hr as hrLocale } from "date-fns/locale";
 import { QRCodeSVG } from "qrcode.react";
 
 function formatDateHr(dateStr: string | null) {
   if (!dateStr) return null;
-  return format(new Date(dateStr), "d. MMMM yyyy.", { locale: hr });
+  return format(new Date(dateStr), "d. MMMM yyyy.", { locale: hrLocale });
+}
+
+function formatDateEn(dateStr: string | null) {
+  if (!dateStr) return null;
+  return format(new Date(dateStr), "MMMM d, yyyy");
 }
 
 function formatTimeHr(dateStr: string | null) {
   if (!dateStr) return null;
-  return format(new Date(dateStr), "HH:mm", { locale: hr });
+  return format(new Date(dateStr), "HH:mm", { locale: hrLocale });
 }
 
-const EVENT_TYPE_LABELS: Record<string, { label: string; icon: typeof Building2 }> = {
-  face2face: { label: "Face2Face", icon: Building2 },
-  virtual: { label: "Virtual / Online", icon: Monitor },
-  hybrid: { label: "Hybrid", icon: Users },
+const EVENT_TYPE_LABELS: Record<string, { label: { hr: string; en: string }; icon: typeof Building2 }> = {
+  face2face: { label: { hr: "Face2Face", en: "Face2Face" }, icon: Building2 },
+  virtual: { label: { hr: "Virtual / Online", en: "Virtual / Online" }, icon: Monitor },
+  hybrid: { label: { hr: "Hybrid", en: "Hybrid" }, icon: Users },
 };
 
 const DEFAULT_CANCELLATION_POLICY = `Otkazivanje kotizacije moguće je najkasnije 14 dana prije početka događaja uz povrat 50% uplaćenog iznosa. Nakon tog roka povrat nije moguć, ali kotizacija može biti prenesena na drugu osobu uz prethodnu pisanu obavijest organizatoru.
@@ -55,6 +61,7 @@ Cancellations are accepted up to 14 days before the event with a 50% refund. Aft
 export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
   const { data: event, isLoading, error } = useEventFull(slug ?? "");
+  const { lang, t } = useLanguage();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -69,8 +76,8 @@ export default function EventLanding() {
         <ConvwayoHeader showBackToEvents />
         <div className="flex flex-1 items-center justify-center px-4">
           <div className="text-center space-y-3">
-            <h1 className="text-2xl font-bold text-foreground">This event is not currently available</h1>
-            <p className="text-muted-foreground">The event may have ended or registration is not open yet.</p>
+            <h1 className="text-2xl font-bold text-foreground">{t("event.notAvailable")}</h1>
+            <p className="text-muted-foreground">{t("event.notAvailableDesc")}</p>
           </div>
         </div>
       </div>
@@ -83,13 +90,17 @@ export default function EventLanding() {
   const institution = event.institutions;
   const primaryColor = event.branding_primary_color ?? "#6366f1";
   const bannerUrl = event.branding_banner_url;
-  const eventType = EVENT_TYPE_LABELS[event.event_type ?? "face2face"] ?? EVENT_TYPE_LABELS.face2face;
-  const EventTypeIcon = eventType.icon;
+  const eventTypeEntry = EVENT_TYPE_LABELS[event.event_type ?? "face2face"] ?? EVENT_TYPE_LABELS.face2face;
+  const EventTypeIcon = eventTypeEntry.icon;
 
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
   const isVirtual = event.event_type === "virtual";
 
   const whatsappUrl = `https://wa.me/385916059712?text=Prijava%20za%3A%20${slug}`;
+
+  const eventName = tr(event.translations as Record<string, any> | null, lang, "name", event.name);
+  const eventDescription = tr(event.translations as Record<string, any> | null, lang, "description", event.description);
+  const formatDate = lang === "hr" ? formatDateHr : formatDateEn;
 
   return (
     <EventBrandingProvider event={event}>
@@ -108,7 +119,7 @@ export default function EventLanding() {
             <div className="absolute inset-0">
               <img
                 src={bannerUrl}
-                alt={`${event.name} banner`}
+                alt={`${eventName} banner`}
                 className="h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-black/30" />
@@ -126,7 +137,7 @@ export default function EventLanding() {
           <div className="container mx-auto px-4 py-8 md:py-10">
             <div className="mx-auto max-w-4xl">
               <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-5xl">
-                {event.name}
+                {eventName}
               </h1>
             </div>
           </div>
@@ -136,44 +147,41 @@ export default function EventLanding() {
         <section className="border-b border-border bg-card">
           <div className="container mx-auto px-4 py-6">
             <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Date */}
               {event.start_date && (
                 <DetailItem
                   icon={<CalendarDays className="h-5 w-5 text-primary" />}
-                  label="Datum / Date"
+                  label={t("event.dateLabel")}
                   value={
                     <>
-                      {formatDateHr(event.start_date)}
+                      {formatDate(event.start_date)}
                       {formatTimeHr(event.start_date) && ` | ${formatTimeHr(event.start_date)}`}
                       {event.end_date && (
-                        <> – {formatDateHr(event.end_date)}</>
+                        <> – {formatDate(event.end_date)}</>
                       )}
                     </>
                   }
                 />
               )}
 
-              {/* Location */}
               {!isVirtual && locationParts.length > 0 && (
                 <DetailItem
                   icon={<MapPin className="h-5 w-5 text-primary" />}
-                  label="Lokacija / Location"
+                  label={t("event.locationLabel")}
                   value={locationParts.join(", ")}
                 />
               )}
               {isVirtual && (
                 <DetailItem
                   icon={<Monitor className="h-5 w-5 text-primary" />}
-                  label="Lokacija / Location"
+                  label={t("event.locationLabel")}
                   value="Virtual Event – Online"
                 />
               )}
 
-              {/* Website or Phone */}
               {event.website_url && (
                 <DetailItem
                   icon={<Globe className="h-5 w-5 text-primary" />}
-                  label="Web"
+                  label={t("event.webLabel")}
                   value={
                     <a
                       href={event.website_url}
@@ -189,16 +197,15 @@ export default function EventLanding() {
               {!event.website_url && event.support_phone && (
                 <DetailItem
                   icon={<Phone className="h-5 w-5 text-primary" />}
-                  label="Telefon / Phone"
+                  label={t("event.phoneLabel")}
                   value={event.support_phone}
                 />
               )}
 
-              {/* Event Type */}
               <DetailItem
                 icon={<EventTypeIcon className="h-5 w-5 text-primary" />}
-                label="Tip / Event Type"
-                value={eventType.label}
+                label={t("event.typeLabel")}
+                value={eventTypeEntry.label[lang]}
               />
             </div>
           </div>
@@ -207,14 +214,14 @@ export default function EventLanding() {
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-4xl space-y-12 py-10 md:py-14">
             {/* SECTION 3 — ABOUT */}
-            {event.description && (
+            {eventDescription && (
               <section>
                 <h2 className="mb-4 text-2xl font-bold text-foreground">
-                  O eventu / About the Event
+                  {t("event.aboutTitle")}
                 </h2>
                 <div
                   className="prose prose-sm max-w-none text-muted-foreground"
-                  dangerouslySetInnerHTML={{ __html: event.description }}
+                  dangerouslySetInnerHTML={{ __html: eventDescription }}
                 />
               </section>
             )}
@@ -224,36 +231,40 @@ export default function EventLanding() {
               <section>
                 <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
                   <Ticket className="h-6 w-6" />
-                  Ulaznice / Tickets
+                  {t("event.ticketsTitle")}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {tiers.map((tier) => (
-                    <Card key={tier.id} className="border-border">
-                      <CardContent className="p-5">
-                        <h3 className="text-lg font-semibold text-card-foreground">
-                          {tier.name}
-                        </h3>
-                        {tier.description && (
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {tier.description}
+                  {tiers.map((tier) => {
+                    const tierName = tr(tier.translations as Record<string, any> | null, lang, "name", tier.name);
+                    const tierDesc = tr(tier.translations as Record<string, any> | null, lang, "description", tier.description);
+                    return (
+                      <Card key={tier.id} className="border-border">
+                        <CardContent className="p-5">
+                          <h3 className="text-lg font-semibold text-card-foreground">
+                            {tierName}
+                          </h3>
+                          {tierDesc && (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {tierDesc}
+                            </p>
+                          )}
+                          <p className="mt-3 text-2xl font-bold text-primary">
+                            {tier.price === 0
+                              ? t("event.freeLabel")
+                              : `${Number(tier.price).toFixed(2)} ${currency}`}
                           </p>
-                        )}
-                        <p className="mt-3 text-2xl font-bold text-primary">
-                          {tier.price === 0
-                            ? "Besplatno / Free"
-                            : `${Number(tier.price).toFixed(2)} ${currency}`}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Cijena uključuje PDV / Price includes VAT
-                        </p>
-                        {tier.capacity != null && tier.capacity > 0 && (
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            Preostalo mjesta: {tier.capacity}
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t("event.priceIncludesVat")}
                           </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                          {tier.capacity != null && tier.capacity > 0 && (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              {t("event.spotsLeft")}: {tier.capacity}
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
 
                 {/* WhatsApp AI Registration section */}
@@ -269,9 +280,9 @@ export default function EventLanding() {
                       />
                     </div>
                     <div className="text-center sm:text-left">
-                      <h3 className="text-2xl font-bold text-foreground">AI Registration</h3>
+                      <h3 className="text-2xl font-bold text-foreground">{t("event.whatsappTitle")}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Prijavi se brzo i jednostavno putem WhatsApp AI agenta
+                        {t("event.whatsappDesc")}
                       </p>
                       <a
                         href={whatsappUrl}
@@ -281,7 +292,7 @@ export default function EventLanding() {
                         style={{ backgroundColor: "#25D366" }}
                       >
                         <MessageCircle className="h-4 w-4" />
-                        Otvori WhatsApp
+                        {t("event.whatsappButton")}
                       </a>
                     </div>
                   </CardContent>
@@ -289,7 +300,7 @@ export default function EventLanding() {
                 <div className="mt-6 text-center">
                   <Button asChild size="lg" className="gap-2 px-10 py-6 text-lg">
                     <Link to={`/event/${slug}/register`}>
-                      Register Now
+                      {t("event.registerNow")}
                       <ArrowRight className="h-5 w-5" />
                     </Link>
                   </Button>
@@ -302,34 +313,38 @@ export default function EventLanding() {
               <section>
                 <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
                   <ShieldCheck className="h-6 w-6" />
-                  Dodatne usluge / Additional Services
+                  {t("event.servicesTitle")}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {services.map((service) => (
-                    <Card key={service.id} className="border-border">
-                      <CardContent className="p-5">
-                        <h3 className="text-lg font-semibold text-card-foreground">
-                          {service.name}
-                        </h3>
-                        {service.description && (
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {service.description}
+                  {services.map((service) => {
+                    const svcName = tr(service.translations as Record<string, any> | null, lang, "name", service.name);
+                    const svcDesc = tr(service.translations as Record<string, any> | null, lang, "description", service.description);
+                    return (
+                      <Card key={service.id} className="border-border">
+                        <CardContent className="p-5">
+                          <h3 className="text-lg font-semibold text-card-foreground">
+                            {svcName}
+                          </h3>
+                          {svcDesc && (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {svcDesc}
+                            </p>
+                          )}
+                          <p className="mt-3 text-2xl font-bold text-primary">
+                            {service.price === 0
+                              ? t("event.freeLabel")
+                              : `${Number(service.price).toFixed(2)} ${currency}`}
                           </p>
-                        )}
-                        <p className="mt-3 text-2xl font-bold text-primary">
-                          {service.price === 0
-                            ? "Besplatno / Free"
-                            : `${Number(service.price).toFixed(2)} ${currency}`}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Cijena uključuje PDV / Price includes VAT
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t("event.priceIncludesVat")}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
                 <p className="mt-4 text-sm text-muted-foreground text-center">
-                  Dodatne usluge možete odabrati tijekom procesa registracije. / Additional services can be selected during registration.
+                  {t("event.servicesNote")}
                 </p>
               </section>
             )}
@@ -338,7 +353,7 @@ export default function EventLanding() {
             <section>
               <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-foreground">
                 <Building2 className="h-6 w-6" />
-                Organizator / Event Organizer
+                {t("event.organizerTitle")}
               </h2>
               <Card className="border-border">
                 <CardContent className="p-5 space-y-3 text-sm">
@@ -390,7 +405,6 @@ export default function EventLanding() {
                           </a>
                         </div>
                       )}
-                      {/* Social links */}
                       <SocialLinks
                         facebook={institution.facebook_url}
                         linkedin={institution.linkedin_url}
@@ -427,7 +441,7 @@ export default function EventLanding() {
               <Accordion type="single" collapsible>
                 <AccordionItem value="cancellation" className="border-border">
                   <AccordionTrigger className="text-base font-semibold">
-                    Politika povrata / Cancellation Policy
+                    {t("event.cancellationTitle")}
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="whitespace-pre-line text-sm text-muted-foreground leading-relaxed">
@@ -443,12 +457,8 @@ export default function EventLanding() {
         {/* SECTION 7 — PLATFORM FOOTER */}
         <footer className="border-t border-border bg-muted/50 py-6">
           <div className="container mx-auto px-4 text-center text-xs text-muted-foreground leading-relaxed">
-            <p>
-              Prodaja ulaznica omogućena putem platforme Conwayo.
-            </p>
-            <p>
-              Vlasnik platforme: Penta d.o.o., Izidora Kršnjavoga 25, 10000 Zagreb
-            </p>
+            <p>{t("footer.poweredBy")}</p>
+            <p>{t("footer.owner")}</p>
             <p>
               OIB: 31375495391 |{" "}
               <a href="mailto:info@penta-zagreb.hr" className="underline underline-offset-2">
