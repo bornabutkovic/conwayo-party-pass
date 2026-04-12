@@ -834,6 +834,8 @@ export default function EventRegister() {
                 <div className="space-y-3">
                   {tiers.map((tier) => {
                     const qty = ticketQuantities[tier.id] ?? 0;
+                    const tierName = tr(tier.translations as Record<string, any> | null, lang, "name", tier.name);
+                    const tierDesc = tr(tier.translations as Record<string, any> | null, lang, "description", tier.description);
                     return (
                       <div
                         key={tier.id}
@@ -842,15 +844,15 @@ export default function EventRegister() {
                         }`}
                       >
                         <div className="flex-1">
-                          <p className="font-medium text-foreground">{tier.name}</p>
-                          {tier.description && (
-                            <p className="text-sm text-muted-foreground">{tier.description}</p>
+                          <p className="font-medium text-foreground">{tierName}</p>
+                          {tierDesc && (
+                            <p className="text-sm text-muted-foreground">{tierDesc}</p>
                           )}
                           <p className="mt-1 text-sm font-semibold text-primary">
-                            {tier.price > 0 ? `€${Number(tier.price).toFixed(2)}` : "Free"}
+                            {tier.price > 0 ? `€${Number(tier.price).toFixed(2)}` : t("event.freeLabel")}
                           </p>
                           {tier.capacity !== null && (
-                            <p className="text-xs text-muted-foreground">{tier.capacity} spots left</p>
+                            <p className="text-xs text-muted-foreground">{tier.capacity} {t("event.spotsLeft").toLowerCase()}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -879,7 +881,7 @@ export default function EventRegister() {
                     );
                   })}
                   {tiers.length === 0 && (
-                    <p className="text-muted-foreground">No tickets available at this time.</p>
+                    <p className="text-muted-foreground">{t("register.noTickets")}</p>
                   )}
                 </div>
               </div>
@@ -889,10 +891,10 @@ export default function EventRegister() {
                 {totalTickets > 0 && (
                   <div>
                     <h3 className="mb-4 text-lg font-semibold text-foreground">
-                      Attendee Details
+                      {t("register.attendeeDetails")}
                       {totalTickets > 1 && (
                         <span className="ml-2 text-sm font-normal text-muted-foreground">
-                          ({totalTickets} tickets)
+                          ({totalTickets} {t("register.tickets")})
                         </span>
                       )}
                     </h3>
