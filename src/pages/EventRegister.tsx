@@ -691,7 +691,7 @@ export default function EventRegister() {
     <div className="space-y-3 mt-3 sm:col-span-2">
       <div>
         <label className="block text-sm font-medium text-muted-foreground mb-1">
-          Street Address <span className="text-destructive">*</span>
+          {t("register.streetAddress")} <span className="text-destructive">*</span>
         </label>
         <input
           type="text"
@@ -705,7 +705,7 @@ export default function EventRegister() {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-1">
-            City <span className="text-destructive">*</span>
+            {t("register.city")} <span className="text-destructive">*</span>
           </label>
           <input
             type="text"
@@ -718,7 +718,7 @@ export default function EventRegister() {
         </div>
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-1">
-            Postal Code <span className="text-destructive">*</span>
+            {t("register.postalCode")} <span className="text-destructive">*</span>
           </label>
           <input
             type="text"
@@ -732,7 +732,7 @@ export default function EventRegister() {
       </div>
       <div className="relative" ref={countryRef}>
         <label className="block text-sm font-medium text-muted-foreground mb-1">
-          Country <span className="text-destructive">*</span>
+          {t("register.country")} <span className="text-destructive">*</span>
         </label>
         <div
           className="w-full border border-input rounded-lg px-3 py-2 text-sm cursor-pointer flex justify-between items-center bg-background text-foreground"
@@ -748,7 +748,7 @@ export default function EventRegister() {
                 type="text"
                 value={countrySearch}
                 onChange={e => setCountrySearch(e.target.value)}
-                placeholder="Search country..."
+                placeholder={t("register.searchCountry")}
                 className="w-full border border-input rounded px-2 py-1 text-sm bg-background text-foreground focus:outline-none"
                 autoFocus
                 onClick={e => e.stopPropagation()}
