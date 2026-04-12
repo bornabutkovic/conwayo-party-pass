@@ -1143,12 +1143,12 @@ export default function EventRegister() {
                       })}
                     {servicesTotal > 0 && (
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Additional services</span>
+                        <span className="text-muted-foreground">{t("register.additionalServices")}</span>
                         <span className="font-medium text-foreground">{servicesTotal.toFixed(2)} {currency}</span>
                       </div>
                     )}
                     <div className="border-t border-border pt-2 flex items-center justify-between">
-                      <span className="font-semibold text-foreground">Total</span>
+                      <span className="font-semibold text-foreground">{t("register.total")}</span>
                       <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
                     </div>
                   </div>
@@ -1167,32 +1167,30 @@ export default function EventRegister() {
                       className="mt-1 h-4 w-4 rounded border-input text-primary accent-primary"
                     />
                     <span className="text-sm text-muted-foreground">
-                      I agree to the{" "}
+                      {t("register.termsAgree")}{" "}
                       <a
                         href={event.terms_url || "#"}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary underline hover:text-primary/80"
                       >
-                        Terms of Purchase
+                        {t("register.termsPurchase")}
                       </a>{" "}
-                      and Cancellation Policy
-                      <br />
-                      <span className="text-xs">(Slažem se s Uvjetima kupnje i Politikom povrata)</span>
+                      {t("register.termsAndCancellation")}
                     </span>
                   </label>
                   {termsError && !termsAccepted && (
-                    <p className="text-xs text-destructive ml-7">Please accept the Terms of Purchase to continue.</p>
+                    <p className="text-xs text-destructive ml-7">{t("register.termsError")}</p>
                   )}
                 </div>
 
                 <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0 || !termsAccepted}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
-                    ? "Processing..."
+                    ? t("register.processing")
                     : payerType === "company" && companyPaymentMethod === "invoice"
-                      ? `Request Invoice — ${grandTotal.toFixed(2)} ${currency}`
-                      : `Register & Pay — ${grandTotal.toFixed(2)} ${currency}`}
+                      ? `${t("register.requestInvoice")} — ${grandTotal.toFixed(2)} ${currency}`
+                      : `${t("register.registerAndPay")} — ${grandTotal.toFixed(2)} ${currency}`}
                 </Button>
               </form>
             </>
