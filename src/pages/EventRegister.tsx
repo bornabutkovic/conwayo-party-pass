@@ -5,6 +5,7 @@ import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
 import { supabase } from "@/integrations/supabase/client";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
+import { EventHero } from "@/components/event/EventHero";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Input } from "@/components/ui/input";
