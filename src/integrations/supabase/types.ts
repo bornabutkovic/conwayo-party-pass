@@ -495,6 +495,7 @@ export type Database = {
           price: number
           rejection_reason: string | null
           status: string | null
+          translations: Json | null
         }
         Insert: {
           approval_note?: string | null
@@ -512,6 +513,7 @@ export type Database = {
           price?: number
           rejection_reason?: string | null
           status?: string | null
+          translations?: Json | null
         }
         Update: {
           approval_note?: string | null
@@ -529,6 +531,7 @@ export type Database = {
           price?: number
           rejection_reason?: string | null
           status?: string | null
+          translations?: Json | null
         }
         Relationships: [
           {
@@ -599,6 +602,7 @@ export type Database = {
           supported_languages: string[] | null
           tax_location: string | null
           terms_url: string | null
+          translations: Json | null
           vat_rate: number | null
           venue_name: string | null
           website_url: string | null
@@ -647,6 +651,7 @@ export type Database = {
           supported_languages?: string[] | null
           tax_location?: string | null
           terms_url?: string | null
+          translations?: Json | null
           vat_rate?: number | null
           venue_name?: string | null
           website_url?: string | null
@@ -695,6 +700,7 @@ export type Database = {
           supported_languages?: string[] | null
           tax_location?: string | null
           terms_url?: string | null
+          translations?: Json | null
           vat_rate?: number | null
           venue_name?: string | null
           website_url?: string | null
@@ -1380,6 +1386,7 @@ export type Database = {
           sales_start: string | null
           short_name: string | null
           status: string | null
+          translations: Json | null
         }
         Insert: {
           approval_note?: string | null
@@ -1398,6 +1405,7 @@ export type Database = {
           sales_start?: string | null
           short_name?: string | null
           status?: string | null
+          translations?: Json | null
         }
         Update: {
           approval_note?: string | null
@@ -1416,6 +1424,7 @@ export type Database = {
           sales_start?: string | null
           short_name?: string | null
           status?: string | null
+          translations?: Json | null
         }
         Relationships: [
           {
