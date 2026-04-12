@@ -153,13 +153,6 @@ export default function EventLanding() {
                 />
               )}
 
-              {/* Event Type */}
-              <DetailItem
-                icon={<EventTypeIcon className="h-5 w-5 text-primary" />}
-                label="Tip / Event Type"
-                value={eventType.label}
-              />
-
               {/* Location */}
               {!isVirtual && locationParts.length > 0 && (
                 <DetailItem
