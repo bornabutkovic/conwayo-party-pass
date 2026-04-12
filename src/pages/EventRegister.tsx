@@ -808,14 +808,14 @@ export default function EventRegister() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Logged in as {user.user_metadata?.first_name || user.email?.split("@")[0]}
+                  {t("register.loggedInAs")} {user.user_metadata?.first_name || user.email?.split("@")[0]}
                 </p>
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
             </div>
           )}
 
-          <h2 className="mb-8 text-3xl font-bold text-foreground">Complete Registration</h2>
+          <h2 className="mb-8 text-3xl font-bold text-foreground">{t("register.completeTitle")}</h2>
 
           {profileLoading ? (
             <div className="space-y-4">
@@ -830,7 +830,7 @@ export default function EventRegister() {
             <>
               {/* ── Ticket Selection with Quantity ── */}
               <div className="mb-10">
-                <h3 className="mb-4 text-lg font-semibold text-foreground">Select Your Tickets</h3>
+                <h3 className="mb-4 text-lg font-semibold text-foreground">{t("register.selectTickets")}</h3>
                 <div className="space-y-3">
                   {tiers.map((tier) => {
                     const qty = ticketQuantities[tier.id] ?? 0;
