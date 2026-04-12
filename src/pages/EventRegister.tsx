@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
+import { useLanguage, tr } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { EventHero } from "@/components/event/EventHero";
