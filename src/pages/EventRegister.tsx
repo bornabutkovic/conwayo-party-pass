@@ -5,6 +5,7 @@ import { useEvent, useTicketTiers } from "@/hooks/useEvent";
 import { useEventServices } from "@/hooks/useEventServices";
 import { supabase } from "@/integrations/supabase/client";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
+import { EventHero } from "@/components/event/EventHero";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Input } from "@/components/ui/input";
@@ -779,7 +780,7 @@ export default function EventRegister() {
   return (
     <div className="min-h-screen bg-background">
       <ConvwayoHeader showBackToEvents />
-
+      <EventHero event={event} />
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="mx-auto max-w-2xl">
           {/* Guest / Logged-in banner */}
@@ -880,7 +881,7 @@ export default function EventRegister() {
                   )}
                 </div>
               </div>
-
+      <EventHero event={event} />
 
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* ── Per-Ticket Attendee Details ── */}

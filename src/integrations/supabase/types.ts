@@ -377,26 +377,50 @@ export type Database = {
       chat_messages: {
         Row: {
           created_at: string | null
+          event_id: string | null
+          event_name: string | null
           id: string
           message: Json
           Sender: Json | null
+          sender_name: string | null
           session_id: string
         }
         Insert: {
           created_at?: string | null
+          event_id?: string | null
+          event_name?: string | null
           id?: string
           message: Json
           Sender?: Json | null
+          sender_name?: string | null
           session_id: string
         }
         Update: {
           created_at?: string | null
+          event_id?: string | null
+          event_name?: string | null
           id?: string
           message?: Json
           Sender?: Json | null
+          sender_name?: string | null
           session_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "view_events_full"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_memberships: {
         Row: {
@@ -469,6 +493,7 @@ export type Database = {
           id: string
           name: string
           price: number
+          rejection_reason: string | null
           status: string | null
         }
         Insert: {
@@ -485,6 +510,7 @@ export type Database = {
           id?: string
           name: string
           price?: number
+          rejection_reason?: string | null
           status?: string | null
         }
         Update: {
@@ -501,6 +527,7 @@ export type Database = {
           id?: string
           name?: string
           price?: number
+          rejection_reason?: string | null
           status?: string | null
         }
         Relationships: [
@@ -562,6 +589,7 @@ export type Database = {
           notification_sender_name: string | null
           payment_due_days: number | null
           price: number | null
+          rejection_reason: string | null
           short_name: string | null
           slug: string
           start_date: string | null
@@ -609,6 +637,7 @@ export type Database = {
           notification_sender_name?: string | null
           payment_due_days?: number | null
           price?: number | null
+          rejection_reason?: string | null
           short_name?: string | null
           slug: string
           start_date?: string | null
@@ -656,6 +685,7 @@ export type Database = {
           notification_sender_name?: string | null
           payment_due_days?: number | null
           price?: number | null
+          rejection_reason?: string | null
           short_name?: string | null
           slug?: string
           start_date?: string | null
@@ -982,6 +1012,8 @@ export type Database = {
           pdf_url: string | null
           po_number: string | null
           status: Database["public"]["Enums"]["payment_status"] | null
+          stripe_session_expires_at: string | null
+          stripe_session_id: string | null
           terms_accepted: boolean | null
           terms_accepted_at: string | null
           terms_ip: string | null
@@ -1016,6 +1048,8 @@ export type Database = {
           pdf_url?: string | null
           po_number?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
+          stripe_session_expires_at?: string | null
+          stripe_session_id?: string | null
           terms_accepted?: boolean | null
           terms_accepted_at?: string | null
           terms_ip?: string | null
@@ -1050,6 +1084,8 @@ export type Database = {
           pdf_url?: string | null
           po_number?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
+          stripe_session_expires_at?: string | null
+          stripe_session_id?: string | null
           terms_accepted?: boolean | null
           terms_accepted_at?: string | null
           terms_ip?: string | null
@@ -1114,6 +1150,57 @@ export type Database = {
           internal_code?: string | null
           is_active?: boolean | null
           stripe_brand?: string
+        }
+        Relationships: []
+      }
+      pricing_leads: {
+        Row: {
+          company: string | null
+          congress_name: string | null
+          created_at: string | null
+          duration: string | null
+          email: string
+          estimated_fee: string | null
+          event_scale: string | null
+          expected_participants: string | null
+          first_name: string
+          funding_source: string | null
+          has_registration_fees: boolean | null
+          id: string
+          last_name: string
+          services_needed: string[] | null
+        }
+        Insert: {
+          company?: string | null
+          congress_name?: string | null
+          created_at?: string | null
+          duration?: string | null
+          email: string
+          estimated_fee?: string | null
+          event_scale?: string | null
+          expected_participants?: string | null
+          first_name: string
+          funding_source?: string | null
+          has_registration_fees?: boolean | null
+          id?: string
+          last_name: string
+          services_needed?: string[] | null
+        }
+        Update: {
+          company?: string | null
+          congress_name?: string | null
+          created_at?: string | null
+          duration?: string | null
+          email?: string
+          estimated_fee?: string | null
+          event_scale?: string | null
+          expected_participants?: string | null
+          first_name?: string
+          funding_source?: string | null
+          has_registration_fees?: boolean | null
+          id?: string
+          last_name?: string
+          services_needed?: string[] | null
         }
         Relationships: []
       }
@@ -1288,6 +1375,7 @@ export type Database = {
           id: string
           name: string
           price: number
+          rejection_reason: string | null
           sales_end: string | null
           sales_start: string | null
           short_name: string | null
@@ -1305,6 +1393,7 @@ export type Database = {
           id?: string
           name: string
           price?: number
+          rejection_reason?: string | null
           sales_end?: string | null
           sales_start?: string | null
           short_name?: string | null
@@ -1322,6 +1411,7 @@ export type Database = {
           id?: string
           name?: string
           price?: number
+          rejection_reason?: string | null
           sales_end?: string | null
           sales_start?: string | null
           short_name?: string | null
@@ -1358,6 +1448,7 @@ export type Database = {
           billing_email: string | null
           cart_items: string | null
           cart_services: string | null
+          cart_services_confirmed: boolean | null
           company_address: string | null
           company_name: string | null
           company_oib: string | null
@@ -1379,6 +1470,7 @@ export type Database = {
           last_message_id: string | null
           last_name: string | null
           last_user_message: string | null
+          next_action: string | null
           participants_count: number | null
           payer_city: string | null
           payer_country_code: string | null
@@ -1398,6 +1490,7 @@ export type Database = {
           billing_email?: string | null
           cart_items?: string | null
           cart_services?: string | null
+          cart_services_confirmed?: boolean | null
           company_address?: string | null
           company_name?: string | null
           company_oib?: string | null
@@ -1419,6 +1512,7 @@ export type Database = {
           last_message_id?: string | null
           last_name?: string | null
           last_user_message?: string | null
+          next_action?: string | null
           participants_count?: number | null
           payer_city?: string | null
           payer_country_code?: string | null
@@ -1438,6 +1532,7 @@ export type Database = {
           billing_email?: string | null
           cart_items?: string | null
           cart_services?: string | null
+          cart_services_confirmed?: boolean | null
           company_address?: string | null
           company_name?: string | null
           company_oib?: string | null
@@ -1459,6 +1554,7 @@ export type Database = {
           last_message_id?: string | null
           last_name?: string | null
           last_user_message?: string | null
+          next_action?: string | null
           participants_count?: number | null
           payer_city?: string | null
           payer_country_code?: string | null
@@ -1960,6 +2056,9 @@ export type Database = {
         }[]
       }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
+      jwt_institution_uuid: { Args: never; Returns: string }
+      jwt_is_admin: { Args: never; Returns: boolean }
+      jwt_role: { Args: never; Returns: string }
       normalize_phone_to_waid: { Args: { phone: string }; Returns: string }
       unaccent: { Args: { "": string }; Returns: string }
       update_completed_events: { Args: never; Returns: undefined }
