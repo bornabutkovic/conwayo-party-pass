@@ -881,7 +881,6 @@ export default function EventRegister() {
                   )}
                 </div>
               </div>
-      <EventHero event={event} />
 
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* ── Per-Ticket Attendee Details ── */}
