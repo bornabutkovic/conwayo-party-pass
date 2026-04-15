@@ -96,7 +96,7 @@ export default function EventLanding() {
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
   const isVirtual = event.event_type === "virtual";
 
-  const whatsappUrl = `https://wa.me/385916059712?text=Prijava%20za%3A%20${slug}`;
+  const whatsappUrl = `https://wa.me/385912015954?text=Prijava%20za%3A%20${slug}`;
 
   const eventName = tr(event.translations as Record<string, any> | null, lang, "name", event.name);
   const eventDescription = tr(event.translations as Record<string, any> | null, lang, "description", event.description);
