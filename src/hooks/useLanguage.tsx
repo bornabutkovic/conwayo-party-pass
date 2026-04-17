@@ -5,6 +5,19 @@ export type Lang = "hr" | "en";
 const STORAGE_KEY = "conwayo_lang";
 
 const translations = {
+  // Home / Index
+  "home.aiBadge": { hr: "AI Registracija", en: "AI-Powered Registration" },
+  "home.heroTitle": { hr: "Nadolazeći događaji", en: "Upcoming Events" },
+  "home.heroSubtitle": {
+    hr: "Pregledajte naše događaje, odaberite kartu i registrirajte se za nekoliko sekundi — bez potrebe za računom.",
+    en: "Browse our events, pick your ticket, and register in seconds — no account needed.",
+  },
+  "home.noEventsTitle": { hr: "Nema dostupnih događaja", en: "No Events Available" },
+  "home.noEventsDesc": {
+    hr: "Uskoro će biti dostupni novi događaji.",
+    en: "Check back soon for upcoming events.",
+  },
+
   // Header / Nav
   "nav.allEvents": { hr: "Svi eventi", en: "All Events" },
   "nav.logIn": { hr: "Prijava", en: "Log In" },
