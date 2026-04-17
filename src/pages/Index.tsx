@@ -4,6 +4,7 @@ import { CalendarDays, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { useAvailableEvents } from "@/hooks/useEvent";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/hooks/useLanguage";
 
 function EventCardSkeleton() {
   return (
@@ -75,6 +76,7 @@ function StatusTag({ status }: { status: string | null }) {
 
 export default function Index() {
   const { data: events, isLoading } = useAvailableEvents();
+  const { t } = useLanguage();
 
   const publicEvents = events?.filter((e) => e.status !== "draft") ?? [];
 
@@ -95,13 +97,13 @@ export default function Index() {
           <div className="max-w-2xl animate-fade-in-up">
             <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 glass px-3 py-1 text-xs font-medium text-white/80">
               <Sparkles className="h-3.5 w-3.5 gradient-brand-text" style={{ WebkitTextFillColor: 'unset' }} />
-              AI-Powered Registration
+              {t("home.aiBadge")}
             </div>
             <h1 className="mb-5 text-5xl font-extrabold tracking-tight md:text-6xl drop-shadow-lg">
-              Upcoming Events
+              {t("home.heroTitle")}
             </h1>
             <p className="text-lg text-white/75 max-w-lg leading-relaxed">
-              Browse our events, pick your ticket, and register in seconds — no account needed.
+              {t("home.heroSubtitle")}
             </p>
           </div>
         </div>
@@ -120,8 +122,8 @@ export default function Index() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl gradient-brand shadow-brand">
               <Sparkles className="h-7 w-7 text-white" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-foreground">No Events Available</h2>
-            <p className="text-muted-foreground">Check back soon for upcoming events.</p>
+            <h2 className="mb-2 text-2xl font-bold text-foreground">{t("home.noEventsTitle")}</h2>
+            <p className="text-muted-foreground">{t("home.noEventsDesc")}</p>
           </div>
         ) : (
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
