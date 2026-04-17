@@ -4,6 +4,7 @@ import { CalendarDays, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { useAvailableEvents } from "@/hooks/useEvent";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/hooks/useLanguage";
 
 function EventCardSkeleton() {
   return (
