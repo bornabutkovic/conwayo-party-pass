@@ -9,6 +9,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import { LanguageProvider } from "./hooks/useLanguage";
 import Index from "./pages/Index";
 import EventLanding from "./pages/EventLanding";
+import EventPreview from "./pages/EventPreview";
 import EventAuth from "./pages/EventAuth";
 import EventRegister from "./pages/EventRegister";
 import EventDashboard from "./pages/EventDashboard";
@@ -39,6 +40,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/event/:slug" element={<EventLanding />} />
+                <Route path="/preview/:eventId" element={<EventPreview />} />
                 <Route path="/event/:slug/auth" element={<EventAuth />} />
                 <Route path="/event/:slug/register" element={<EventRegister />} />
                 <Route path="/event/:slug/dashboard" element={<EventDashboard />} />
