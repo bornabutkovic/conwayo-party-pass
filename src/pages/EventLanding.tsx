@@ -8,6 +8,7 @@ import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { OrganizerCard } from "@/components/event/OrganizerCard";
 import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
@@ -439,85 +440,63 @@ export default function EventLanding() {
                 <Building2 className="h-6 w-6" />
                 {t("event.organizerTitle")}
               </h2>
-              <Card className="border-border">
-                <CardContent className="p-5 space-y-3 text-sm">
-                  {institution ? (
-                    <>
+              {institution ? (
+                <OrganizerCard institution={institution} fallbackPhone={event.support_phone} />
+              ) : (
+                <Card className="border-border">
+                  <CardContent className="p-5 space-y-3 text-sm">
+                    {event.notification_sender_name && (
                       <div className="flex items-start gap-2">
                         <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="font-medium">{institution.name}</span>
+                        <span className="font-medium">{event.notification_sender_name}</span>
                       </div>
-                      {(institution.address || institution.city) && (
-                        <div className="flex items-start gap-2">
-                          <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                          <span>
-                            {[institution.address, institution.city].filter(Boolean).join(", ")}
-                          </span>
-                        </div>
-                      )}
-                      {institution.oib && (
-                        <div className="flex items-start gap-2">
-                          <ShieldCheck className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                          <span>OIB/VAT: {institution.oib}</span>
-                        </div>
-                      )}
+                    )}
+                    {event.notification_sender_email && (
                       <div className="flex items-start gap-2">
                         <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
                         <a
-                          href={`mailto:${institution.invoice_email}`}
+                          href={`mailto:${event.notification_sender_email}`}
                           className="text-primary underline underline-offset-2"
                         >
-                          {institution.invoice_email}
+                          {event.notification_sender_email}
                         </a>
                       </div>
-                      {(institution.phone || event.support_phone) && (
-                        <div className="flex items-start gap-2">
-                          <Phone className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                          <span>{institution.phone || event.support_phone}</span>
-                        </div>
-                      )}
-                      {institution.website && (
-                        <div className="flex items-start gap-2">
-                          <Globe className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                          <a
-                            href={institution.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary underline underline-offset-2"
-                          >
-                            {institution.website.replace(/^https?:\/\//, "")}
-                          </a>
-                        </div>
-                      )}
-                      <SocialLinks
-                        facebook={institution.facebook_url}
-                        linkedin={institution.linkedin_url}
-                        instagram={institution.instagram_url}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      {event.notification_sender_name && (
-                        <div className="flex items-start gap-2">
-                          <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className="font-medium">{event.notification_sender_name}</span>
-                        </div>
-                      )}
-                      {event.notification_sender_email && (
-                        <div className="flex items-start gap-2">
-                          <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                          <a
-                            href={`mailto:${event.notification_sender_email}`}
-                            className="text-primary underline underline-offset-2"
-                          >
-                            {event.notification_sender_email}
-                          </a>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Co-organizers */}
+              {event.coOrganizers && event.coOrganizers.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t("event.coOrganizersTitle")}
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {event.coOrganizers.map((org, idx) =>
+                      org.institutions ? (
+                        <OrganizerCard
+                          key={`co-${idx}`}
+                          institution={org.institutions}
+                        />
+                      ) : null,
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Technical organizer */}
+              {event.technicalOrganizer?.institutions && (
+                <div className="mt-6 space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t("event.technicalOrganizerTitle")}
+                  </h3>
+                  <OrganizerCard
+                    institution={event.technicalOrganizer.institutions}
+                    variant="muted"
+                  />
+                </div>
+              )}
             </section>
 
             {/* SECTION 6 — CANCELLATION POLICY */}

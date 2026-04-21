@@ -39,6 +39,8 @@ const translations = {
     en: "Additional services can be selected during registration.",
   },
   "event.organizerTitle": { hr: "Organizator", en: "Event Organizer" },
+  "event.coOrganizersTitle": { hr: "Suorganizatori", en: "Co-organizers" },
+  "event.technicalOrganizerTitle": { hr: "Tehnički organizator", en: "Technical Organizer" },
   "event.cancellationTitle": { hr: "Politika povrata", en: "Cancellation Policy" },
   "event.registerNow": { hr: "Registriraj se", en: "Register Now" },
   "event.freeLabel": { hr: "Besplatno", en: "Free" },
