@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { useParams, useLocation, Link } from "react-router-dom";
+import { useEffect, useMemo, useCallback } from "react";
+import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
@@ -61,21 +61,36 @@ Cancellations are accepted up to 14 days before the event with a 50% refund. Aft
 export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { data: event, isLoading, error } = useEventFull(slug ?? "");
   const { lang, t } = useLanguage();
 
+  const supportsEnglish = useMemo(() => {
+    return Array.isArray(event?.supported_languages) && event!.supported_languages!.includes("en");
+  }, [event?.supported_languages]);
+
   // Detect English preference: ?lang=en in URL OR browser language starts with 'en'.
-  // The global UI language toggle still wins if user explicitly picked it.
+  // Only honor English if the event explicitly supports it via supported_languages.
   const displayLang = useMemo<"hr" | "en">(() => {
+    if (!supportsEnglish) return "hr";
     const params = new URLSearchParams(location.search);
     const urlLang = params.get("lang");
-    if (urlLang === "en" || urlLang === "hr") return urlLang;
+    if (urlLang === "en") return "en";
+    if (urlLang === "hr") return "hr";
     if (lang === "en") return "en";
     if (typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("en")) {
       return "en";
     }
     return "hr";
-  }, [location.search, lang]);
+  }, [location.search, lang, supportsEnglish]);
+
+  const switchLang = useCallback((next: "hr" | "en") => {
+    const params = new URLSearchParams(location.search);
+    if (next === "en") params.set("lang", "en");
+    else params.delete("lang");
+    const qs = params.toString();
+    navigate({ pathname: location.pathname, search: qs ? `?${qs}` : "" }, { replace: true });
+  }, [location.pathname, location.search, navigate]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -114,12 +129,52 @@ export default function EventLanding() {
 
   const eventName = tr(event.translations as Record<string, any> | null, displayLang, "name", event.name);
   const eventDescription = tr(event.translations as Record<string, any> | null, displayLang, "description", event.description);
+  const cancellationPolicy = tr(
+    event.translations as Record<string, any> | null,
+    displayLang,
+    "cancellation_policy",
+    event.cancellation_policy,
+  ) || DEFAULT_CANCELLATION_POLICY;
   const formatDate = displayLang === "hr" ? formatDateHr : formatDateEn;
 
   return (
     <EventBrandingProvider event={event}>
       <div className="min-h-screen bg-background text-foreground">
         <ConvwayoHeader showBackToEvents />
+
+        {/* Language switcher (only when event supports EN) */}
+        {supportsEnglish && (
+          <div className="container mx-auto px-4 pt-3">
+            <div className="mx-auto flex max-w-4xl justify-end">
+              <div className="inline-flex overflow-hidden rounded-md border border-border bg-card text-xs">
+                <button
+                  type="button"
+                  onClick={() => switchLang("hr")}
+                  className={`px-3 py-1.5 font-medium transition-colors ${
+                    displayLang === "hr"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                  aria-pressed={displayLang === "hr"}
+                >
+                  HR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchLang("en")}
+                  className={`px-3 py-1.5 font-medium transition-colors ${
+                    displayLang === "en"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                  aria-pressed={displayLang === "en"}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* SECTION 1 — HERO (clean, no text) */}
         <section className="relative overflow-hidden" style={{ height: 280 }}>
@@ -453,7 +508,7 @@ export default function EventLanding() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="whitespace-pre-line text-sm text-muted-foreground leading-relaxed">
-                      {event.cancellation_policy || DEFAULT_CANCELLATION_POLICY}
+                      {cancellationPolicy}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
