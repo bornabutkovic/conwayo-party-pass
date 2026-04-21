@@ -1,17 +1,17 @@
 import { Link } from "react-router-dom";
-import { format, isSameDay } from "date-fns";
+import { format } from "date-fns";
+import { hr } from "date-fns/locale";
 import { CalendarDays, MapPin, ArrowRight, Sparkles } from "lucide-react";
 
 function formatEventDateRange(startStr: string | null, endStr: string | null): string | null {
-  if (!startStr) return null;
-  const start = new Date(startStr);
-  if (!endStr) return format(start, "d. MMM yyyy");
-  const end = new Date(endStr);
-  if (isSameDay(start, end)) return format(start, "d. MMM yyyy");
-  if (start.getFullYear() === end.getFullYear()) {
-    return `${format(start, "d. MMM")} – ${format(end, "d. MMM yyyy")}`;
+  const startDate = startStr ? new Date(startStr) : null;
+  const endDate = endStr ? new Date(endStr) : null;
+  if (!startDate) return null;
+  const isSameDay = endDate && startDate.toDateString() === endDate.toDateString();
+  if (isSameDay || !endDate) {
+    return format(startDate, "d. MMM yyyy.", { locale: hr });
   }
-  return `${format(start, "d. MMM yyyy")} – ${format(end, "d. MMM yyyy")}`;
+  return `${format(startDate, "d. MMM", { locale: hr })} – ${format(endDate, "d. MMM yyyy.", { locale: hr })}`;
 }
 import { useAvailableEvents } from "@/hooks/useEvent";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
