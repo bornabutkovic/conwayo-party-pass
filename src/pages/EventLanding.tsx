@@ -178,7 +178,10 @@ export default function EventLanding() {
         )}
 
         {/* SECTION 1 — HERO (clean, no text) */}
-        <section className="relative overflow-hidden" style={{ height: 280 }}>
+        <section
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio: "3/1", maxHeight: "360px", minHeight: "160px" }}
+        >
           {bannerUrl ? (
             <div className="absolute inset-0">
               <img

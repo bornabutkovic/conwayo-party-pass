@@ -6,7 +6,7 @@ import { useEventServices } from "@/hooks/useEventServices";
 import { useLanguage, tr } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
-import { EventHero } from "@/components/event/EventHero";
+import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,13 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2, LogIn } from "lucide-react";
+import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2, LogIn, CalendarDays, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { OrderConfirmation } from "@/components/event/OrderConfirmation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { format } from "date-fns";
+import { hr as hrLocale } from "date-fns/locale";
 
 // ── Country list & zone helper ──
 const EU_CODES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
@@ -779,11 +781,69 @@ export default function EventRegister() {
     </div>
   );
 
+  const eventName = tr(event.translations as Record<string, any> | null, lang, "name", event.name);
+  const primaryColor = event.branding_primary_color ?? "#6366f1";
+  const bannerUrl = event.branding_banner_url;
+  const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
+  const dateLocale = lang === "hr" ? hrLocale : undefined;
+  const dateFmt = lang === "hr" ? "d. MMMM yyyy." : "MMMM d, yyyy";
+  const timeFmt = "HH:mm";
+  const startDate = event.start_date ? new Date(event.start_date) : null;
+  const endDate = event.end_date ? new Date(event.end_date) : null;
+
   return (
-    <div className="min-h-screen bg-background">
+    <EventBrandingProvider event={event}>
+    <div className="min-h-screen bg-background text-foreground">
       <ConvwayoHeader showBackToEvents />
-      <EventHero event={event} />
-      <section className="container mx-auto px-4 py-12 md:py-16">
+
+      {/* HERO — clean banner only */}
+      <section
+        className="relative w-full overflow-hidden"
+        style={{ aspectRatio: "3/1", maxHeight: "360px", minHeight: "160px" }}
+      >
+        {bannerUrl ? (
+          <div className="absolute inset-0">
+            <img src={bannerUrl} alt={`${eventName} banner`} className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-black/30" />
+          </div>
+        ) : (
+          <div className="absolute inset-0" style={{ backgroundColor: primaryColor }}>
+            <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10" />
+            <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
+          </div>
+        )}
+      </section>
+
+      {/* EVENT TITLE + INFO BAR */}
+      <section className="bg-card border-b border-border">
+        <div className="container mx-auto px-4 py-6 md:py-8">
+          <div className="mx-auto max-w-4xl space-y-4">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-4xl">
+              {eventName}
+            </h1>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground">
+              {startDate && (
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                  <span>
+                    {format(startDate, dateFmt, { locale: dateLocale })}
+                    {` | ${format(startDate, timeFmt, { locale: dateLocale })}`}
+                    {endDate && ` – ${format(endDate, dateFmt, { locale: dateLocale })}`}
+                  </span>
+                </div>
+              )}
+              {locationParts.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span>{locationParts.join(", ")}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 py-8 md:py-12">
         <div className="mx-auto max-w-2xl">
           {/* Guest / Logged-in banner */}
           {!authLoading && !user && (
@@ -1198,5 +1258,6 @@ export default function EventRegister() {
         </div>
       </section>
     </div>
+    </EventBrandingProvider>
   );
 }
