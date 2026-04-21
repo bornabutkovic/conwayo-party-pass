@@ -1258,5 +1258,6 @@ export default function EventRegister() {
         </div>
       </section>
     </div>
+    </EventBrandingProvider>
   );
 }
