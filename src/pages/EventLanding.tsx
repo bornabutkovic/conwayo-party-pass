@@ -192,7 +192,11 @@ export default function EventLanding() {
                       {formatDate(event.start_date)}
                       {formatTimeHr(event.start_date) && ` | ${formatTimeHr(event.start_date)}`}
                       {event.end_date && (
-                        <> – {formatDate(event.end_date)}</>
+                        <>
+                          {" – "}
+                          {formatDate(event.end_date)}
+                          {formatTimeHr(event.end_date) && ` | ${formatTimeHr(event.end_date)}`}
+                        </>
                       )}
                     </>
                   }
