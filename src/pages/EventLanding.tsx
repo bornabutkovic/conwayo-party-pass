@@ -508,7 +508,7 @@ export default function EventLanding() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="whitespace-pre-line text-sm text-muted-foreground leading-relaxed">
-                      {event.cancellation_policy || DEFAULT_CANCELLATION_POLICY}
+                      {cancellationPolicy}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
