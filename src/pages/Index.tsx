@@ -140,7 +140,7 @@ export default function Index() {
         ) : (
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {publicEvents.map((event, index) => {
-              const dateRange = formatEventDateRange(event.start_date ?? null, (event as any).end_date ?? null);
+              const dateRange = formatEventDateRange(event.start_date ?? null, event.end_date ?? null);
               return (
                 <Link
                   key={event.slug}
