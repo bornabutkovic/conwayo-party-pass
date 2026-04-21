@@ -129,6 +129,12 @@ export default function EventLanding() {
 
   const eventName = tr(event.translations as Record<string, any> | null, displayLang, "name", event.name);
   const eventDescription = tr(event.translations as Record<string, any> | null, displayLang, "description", event.description);
+  const cancellationPolicy = tr(
+    event.translations as Record<string, any> | null,
+    displayLang,
+    "cancellation_policy",
+    event.cancellation_policy,
+  ) || DEFAULT_CANCELLATION_POLICY;
   const formatDate = displayLang === "hr" ? formatDateHr : formatDateEn;
 
   return (
