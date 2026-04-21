@@ -8,6 +8,7 @@ import { EventBrandingProvider } from "@/components/event/EventBrandingProvider"
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { OrganizerCard } from "@/components/event/OrganizerCard";
 import {
   CalendarDays,
   MapPin,
@@ -83,10 +84,24 @@ function useEventPreview(eventId: string) {
         .eq("status", "active")
         .order("price", { ascending: true });
 
+      const { data: organizers } = await supabase
+        .from("event_organizers")
+        .select(
+          "role, display_order, institutions(name, address, city, oib, invoice_email, website, phone, facebook_url, linkedin_url, instagram_url)"
+        )
+        .eq("event_id", event.id)
+        .order("display_order", { ascending: true });
+
+      const orgList = (organizers ?? []) as any[];
+      const coOrganizers = orgList.filter((o) => o.role === "co_organizer");
+      const technicalOrganizer = orgList.find((o) => o.role === "technical_organizer") ?? null;
+
       return {
         ...event,
         ticket_tiers: (tiers ?? []) as Tables<"ticket_tiers">[],
         event_services: (services ?? []) as Tables<"event_services">[],
+        coOrganizers,
+        technicalOrganizer,
       };
     },
     enabled: !!eventId,
