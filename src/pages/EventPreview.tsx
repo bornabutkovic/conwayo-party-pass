@@ -162,7 +162,10 @@ export default function EventPreview() {
         <ConvwayoHeader showBackToEvents />
 
         {/* HERO */}
-        <section className="relative overflow-hidden" style={{ height: 280 }}>
+        <section
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio: "3/1", maxHeight: "360px", minHeight: "160px" }}
+        >
           {bannerUrl ? (
             <div className="absolute inset-0">
               <img src={bannerUrl} alt={`${eventName} banner`} className="h-full w-full object-cover" />
