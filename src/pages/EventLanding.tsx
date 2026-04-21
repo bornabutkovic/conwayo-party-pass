@@ -61,21 +61,36 @@ Cancellations are accepted up to 14 days before the event with a 50% refund. Aft
 export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { data: event, isLoading, error } = useEventFull(slug ?? "");
   const { lang, t } = useLanguage();
 
+  const supportsEnglish = useMemo(() => {
+    return Array.isArray(event?.supported_languages) && event!.supported_languages!.includes("en");
+  }, [event?.supported_languages]);
+
   // Detect English preference: ?lang=en in URL OR browser language starts with 'en'.
-  // The global UI language toggle still wins if user explicitly picked it.
+  // Only honor English if the event explicitly supports it via supported_languages.
   const displayLang = useMemo<"hr" | "en">(() => {
+    if (!supportsEnglish) return "hr";
     const params = new URLSearchParams(location.search);
     const urlLang = params.get("lang");
-    if (urlLang === "en" || urlLang === "hr") return urlLang;
+    if (urlLang === "en") return "en";
+    if (urlLang === "hr") return "hr";
     if (lang === "en") return "en";
     if (typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("en")) {
       return "en";
     }
     return "hr";
-  }, [location.search, lang]);
+  }, [location.search, lang, supportsEnglish]);
+
+  const switchLang = useCallback((next: "hr" | "en") => {
+    const params = new URLSearchParams(location.search);
+    if (next === "en") params.set("lang", "en");
+    else params.delete("lang");
+    const qs = params.toString();
+    navigate({ pathname: location.pathname, search: qs ? `?${qs}` : "" }, { replace: true });
+  }, [location.pathname, location.search, navigate]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
