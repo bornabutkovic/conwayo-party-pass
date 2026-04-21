@@ -29,8 +29,6 @@ import { hr as hrLocale } from "date-fns/locale";
 import { QRCodeSVG } from "qrcode.react";
 import type { Tables } from "@/integrations/supabase/types";
 
-const ALLOWED_INSTITUTION_UUID = "aaaaaaaa-0000-0000-0000-000000000001";
-
 function formatDateHr(dateStr: string | null) {
   if (!dateStr) return null;
   return format(new Date(dateStr), "d. MMMM yyyy.", { locale: hrLocale });
@@ -127,7 +125,6 @@ export default function EventPreview() {
 
   if (isLoading) return <EventPageSkeleton />;
   if (error || !event) return <PlainNotFound />;
-  if (event.institution_uuid !== ALLOWED_INSTITUTION_UUID) return <PlainNotFound />;
 
   const currency = event.currency ?? "EUR";
   const tiers = event.ticket_tiers ?? [];
