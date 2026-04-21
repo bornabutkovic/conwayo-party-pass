@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { useParams, useLocation, Link } from "react-router-dom";
+import { useEffect, useMemo, useCallback } from "react";
+import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
