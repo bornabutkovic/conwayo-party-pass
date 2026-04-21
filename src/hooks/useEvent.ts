@@ -5,11 +5,32 @@ import type { Tables } from "@/integrations/supabase/types";
 export type Event = Tables<"events">;
 export type TicketTier = Tables<"ticket_tiers">;
 export type EventService = Tables<"event_services">;
+export type Institution = Tables<"institutions">;
+
+export interface OrganizerEntry {
+  role: "co_organizer" | "technical_organizer" | string;
+  display_order: number;
+  institutions: Pick<
+    Institution,
+    | "name"
+    | "address"
+    | "city"
+    | "oib"
+    | "invoice_email"
+    | "website"
+    | "phone"
+    | "facebook_url"
+    | "linkedin_url"
+    | "instagram_url"
+  > | null;
+}
 
 export interface EventWithRelations extends Event {
   institutions: Tables<"institutions"> | null;
   ticket_tiers: TicketTier[];
   event_services: EventService[];
+  coOrganizers: OrganizerEntry[];
+  technicalOrganizer: OrganizerEntry | null;
 }
 
 export function useEvent(slug: string) {
@@ -79,10 +100,25 @@ export function useEventFull(slug: string) {
         .eq("status", "active")
         .order("price", { ascending: true });
 
+      // Fetch co-organizers and technical organizer
+      const { data: organizers } = await supabase
+        .from("event_organizers")
+        .select(
+          "role, display_order, institutions(name, address, city, oib, invoice_email, website, phone, facebook_url, linkedin_url, instagram_url)"
+        )
+        .eq("event_id", event.id)
+        .order("display_order", { ascending: true });
+
+      const orgList = (organizers ?? []) as unknown as OrganizerEntry[];
+      const coOrganizers = orgList.filter((o) => o.role === "co_organizer");
+      const technicalOrganizer = orgList.find((o) => o.role === "technical_organizer") ?? null;
+
       return {
         ...event,
         ticket_tiers: (tiers ?? []) as TicketTier[],
         event_services: (services ?? []) as EventService[],
+        coOrganizers,
+        technicalOrganizer,
       } as EventWithRelations;
     },
     enabled: !!slug,
