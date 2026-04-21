@@ -391,52 +391,42 @@ export default function EventPreview() {
             )}
 
             {/* ORGANIZER */}
-            {institution && (
+            {(institution || (event as any).coOrganizers?.length || (event as any).technicalOrganizer) && (
               <section>
                 <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-foreground">
                   <Building2 className="h-6 w-6" />
                   {t("event.organizerTitle")}
                 </h2>
-                <Card className="border-border">
-                  <CardContent className="space-y-3 p-5 text-sm">
-                    <div className="flex items-start gap-2">
-                      <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="font-medium">{institution.name}</span>
+                {institution && (
+                  <OrganizerCard institution={institution} fallbackPhone={event.support_phone} />
+                )}
+
+                {(event as any).coOrganizers && (event as any).coOrganizers.length > 0 && (
+                  <div className="mt-6 space-y-3">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {t("event.coOrganizersTitle")}
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {(event as any).coOrganizers.map((org: any, idx: number) =>
+                        org.institutions ? (
+                          <OrganizerCard key={`co-${idx}`} institution={org.institutions} />
+                        ) : null,
+                      )}
                     </div>
-                    {(institution.address || institution.city) && (
-                      <div className="flex items-start gap-2">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span>{[institution.address, institution.city].filter(Boolean).join(", ")}</span>
-                      </div>
-                    )}
-                    {institution.oib && (
-                      <div className="flex items-start gap-2">
-                        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span>OIB/VAT: {institution.oib}</span>
-                      </div>
-                    )}
-                    {institution.invoice_email && (
-                      <div className="flex items-start gap-2">
-                        <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="text-primary underline underline-offset-2">{institution.invoice_email}</span>
-                      </div>
-                    )}
-                    {(institution.phone || event.support_phone) && (
-                      <div className="flex items-start gap-2">
-                        <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span>{institution.phone || event.support_phone}</span>
-                      </div>
-                    )}
-                    {institution.website && (
-                      <div className="flex items-start gap-2">
-                        <Globe className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="text-primary underline underline-offset-2">
-                          {institution.website.replace(/^https?:\/\//, "")}
-                        </span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  </div>
+                )}
+
+                {(event as any).technicalOrganizer?.institutions && (
+                  <div className="mt-6 space-y-3">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {t("event.technicalOrganizerTitle")}
+                    </h3>
+                    <OrganizerCard
+                      institution={(event as any).technicalOrganizer.institutions}
+                      variant="muted"
+                    />
+                  </div>
+                )}
               </section>
             )}
           </div>
