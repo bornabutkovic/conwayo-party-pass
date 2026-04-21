@@ -104,13 +104,7 @@ export default function EventLanding() {
 
   return (
     <EventBrandingProvider event={event}>
-      <div
-        className="min-h-screen"
-        style={{
-          backgroundColor: event.branding_secondary_color ?? undefined,
-          color: event.branding_text_color ?? undefined,
-        }}
-      >
+      <div className="min-h-screen bg-background text-foreground">
         <ConvwayoHeader showBackToEvents />
 
         {/* SECTION 1 — HERO (clean, no text) */}
