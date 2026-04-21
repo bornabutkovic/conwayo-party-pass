@@ -142,6 +142,40 @@ export default function EventLanding() {
       <div className="min-h-screen bg-background text-foreground">
         <ConvwayoHeader showBackToEvents />
 
+        {/* Language switcher (only when event supports EN) */}
+        {supportsEnglish && (
+          <div className="container mx-auto px-4 pt-3">
+            <div className="mx-auto flex max-w-4xl justify-end">
+              <div className="inline-flex overflow-hidden rounded-md border border-border bg-card text-xs">
+                <button
+                  type="button"
+                  onClick={() => switchLang("hr")}
+                  className={`px-3 py-1.5 font-medium transition-colors ${
+                    displayLang === "hr"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                  aria-pressed={displayLang === "hr"}
+                >
+                  HR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchLang("en")}
+                  className={`px-3 py-1.5 font-medium transition-colors ${
+                    displayLang === "en"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                  aria-pressed={displayLang === "en"}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* SECTION 1 — HERO (clean, no text) */}
         <section className="relative overflow-hidden" style={{ height: 280 }}>
           {bannerUrl ? (
