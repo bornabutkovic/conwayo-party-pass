@@ -140,7 +140,7 @@ export default function Index() {
         ) : (
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {publicEvents.map((event, index) => {
-              const startDate = event.start_date ? new Date(event.start_date) : null;
+              const dateRange = formatEventDateRange(event.start_date ?? null, (event as any).end_date ?? null);
               return (
                 <Link
                   key={event.slug}
@@ -160,10 +160,10 @@ export default function Index() {
                   </div>
 
                   <div className="space-y-2.5 text-sm text-muted-foreground mb-6">
-                    {startDate && (
+                    {dateRange && (
                       <div className="flex items-center gap-2.5">
                         <CalendarDays className="h-4 w-4 shrink-0 text-brand-purple" />
-                        <span>{format(startDate, "MMMM d, yyyy")}</span>
+                        <span>{dateRange}</span>
                       </div>
                     )}
                     {event.venue_name && (
