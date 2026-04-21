@@ -797,22 +797,26 @@ export default function EventRegister() {
       <ConvwayoHeader showBackToEvents />
 
       {/* HERO — clean banner only */}
-      <section
-        className="relative w-full overflow-hidden"
-        style={{ aspectRatio: "3/1", maxHeight: "360px", minHeight: "160px" }}
-      >
-        {bannerUrl ? (
-          <div className="absolute inset-0">
-            <img src={bannerUrl} alt={`${eventName} banner`} className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-black/30" />
-          </div>
-        ) : (
-          <div className="absolute inset-0" style={{ backgroundColor: primaryColor }}>
-            <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10" />
-            <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
-          </div>
-        )}
-      </section>
+      {bannerUrl ? (
+        <section
+          className="relative w-full overflow-hidden"
+          style={{ backgroundColor: (event as any).branding_secondary_color ?? "hsl(var(--muted))" }}
+        >
+          <img
+            src={bannerUrl}
+            alt={`${eventName} banner`}
+            className="block w-full h-auto object-contain"
+          />
+        </section>
+      ) : (
+        <section
+          className="relative w-full overflow-hidden"
+          style={{ height: 200, backgroundColor: primaryColor }}
+        >
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10" />
+          <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
+        </section>
+      )}
 
       {/* EVENT TITLE + INFO BAR */}
       <section className="bg-card border-b border-border">

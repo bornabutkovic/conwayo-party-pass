@@ -144,61 +144,27 @@ export default function EventLanding() {
       <div className="min-h-screen bg-background text-foreground">
         <ConvwayoHeader showBackToEvents />
 
-        {/* Language switcher (only when event supports EN) */}
-        {supportsEnglish && (
-          <div className="container mx-auto px-4 pt-3">
-            <div className="mx-auto flex max-w-4xl justify-end">
-              <div className="inline-flex overflow-hidden rounded-md border border-border bg-card text-xs">
-                <button
-                  type="button"
-                  onClick={() => switchLang("hr")}
-                  className={`px-3 py-1.5 font-medium transition-colors ${
-                    displayLang === "hr"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-muted"
-                  }`}
-                  aria-pressed={displayLang === "hr"}
-                >
-                  HR
-                </button>
-                <button
-                  type="button"
-                  onClick={() => switchLang("en")}
-                  className={`px-3 py-1.5 font-medium transition-colors ${
-                    displayLang === "en"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-muted"
-                  }`}
-                  aria-pressed={displayLang === "en"}
-                >
-                  EN
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* SECTION 1 — HERO (clean, no text) */}
-        <section
-          className="relative w-full overflow-hidden"
-          style={{ aspectRatio: "3/1", maxHeight: "360px", minHeight: "160px" }}
-        >
-          {bannerUrl ? (
-            <div className="absolute inset-0">
-              <img
-                src={bannerUrl}
-                alt={`${eventName} banner`}
-                className="h-full w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/30" />
-            </div>
-          ) : (
-            <div className="absolute inset-0" style={{ backgroundColor: primaryColor }}>
-              <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10" />
-              <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
-            </div>
-          )}
-        </section>
+        {bannerUrl ? (
+          <section
+            className="relative w-full overflow-hidden"
+            style={{ backgroundColor: event.branding_secondary_color ?? "hsl(var(--muted))" }}
+          >
+            <img
+              src={bannerUrl}
+              alt={`${eventName} banner`}
+              className="block w-full h-auto object-contain"
+            />
+          </section>
+        ) : (
+          <section
+            className="relative w-full overflow-hidden"
+            style={{ height: 200, backgroundColor: primaryColor }}
+          >
+            <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10" />
+            <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
+          </section>
+        )}
 
         {/* SECTION 1b — EVENT TITLE */}
         <section className="bg-card border-b border-border">
