@@ -46,7 +46,9 @@ function formatDateEn(dateStr: string | null) {
 
 function formatTimeHr(dateStr: string | null) {
   if (!dateStr) return null;
-  return format(new Date(dateStr), "HH:mm", { locale: hrLocale });
+  const d = new Date(dateStr);
+  if (d.getHours() === 0 && d.getMinutes() === 0) return null;
+  return format(d, "HH:mm", { locale: hrLocale });
 }
 
 const EVENT_TYPE_LABELS: Record<string, { label: { hr: string; en: string }; icon: typeof Building2 }> = {
@@ -190,7 +192,11 @@ export default function EventLanding() {
                       {formatDate(event.start_date)}
                       {formatTimeHr(event.start_date) && ` | ${formatTimeHr(event.start_date)}`}
                       {event.end_date && (
-                        <> – {formatDate(event.end_date)}</>
+                        <>
+                          {" – "}
+                          {formatDate(event.end_date)}
+                          {formatTimeHr(event.end_date) && ` | ${formatTimeHr(event.end_date)}`}
+                        </>
                       )}
                     </>
                   }
