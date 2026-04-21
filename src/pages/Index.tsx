@@ -5,13 +5,13 @@ import { CalendarDays, MapPin, ArrowRight, Sparkles } from "lucide-react";
 function formatEventDateRange(startStr: string | null, endStr: string | null): string | null {
   if (!startStr) return null;
   const start = new Date(startStr);
-  if (!endStr) return format(start, "MMMM d, yyyy");
+  if (!endStr) return format(start, "d. MMM yyyy");
   const end = new Date(endStr);
-  if (isSameDay(start, end)) return format(start, "MMMM d, yyyy");
+  if (isSameDay(start, end)) return format(start, "d. MMM yyyy");
   if (start.getFullYear() === end.getFullYear()) {
-    return `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`;
+    return `${format(start, "d. MMM")} – ${format(end, "d. MMM yyyy")}`;
   }
-  return `${format(start, "MMM d, yyyy")} – ${format(end, "MMM d, yyyy")}`;
+  return `${format(start, "d. MMM yyyy")} – ${format(end, "d. MMM yyyy")}`;
 }
 import { useAvailableEvents } from "@/hooks/useEvent";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
