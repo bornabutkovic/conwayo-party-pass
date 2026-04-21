@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
@@ -60,8 +60,22 @@ Cancellations are accepted up to 14 days before the event with a 50% refund. Aft
 
 export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
+  const location = useLocation();
   const { data: event, isLoading, error } = useEventFull(slug ?? "");
   const { lang, t } = useLanguage();
+
+  // Detect English preference: ?lang=en in URL OR browser language starts with 'en'.
+  // The global UI language toggle still wins if user explicitly picked it.
+  const displayLang = useMemo<"hr" | "en">(() => {
+    const params = new URLSearchParams(location.search);
+    const urlLang = params.get("lang");
+    if (urlLang === "en" || urlLang === "hr") return urlLang;
+    if (lang === "en") return "en";
+    if (typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("en")) {
+      return "en";
+    }
+    return "hr";
+  }, [location.search, lang]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -98,9 +112,9 @@ export default function EventLanding() {
 
   const whatsappUrl = `https://wa.me/385912015954?text=Prijava%20za%3A%20${slug}`;
 
-  const eventName = tr(event.translations as Record<string, any> | null, lang, "name", event.name);
-  const eventDescription = tr(event.translations as Record<string, any> | null, lang, "description", event.description);
-  const formatDate = lang === "hr" ? formatDateHr : formatDateEn;
+  const eventName = tr(event.translations as Record<string, any> | null, displayLang, "name", event.name);
+  const eventDescription = tr(event.translations as Record<string, any> | null, displayLang, "description", event.description);
+  const formatDate = displayLang === "hr" ? formatDateHr : formatDateEn;
 
   return (
     <EventBrandingProvider event={event}>
@@ -214,7 +228,7 @@ export default function EventLanding() {
                   {t("event.aboutTitle")}
                 </h2>
                 <div
-                  className="prose prose-sm max-w-none text-muted-foreground"
+                  className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
                   dangerouslySetInnerHTML={{ __html: eventDescription }}
                 />
               </section>
