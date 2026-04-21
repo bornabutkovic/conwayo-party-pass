@@ -52,6 +52,11 @@ const translations = {
     hr: "Event je završio ili registracija još nije otvorena.",
     en: "The event may have ended or registration is not open yet.",
   },
+  "event.onlineTitle": { hr: "Online registracija", en: "Online Registration" },
+  "event.onlineDesc": {
+    hr: "Registriraj se putem web obrasca. Plati karticom ili odaberi plaćanje po računu.",
+    en: "Register via web form. Pay by card or choose invoice payment.",
+  },
   "event.whatsappTitle": { hr: "AI Registracija", en: "AI Registration" },
   "event.whatsappDesc": {
     hr: "Prijavi se brzo i jednostavno putem WhatsApp AI agenta",

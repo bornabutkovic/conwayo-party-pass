@@ -293,32 +293,50 @@ export default function EventPreview() {
                   })}
                 </div>
 
-                {/* WhatsApp card — disabled */}
-                <Card className="mt-6 border-border opacity-70">
-                  <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-start">
-                    <div className="shrink-0 rounded-lg border border-border bg-white p-2">
-                      <QRCodeSVG value="preview-disabled" size={160} bgColor="#ffffff" fgColor="#a1a1aa" level="M" />
-                    </div>
-                    <div className="text-center sm:text-left">
-                      <h3 className="text-2xl font-bold text-foreground">{t("event.whatsappTitle")}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">{t("event.whatsappDesc")}</p>
+                {/* Registration options — equal weight (preview disabled) */}
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {/* Card 1 — Online registration (disabled) */}
+                  <Card className="border-border opacity-70">
+                    <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
+                      <div className="space-y-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                          <Ticket className="h-6 w-6 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground">{t("event.onlineTitle")}</h3>
+                        <p className="text-sm text-muted-foreground">{t("event.onlineDesc")}</p>
+                      </div>
+                      <Button size="lg" className="w-full gap-2" disabled>
+                        {t("event.registerNow")}
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Card 2 — WhatsApp AI (disabled) */}
+                  <Card className="border-border opacity-70">
+                    <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
+                      <div className="space-y-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                          <MessageCircle className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground">{t("event.whatsappTitle")}</h3>
+                        <p className="text-sm text-muted-foreground">{t("event.whatsappDesc")}</p>
+                        <div className="flex justify-center pt-1">
+                          <div className="rounded-lg border border-border bg-white p-2">
+                            <QRCodeSVG value="preview-disabled" size={120} bgColor="#ffffff" fgColor="#a1a1aa" level="M" />
+                          </div>
+                        </div>
+                      </div>
                       <button
                         type="button"
                         disabled
-                        className="mt-4 inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-muted px-5 py-2.5 text-sm font-medium text-muted-foreground"
+                        className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md bg-muted px-5 py-3 text-sm font-medium text-muted-foreground"
                       >
                         <MessageCircle className="h-4 w-4" />
                         {t("event.whatsappButton")}
                       </button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="mt-6 text-center">
-                  <Button size="lg" className="gap-2 px-10 py-6 text-lg" disabled>
-                    {t("event.registerNow")}
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
+                    </CardContent>
+                  </Card>
                 </div>
               </section>
             )}
