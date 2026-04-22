@@ -453,8 +453,9 @@ export default function EventLanding() {
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {services.map((service) => {
-                    const svcName = tr(service.translations as Record<string, any> | null, displayLang, "name", service.name);
-                    const svcDesc = tr(service.translations as Record<string, any> | null, displayLang, "description", service.description);
+                    const svcTrans = ((service.translations as Record<string, any>)?.['en'] as Record<string, any>) ?? {};
+                    const svcName = displayLang === 'en' && svcTrans['name'] ? String(svcTrans['name']) : service.name;
+                    const svcDesc = displayLang === 'en' && svcTrans['description'] ? String(svcTrans['description']) : (service.description ?? '');
                     return (
                       <Card key={service.id} className="border-border">
                         <CardContent className="p-5">
