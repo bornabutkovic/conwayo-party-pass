@@ -122,16 +122,15 @@ export default function EventLanding() {
 
   const whatsappUrl = `https://wa.me/385912015954?text=Prijava%20za%3A%20${slug}`;
 
-  const translationsJson = event.translations as Record<string, any> | null;
-  const resolveField = (field: string, hrFallback: string | null | undefined): string => {
-    if (displayLang === "hr") return hrFallback ?? "";
-    const enVal = translationsJson?.en?.[field];
-    return typeof enVal === "string" && enVal.trim().length > 0 ? enVal : (hrFallback ?? "");
-  };
+  function resolveField(translations: any, lang: 'hr' | 'en', field: string, hrValue: string | null | undefined): string {
+    if (lang === 'hr') return hrValue ?? '';
+    const enVal = translations?.en?.[field];
+    return (typeof enVal === 'string' && enVal.trim().length > 0) ? enVal : (hrValue ?? '');
+  }
 
-  const eventName = resolveField("name", event.name);
-  const eventDescription = resolveField("description", event.description);
-  const cancellationPolicy = resolveField("cancellation_policy", event.cancellation_policy);
+  const eventName = resolveField(event.translations, displayLang, 'name', event.name);
+  const eventDescription = resolveField(event.translations, displayLang, 'description', event.description);
+  const cancellationPolicy = resolveField(event.translations, displayLang, 'cancellation_policy', event.cancellation_policy);
 
   const formatDate = displayLang === "hr" ? formatDateHr : formatDateEn;
 
