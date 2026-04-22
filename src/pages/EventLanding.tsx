@@ -70,13 +70,10 @@ export default function EventLanding() {
     return Array.isArray(event?.supported_languages) && event!.supported_languages!.includes("en");
   }, [event?.supported_languages]);
 
-  // Detect English preference: only ?lang=en in URL. Default to HR otherwise.
-  const displayLang = useMemo<"hr" | "en">(() => {
-    if (!supportsEnglish) return "hr";
+  const displayLang = useMemo<'hr' | 'en'>(() => {
+    if (!supportsEnglish) return 'hr';
     const params = new URLSearchParams(location.search);
-    const urlLang = params.get("lang");
-    if (urlLang === "en") return "en";
-    return "hr";
+    return params.get('lang') === 'en' ? 'en' : 'hr';
   }, [location.search, supportsEnglish]);
 
   const switchLang = useCallback((next: "hr" | "en") => {
