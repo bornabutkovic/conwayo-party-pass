@@ -477,7 +477,7 @@ export default function EventLanding() {
                   {event.coOrganizersInfo && event.coOrganizersInfo.length > 0 && (
                     <div>
                       <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Suorganizatori
+                        {t("event.coOrganizersTitle")}
                       </h3>
                       <div className="space-y-3">
                         {event.coOrganizersInfo.map((org, idx) => (
@@ -504,7 +504,7 @@ export default function EventLanding() {
                   {event.technicalOrganizerInfo && (
                     <div>
                       <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Tehnički organizator
+                        {t("event.technicalOrganizerTitle")}
                       </h3>
                       <OrganizerCard
                         institution={{
