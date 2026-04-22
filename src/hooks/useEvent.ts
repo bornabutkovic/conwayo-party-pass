@@ -109,6 +109,9 @@ export function useEventFull(slug: string) {
 
       console.log('RAW TRANSLATIONS VIA RPC:', rawTranslations);
 
+      const { data: rawOrganizersInfo } = await supabase
+        .rpc('get_event_organizers_info', { p_event_id: event.id });
+
       // Workaround: force-fetch supported_languages separately
       const { data: eventExtra } = await supabase
         .from('events')
@@ -149,8 +152,7 @@ export function useEventFull(slug: string) {
       const coOrganizers = orgList.filter((o) => o.role === "co_organizer");
       const technicalOrganizer = orgList.find((o) => o.role === "technical_organizer") ?? null;
 
-      // Parse organizers_info JSONB column for display data
-      const info = (event.organizers_info ?? {}) as {
+      const info = (rawOrganizersInfo ?? {}) as {
         co_organizers?: OrganizerInfo[];
         technical_organizer?: OrganizerInfo | null;
       };
@@ -166,6 +168,7 @@ export function useEventFull(slug: string) {
         ...event,
         translations: rawTranslations as Record<string, any> | null,
         supported_languages,
+        organizers_info: rawOrganizersInfo,
         ticket_tiers: (tiers ?? []) as TicketTier[],
         event_services: (services ?? []) as EventService[],
         coOrganizers,
