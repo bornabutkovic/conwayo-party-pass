@@ -29,6 +29,12 @@ export interface OrganizerInfo {
   name: string;
   website_url?: string | null;
   logo_url?: string | null;
+  address?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
+  website?: string | null;
+  phone?: string | null;
 }
 
 export interface EventWithRelations extends Event {
