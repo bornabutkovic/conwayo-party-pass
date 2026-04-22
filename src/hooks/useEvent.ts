@@ -152,8 +152,7 @@ export function useEventFull(slug: string) {
       const coOrganizers = orgList.filter((o) => o.role === "co_organizer");
       const technicalOrganizer = orgList.find((o) => o.role === "technical_organizer") ?? null;
 
-      // Parse organizers_info JSONB column for display data
-      const info = (event.organizers_info ?? {}) as {
+      const info = (rawOrganizersInfo ?? {}) as {
         co_organizers?: OrganizerInfo[];
         technical_organizer?: OrganizerInfo | null;
       };
