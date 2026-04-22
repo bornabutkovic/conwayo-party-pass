@@ -121,12 +121,27 @@ export function useEventFull(slug: string) {
       const coOrganizers = orgList.filter((o) => o.role === "co_organizer");
       const technicalOrganizer = orgList.find((o) => o.role === "technical_organizer") ?? null;
 
+      // Parse organizers_info JSONB column for display data
+      const info = (event.organizers_info ?? {}) as {
+        co_organizers?: OrganizerInfo[];
+        technical_organizer?: OrganizerInfo | null;
+      };
+      const coOrganizersInfo = Array.isArray(info.co_organizers)
+        ? info.co_organizers.filter((o): o is OrganizerInfo => !!o && typeof o.name === "string" && o.name.trim() !== "")
+        : [];
+      const technicalOrganizerInfo =
+        info.technical_organizer && typeof info.technical_organizer.name === "string" && info.technical_organizer.name.trim() !== ""
+          ? info.technical_organizer
+          : null;
+
       return {
         ...event,
         ticket_tiers: (tiers ?? []) as TicketTier[],
         event_services: (services ?? []) as EventService[],
         coOrganizers,
         technicalOrganizer,
+        coOrganizersInfo,
+        technicalOrganizerInfo,
       } as EventWithRelations;
     },
     enabled: !!slug,
