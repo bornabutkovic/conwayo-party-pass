@@ -148,8 +148,8 @@ export default function EventLanding() {
             <img
               src={bannerUrl}
               alt={`${eventName} banner`}
-              className="block w-full h-auto lg:h-[200px] lg:object-cover lg:object-center"
-              style={{ backgroundColor: event.branding_secondary_color ?? undefined }}
+              className="block w-full h-auto lg:max-h-[220px] lg:object-contain lg:object-top"
+              style={{ backgroundColor: event.branding_secondary_color ?? 'transparent' }}
             />
           </section>
         ) : (
