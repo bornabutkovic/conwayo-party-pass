@@ -45,6 +45,8 @@ export interface EventWithRelations extends Event {
   technicalOrganizer: OrganizerEntry | null;
   coOrganizersInfo: OrganizerInfo[];
   technicalOrganizerInfo: OrganizerInfo | null;
+  translations: Record<string, any> | null;
+  supported_languages: string[] | null;
 }
 
 export function useEvent(slug: string) {
@@ -101,6 +103,8 @@ export function useEventFull(slug: string) {
         throw error;
       }
       if (!event) throw new Error("Event not found");
+
+      console.log('RAW EVENT TRANSLATIONS:', (event as any).translations);
 
       // Workaround: force-fetch translations and supported_languages separately
       const { data: eventExtra } = await supabase
