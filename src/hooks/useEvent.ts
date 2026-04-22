@@ -158,6 +158,8 @@ export function useEventFull(slug: string) {
 
       return {
         ...event,
+        translations,
+        supported_languages,
         ticket_tiers: (tiers ?? []) as TicketTier[],
         event_services: (services ?? []) as EventService[],
         coOrganizers,
