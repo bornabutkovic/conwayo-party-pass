@@ -164,7 +164,7 @@ export function useEventFull(slug: string) {
 
       return {
         ...event,
-        translations,
+        translations: rawTranslations as Record<string, any> | null,
         supported_languages,
         ticket_tiers: (tiers ?? []) as TicketTier[],
         event_services: (services ?? []) as EventService[],
