@@ -235,7 +235,7 @@ export default function EventLanding() {
               <DetailItem
                 icon={<EventTypeIcon className="h-5 w-5 text-primary" />}
                 label={t("event.typeLabel")}
-                value={eventTypeEntry.label[lang]}
+                value={eventTypeEntry.label[displayLang]}
               />
             </div>
           </div>
@@ -348,8 +348,8 @@ export default function EventLanding() {
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {tiers.map((tier) => {
-                    const tierName = tr(tier.translations as Record<string, any> | null, lang, "name", tier.name);
-                    const tierDesc = tr(tier.translations as Record<string, any> | null, lang, "description", tier.description);
+                    const tierName = tr(tier.translations as Record<string, any> | null, displayLang, "name", tier.name);
+                    const tierDesc = tr(tier.translations as Record<string, any> | null, displayLang, "description", tier.description);
                     return (
                       <Card key={tier.id} className="border-border">
                         <CardContent className="p-5">
@@ -447,8 +447,8 @@ export default function EventLanding() {
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {services.map((service) => {
-                    const svcName = tr(service.translations as Record<string, any> | null, lang, "name", service.name);
-                    const svcDesc = tr(service.translations as Record<string, any> | null, lang, "description", service.description);
+                    const svcName = tr(service.translations as Record<string, any> | null, displayLang, "name", service.name);
+                    const svcDesc = tr(service.translations as Record<string, any> | null, displayLang, "description", service.description);
                     return (
                       <Card key={service.id} className="border-border">
                         <CardContent className="p-5">
