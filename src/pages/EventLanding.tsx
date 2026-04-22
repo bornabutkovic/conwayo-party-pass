@@ -144,12 +144,11 @@ export default function EventLanding() {
 
         {/* SECTION 1 — HERO (clean, no text) */}
         {bannerUrl ? (
-          <section className="relative w-full overflow-hidden">
+          <section className="w-full bg-card border-b border-border flex justify-center py-4 lg:py-6">
             <img
               src={bannerUrl}
               alt={`${eventName} banner`}
-              className="block w-full h-auto lg:max-h-[220px] lg:object-contain lg:object-top"
-              style={{ backgroundColor: event.branding_secondary_color ?? 'transparent' }}
+              className="h-auto w-full max-w-[900px] lg:max-h-[300px] lg:w-auto object-contain px-4"
             />
           </section>
         ) : (
