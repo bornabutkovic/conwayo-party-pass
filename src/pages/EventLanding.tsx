@@ -255,74 +255,53 @@ export default function EventLanding() {
               <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2">
                 {event.coOrganizersInfo && event.coOrganizersInfo.length > 0 && (
                   <div>
-                    <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Suorganizatori
                     </h3>
-                    <ul className="space-y-3">
-                      {event.coOrganizersInfo.map((org, idx) => {
-                        const link = org.website || org.website_url;
-                        return (
-                          <li key={`co-info-${idx}`} className="text-sm text-foreground">
-                            <div className="font-medium">
-                              {link ? (
-                                <a
-                                  href={link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary underline underline-offset-2 hover:opacity-80"
-                                >
-                                  {org.name}
-                                </a>
-                              ) : (
-                                org.name
-                              )}
-                            </div>
-                            {org.city && (
-                              <div className="text-xs text-muted-foreground">{org.city}</div>
-                            )}
-                            {org.phone && (
-                              <div className="text-xs text-muted-foreground">{org.phone}</div>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    <div className="space-y-3">
+                      {event.coOrganizersInfo.map((org, idx) => (
+                        <OrganizerCard
+                          key={`co-info-${idx}`}
+                          institution={{
+                            name: org.name,
+                            address: org.address ?? null,
+                            city: org.city ?? null,
+                            website: org.website ?? org.website_url ?? null,
+                            phone: org.phone ?? null,
+                            oib: null,
+                            invoice_email: null,
+                            facebook_url: null,
+                            linkedin_url: null,
+                            instagram_url: null,
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 {event.technicalOrganizerInfo && (
                   <div>
-                    <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Tehnički organizator
                     </h3>
-                    {(() => {
-                      const tech = event.technicalOrganizerInfo;
-                      const link = tech.website || tech.website_url;
-                      return (
-                        <div className="text-sm text-foreground">
-                          <div className="font-medium">
-                            {link ? (
-                              <a
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary underline underline-offset-2 hover:opacity-80"
-                              >
-                                {tech.name}
-                              </a>
-                            ) : (
-                              tech.name
-                            )}
-                          </div>
-                          {tech.city && (
-                            <div className="text-xs text-muted-foreground">{tech.city}</div>
-                          )}
-                          {tech.phone && (
-                            <div className="text-xs text-muted-foreground">{tech.phone}</div>
-                          )}
-                        </div>
-                      );
-                    })()}
+                    <OrganizerCard
+                      institution={{
+                        name: event.technicalOrganizerInfo.name,
+                        address: event.technicalOrganizerInfo.address ?? null,
+                        city: event.technicalOrganizerInfo.city ?? null,
+                        website:
+                          event.technicalOrganizerInfo.website ??
+                          event.technicalOrganizerInfo.website_url ??
+                          null,
+                        phone: event.technicalOrganizerInfo.phone ?? null,
+                        oib: null,
+                        invoice_email: null,
+                        facebook_url: null,
+                        linkedin_url: null,
+                        instagram_url: null,
+                      }}
+                    />
                   </div>
                 )}
               </div>
