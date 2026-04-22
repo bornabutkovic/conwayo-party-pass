@@ -80,9 +80,14 @@ export function useEventFull(slug: string) {
       const { data: event, error } = await supabase
         .from("events")
         .select(`
-          *,
-          translations,
-          organizers_info,
+          id, name, slug, short_name, description, cancellation_policy,
+          translations, organizers_info, supported_languages,
+          status, start_date, end_date, venue_name, location_address,
+          location_city, location_country, location_postal_code,
+          website_url, support_phone, event_type, currency, vat_rate,
+          payment_due_days, branding_primary_color, branding_secondary_color,
+          branding_text_color, branding_logo_url, branding_banner_url,
+          branding_favicon_url, notification_sender_name, notification_sender_email,
           institutions!events_institution_uuid_fkey(
             name, address, city, oib, invoice_email,
             website, phone, facebook_url, linkedin_url, instagram_url
