@@ -235,7 +235,7 @@ export default function EventLanding() {
               <DetailItem
                 icon={<EventTypeIcon className="h-5 w-5 text-primary" />}
                 label={t("event.typeLabel")}
-                value={eventTypeEntry.label[lang]}
+                value={eventTypeEntry.label[displayLang]}
               />
             </div>
           </div>
