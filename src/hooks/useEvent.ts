@@ -25,12 +25,20 @@ export interface OrganizerEntry {
   > | null;
 }
 
+export interface OrganizerInfo {
+  name: string;
+  website_url?: string | null;
+  logo_url?: string | null;
+}
+
 export interface EventWithRelations extends Event {
   institutions: Tables<"institutions"> | null;
   ticket_tiers: TicketTier[];
   event_services: EventService[];
   coOrganizers: OrganizerEntry[];
   technicalOrganizer: OrganizerEntry | null;
+  coOrganizersInfo: OrganizerInfo[];
+  technicalOrganizerInfo: OrganizerInfo | null;
 }
 
 export function useEvent(slug: string) {
