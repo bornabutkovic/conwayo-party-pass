@@ -194,12 +194,14 @@ export function useLanguage() {
  * Falls back to the original value if no translation exists.
  */
 export function tr(
-  translationsJson: Record<string, any> | null | undefined,
-  lang: Lang,
+  translations: Record<string, any> | null | undefined,
+  lang: string,
   field: string,
-  fallback: string | null | undefined,
+  fallback: string | null | undefined
 ): string {
-  if (lang === "hr") return fallback ?? "";
-  const val = translationsJson?.[lang]?.[field];
-  return (typeof val === "string" && val.length > 0) ? val : (fallback ?? "");
+  if (lang === 'hr') return fallback ?? '';
+  const enVal = translations?.en?.[field];
+  return typeof enVal === 'string' && enVal.trim().length > 0
+    ? enVal
+    : (fallback ?? '');
 }
