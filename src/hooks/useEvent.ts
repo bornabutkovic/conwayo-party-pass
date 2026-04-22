@@ -81,6 +81,8 @@ export function useEventFull(slug: string) {
         .from("events")
         .select(`
           *,
+          translations,
+          organizers_info,
           institutions!events_institution_uuid_fkey(
             name, address, city, oib, invoice_email,
             website, phone, facebook_url, linkedin_url, instagram_url
