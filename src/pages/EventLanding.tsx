@@ -144,14 +144,12 @@ export default function EventLanding() {
 
         {/* SECTION 1 — HERO (clean, no text) */}
         {bannerUrl ? (
-          <section
-            className="relative w-full overflow-hidden"
-            style={{ backgroundColor: event.branding_secondary_color ?? "hsl(var(--muted))" }}
-          >
+          <section className="relative w-full overflow-hidden">
             <img
               src={bannerUrl}
               alt={`${eventName} banner`}
-              className="block w-full h-auto object-contain"
+              className="block w-full h-auto lg:h-[200px] lg:object-cover lg:object-center"
+              style={{ backgroundColor: event.branding_secondary_color ?? undefined }}
             />
           </section>
         ) : (
