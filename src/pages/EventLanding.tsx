@@ -404,130 +404,85 @@ export default function EventLanding() {
               </section>
             )}
 
-            {/* SECTION 5 — ORGANIZER */}
-            <section>
-              <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-foreground">
-                <Building2 className="h-6 w-6" />
-                {t("event.organizerTitle")}
-              </h2>
-              {institution ? (
-                <OrganizerCard institution={institution} fallbackPhone={event.support_phone} />
-              ) : (
-                <Card className="border-border">
-                  <CardContent className="p-5 space-y-3 text-sm">
-                    {event.notification_sender_name && (
-                      <div className="flex items-start gap-2">
-                        <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="font-medium">{event.notification_sender_name}</span>
-                      </div>
-                    )}
-                    {event.notification_sender_email && (
-                      <div className="flex items-start gap-2">
-                        <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                        <a
-                          href={`mailto:${event.notification_sender_email}`}
-                          className="text-primary underline underline-offset-2"
-                        >
-                          {event.notification_sender_email}
-                        </a>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+            {/* SECTION 5 — ORGANIZERS (main + co-organizers, equal weight) */}
+            {(() => {
+              const coInfoList = (event.coOrganizersInfo ?? []).map((org) => ({
+                name: org.name,
+                address: org.address ?? null,
+                city: org.city ?? null,
+                website: org.website ?? org.website_url ?? null,
+                phone: org.phone ?? null,
+                oib: null,
+                invoice_email: null,
+                facebook_url: null,
+                linkedin_url: null,
+                instagram_url: null,
+              }));
 
-              {/* Co-organizers */}
-              {event.coOrganizers && event.coOrganizers.length > 0 && (
-                <div className="mt-6 space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {t("event.coOrganizersTitle")}
-                  </h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {event.coOrganizers.map((org, idx) =>
-                      org.institutions ? (
-                        <OrganizerCard
-                          key={`co-${idx}`}
-                          institution={org.institutions}
-                        />
-                      ) : null,
-                    )}
+              const coRelList = (event.coOrganizers ?? [])
+                .map((org) => org.institutions)
+                .filter(Boolean) as NonNullable<typeof institution>[];
+
+              const allCoOrganizers = [...coRelList, ...coInfoList];
+              const hasCoOrganizers = allCoOrganizers.length > 0;
+              const gridCols = hasCoOrganizers
+                ? allCoOrganizers.length >= 2
+                  ? "sm:grid-cols-2 lg:grid-cols-3"
+                  : "sm:grid-cols-2"
+                : "";
+
+              return (
+                <section>
+                  <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
+                    <Building2 className="h-6 w-6" />
+                    {t("event.organizerTitle")}
+                  </h2>
+                  <div className={`grid gap-4 ${gridCols}`}>
+                    {/* Main organizer */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        {t("event.organizerLabel")}
+                      </p>
+                      {institution ? (
+                        <OrganizerCard institution={institution} fallbackPhone={event.support_phone} />
+                      ) : (
+                        <Card className="border-border">
+                          <CardContent className="p-5 space-y-3 text-sm">
+                            {event.notification_sender_name && (
+                              <div className="flex items-start gap-2">
+                                <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                                <span className="font-medium">{event.notification_sender_name}</span>
+                              </div>
+                            )}
+                            {event.notification_sender_email && (
+                              <div className="flex items-start gap-2">
+                                <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                                <a
+                                  href={`mailto:${event.notification_sender_email}`}
+                                  className="text-primary underline underline-offset-2"
+                                >
+                                  {event.notification_sender_email}
+                                </a>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+
+                    {/* Co-organizers (relational + info) */}
+                    {allCoOrganizers.map((org, idx) => (
+                      <div key={`coorg-${idx}`} className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          {t("event.coOrganizerLabel")}
+                        </p>
+                        <OrganizerCard institution={org} />
+                      </div>
+                    ))}
                   </div>
-                </div>
-              )}
-
-              {/* Technical organizer */}
-              {event.technicalOrganizer?.institutions && (
-                <div className="mt-6 space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {t("event.technicalOrganizerTitle")}
-                  </h3>
-                  <OrganizerCard
-                    institution={event.technicalOrganizer.institutions}
-                    variant="muted"
-                  />
-                </div>
-              )}
-            </section>
-
-            {/* SECTION 2b — ORGANIZERS INFO (from organizers_info JSONB) */}
-            {((event.coOrganizersInfo && event.coOrganizersInfo.length > 0) ||
-              event.technicalOrganizerInfo) && (
-              <section>
-                <div className="grid gap-6 sm:grid-cols-2">
-                  {event.coOrganizersInfo && event.coOrganizersInfo.length > 0 && (
-                    <div>
-                      <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {t("event.coOrganizersTitle")}
-                      </h3>
-                      <div className="space-y-3">
-                        {event.coOrganizersInfo.map((org, idx) => (
-                          <OrganizerCard
-                            key={`co-info-${idx}`}
-                            institution={{
-                              name: org.name,
-                              address: org.address ?? null,
-                              city: org.city ?? null,
-                              website: org.website ?? org.website_url ?? null,
-                              phone: org.phone ?? null,
-                              oib: null,
-                              invoice_email: null,
-                              facebook_url: null,
-                              linkedin_url: null,
-                              instagram_url: null,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {event.technicalOrganizerInfo && (
-                    <div>
-                      <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {t("event.technicalOrganizerTitle")}
-                      </h3>
-                      <OrganizerCard
-                        institution={{
-                          name: event.technicalOrganizerInfo.name,
-                          address: event.technicalOrganizerInfo.address ?? null,
-                          city: event.technicalOrganizerInfo.city ?? null,
-                          website:
-                            event.technicalOrganizerInfo.website ??
-                            event.technicalOrganizerInfo.website_url ??
-                            null,
-                          phone: event.technicalOrganizerInfo.phone ?? null,
-                          oib: null,
-                          invoice_email: null,
-                          facebook_url: null,
-                          linkedin_url: null,
-                          instagram_url: null,
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
+                </section>
+              );
+            })()}
 
             {/* SECTION 6 — CANCELLATION POLICY */}
             {cancellationPolicy && cancellationPolicy.trim().length > 0 && (
@@ -546,6 +501,48 @@ export default function EventLanding() {
                 </Accordion>
               </section>
             )}
+
+            {/* SECTION 6b — TECHNICAL ORGANIZER (subtle footer line) */}
+            {(() => {
+              const techRel = event.technicalOrganizer?.institutions;
+              const techInfo = event.technicalOrganizerInfo;
+              const tech = techRel
+                ? {
+                    name: techRel.name,
+                    website: techRel.website ?? null,
+                    phone: techRel.phone ?? null,
+                  }
+                : techInfo
+                ? {
+                    name: techInfo.name,
+                    website: techInfo.website ?? techInfo.website_url ?? null,
+                    phone: techInfo.phone ?? null,
+                  }
+                : null;
+              if (!tech || !tech.name) return null;
+              return (
+                <section className="pt-2">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                    <span className="text-xs font-medium uppercase tracking-wider">
+                      {t("event.technicalOrganizerTitle")}:
+                    </span>
+                    {tech.website ? (
+                      <a
+                        href={tech.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-foreground underline underline-offset-2 hover:opacity-80"
+                      >
+                        {tech.name}
+                      </a>
+                    ) : (
+                      <span className="text-foreground">{tech.name}</span>
+                    )}
+                    {tech.phone && <span>· {tech.phone}</span>}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
         </div>
 
