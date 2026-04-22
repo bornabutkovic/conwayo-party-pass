@@ -129,13 +129,10 @@ export default function EventLanding() {
   const whatsappUrl = `https://wa.me/385912015954?text=Prijava%20za%3A%20${slug}`;
 
   const translationsJson = event.translations as Record<string, any> | null;
-  const enTranslations = translationsJson?.en ?? null;
-  const resolveField = (field: string, fallback: string | null | undefined): string => {
-    if (displayLang === "en") {
-      const val = enTranslations?.[field];
-      if (typeof val === "string" && val.length > 0) return val;
-    }
-    return fallback ?? "";
+  const resolveField = (field: string, hrFallback: string | null | undefined): string => {
+    if (displayLang === "hr") return hrFallback ?? "";
+    const enVal = translationsJson?.en?.[field];
+    return typeof enVal === "string" && enVal.trim().length > 0 ? enVal : (hrFallback ?? "");
   };
 
   const eventName = resolveField("name", event.name);
