@@ -469,6 +469,66 @@ export default function EventLanding() {
               )}
             </section>
 
+            {/* SECTION 2b — ORGANIZERS INFO (from organizers_info JSONB) */}
+            {((event.coOrganizersInfo && event.coOrganizersInfo.length > 0) ||
+              event.technicalOrganizerInfo) && (
+              <section>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  {event.coOrganizersInfo && event.coOrganizersInfo.length > 0 && (
+                    <div>
+                      <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Suorganizatori
+                      </h3>
+                      <div className="space-y-3">
+                        {event.coOrganizersInfo.map((org, idx) => (
+                          <OrganizerCard
+                            key={`co-info-${idx}`}
+                            institution={{
+                              name: org.name,
+                              address: org.address ?? null,
+                              city: org.city ?? null,
+                              website: org.website ?? org.website_url ?? null,
+                              phone: org.phone ?? null,
+                              oib: null,
+                              invoice_email: null,
+                              facebook_url: null,
+                              linkedin_url: null,
+                              instagram_url: null,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {event.technicalOrganizerInfo && (
+                    <div>
+                      <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Tehnički organizator
+                      </h3>
+                      <OrganizerCard
+                        institution={{
+                          name: event.technicalOrganizerInfo.name,
+                          address: event.technicalOrganizerInfo.address ?? null,
+                          city: event.technicalOrganizerInfo.city ?? null,
+                          website:
+                            event.technicalOrganizerInfo.website ??
+                            event.technicalOrganizerInfo.website_url ??
+                            null,
+                          phone: event.technicalOrganizerInfo.phone ?? null,
+                          oib: null,
+                          invoice_email: null,
+                          facebook_url: null,
+                          linkedin_url: null,
+                          instagram_url: null,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
             {/* SECTION 6 — CANCELLATION POLICY */}
             {cancellationPolicy && cancellationPolicy.trim().length > 0 && (
               <section>
