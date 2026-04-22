@@ -128,8 +128,7 @@ export default function EventLanding() {
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
   const isVirtual = event.event_type === "virtual";
 
-  const whatsappNumber = event.support_phone?.replace(/\D/g, "") || "385912015954";
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Prijava%20za%3A%20${slug}`;
+  const whatsappUrl = `https://wa.me/385912015954?text=Prijava%20za%3A%20${slug}`;
 
   const eventName = tr(event.translations as Record<string, any> | null, displayLang, "name", event.name);
   const eventDescription = tr(event.translations as Record<string, any> | null, displayLang, "description", event.description);
