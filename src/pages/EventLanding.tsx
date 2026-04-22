@@ -57,9 +57,7 @@ const EVENT_TYPE_LABELS: Record<string, { label: { hr: string; en: string }; ico
   hybrid: { label: { hr: "Hybrid", en: "Hybrid" }, icon: Users },
 };
 
-const DEFAULT_CANCELLATION_POLICY = `Otkazivanje kotizacije moguće je najkasnije 14 dana prije početka događaja uz povrat 50% uplaćenog iznosa. Nakon tog roka povrat nije moguć, ali kotizacija može biti prenesena na drugu osobu uz prethodnu pisanu obavijest organizatoru.
 
-Cancellations are accepted up to 14 days before the event with a 50% refund. After that date, no refund is available, but the registration may be transferred to another person with prior written notice to the organizer.`;
 
 export default function EventLanding() {
   const { slug } = useParams<{ slug: string }>();
