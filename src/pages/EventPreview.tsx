@@ -56,53 +56,24 @@ function useEventPreview(eventId: string) {
   return useQuery({
     queryKey: ["event_preview", eventId],
     queryFn: async () => {
-      const { data: event, error } = await supabase
-        .from("events")
-        .select(`
-          *,
-          institutions!events_institution_uuid_fkey(
-            name, address, city, oib, invoice_email,
-            website, phone, facebook_url, linkedin_url, instagram_url
-          )
-        `)
-        .eq("id", eventId)
-        .maybeSingle();
-      if (error) throw error;
-      if (!event) return null;
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      const { data: tiers } = await supabase
-        .from("ticket_tiers")
-        .select("*")
-        .eq("event_id", event.id)
-        .eq("status", "active")
-        .order("price", { ascending: true });
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/get-event-preview?eventId=${eventId}`,
+        {
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      const { data: services } = await supabase
-        .from("event_services")
-        .select("*")
-        .eq("event_id", event.id)
-        .eq("status", "active")
-        .order("price", { ascending: true });
+      if (!res.ok) return null;
 
-      const { data: organizers } = await supabase
-        .from("event_organizers")
-        .select(
-          "role, display_order, institutions(name, address, city, oib, invoice_email, website, phone, facebook_url, linkedin_url, instagram_url)"
-        )
-        .eq("event_id", event.id)
-        .order("display_order", { ascending: true });
-
-      const orgList = (organizers ?? []) as any[];
-      const coOrganizers = orgList.filter((o) => o.role === "co_organizer");
-      const technicalOrganizer = orgList.find((o) => o.role === "technical_organizer") ?? null;
-
-      return {
-        ...event,
-        ticket_tiers: (tiers ?? []) as Tables<"ticket_tiers">[],
-        event_services: (services ?? []) as Tables<"event_services">[],
-        coOrganizers,
-        technicalOrganizer,
-      };
+      const data = await res.json();
+      if (data.error) return null;
+      return data;
     },
     enabled: !!eventId,
   });
