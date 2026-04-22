@@ -109,6 +109,9 @@ export function useEventFull(slug: string) {
 
       console.log('RAW TRANSLATIONS VIA RPC:', rawTranslations);
 
+      const { data: rawOrganizersInfo } = await supabase
+        .rpc('get_event_organizers_info', { p_event_id: event.id });
+
       // Workaround: force-fetch supported_languages separately
       const { data: eventExtra } = await supabase
         .from('events')
