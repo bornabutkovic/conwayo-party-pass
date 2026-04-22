@@ -102,6 +102,15 @@ export function useEventFull(slug: string) {
       }
       if (!event) throw new Error("Event not found");
 
+      // Workaround: force-fetch translations and supported_languages separately
+      const { data: eventExtra } = await supabase
+        .from('events')
+        .select('translations, supported_languages')
+        .eq('id', event.id)
+        .maybeSingle();
+      const translations = eventExtra?.translations ?? null;
+      const supported_languages = eventExtra?.supported_languages ?? ['hr'];
+
       // Fetch active ticket tiers within their sales window
       const now = new Date().toISOString();
       const { data: tiers } = await supabase
