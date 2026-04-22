@@ -250,6 +250,64 @@ export default function EventLanding() {
           </div>
         </section>
 
+        {/* SECTION 2b — ORGANIZERS INFO (from organizers_info JSONB) */}
+        {((event.coOrganizersInfo && event.coOrganizersInfo.length > 0) ||
+          event.technicalOrganizerInfo) && (
+          <section className="border-b border-border bg-card">
+            <div className="container mx-auto px-4 py-6">
+              <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2">
+                {event.coOrganizersInfo && event.coOrganizersInfo.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Suorganizatori
+                    </h3>
+                    <ul className="space-y-1">
+                      {event.coOrganizersInfo.map((org, idx) => (
+                        <li key={`co-info-${idx}`} className="text-sm font-medium text-foreground">
+                          {org.website_url ? (
+                            <a
+                              href={org.website_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline underline-offset-2 hover:opacity-80"
+                            >
+                              {org.name}
+                            </a>
+                          ) : (
+                            org.name
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {event.technicalOrganizerInfo && (
+                  <div>
+                    <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Tehnički organizator
+                    </h3>
+                    <p className="text-sm font-medium text-foreground">
+                      {event.technicalOrganizerInfo.website_url ? (
+                        <a
+                          href={event.technicalOrganizerInfo.website_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline underline-offset-2 hover:opacity-80"
+                        >
+                          {event.technicalOrganizerInfo.name}
+                        </a>
+                      ) : (
+                        event.technicalOrganizerInfo.name
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-4xl space-y-12 py-10 md:py-14">
             {/* SECTION 3 — ABOUT */}
