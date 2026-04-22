@@ -348,8 +348,8 @@ export default function EventLanding() {
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {tiers.map((tier) => {
-                    const tierName = tr(tier.translations as Record<string, any> | null, lang, "name", tier.name);
-                    const tierDesc = tr(tier.translations as Record<string, any> | null, lang, "description", tier.description);
+                    const tierName = tr(tier.translations as Record<string, any> | null, displayLang, "name", tier.name);
+                    const tierDesc = tr(tier.translations as Record<string, any> | null, displayLang, "description", tier.description);
                     return (
                       <Card key={tier.id} className="border-border">
                         <CardContent className="p-5">
