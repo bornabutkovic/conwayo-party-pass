@@ -104,15 +104,17 @@ export function useEventFull(slug: string) {
       }
       if (!event) throw new Error("Event not found");
 
-      console.log('RAW EVENT TRANSLATIONS:', (event as any).translations);
+      const { data: rawTranslations } = await supabase
+        .rpc('get_event_translations', { p_event_id: event.id });
 
-      // Workaround: force-fetch translations and supported_languages separately
+      console.log('RAW TRANSLATIONS VIA RPC:', rawTranslations);
+
+      // Workaround: force-fetch supported_languages separately
       const { data: eventExtra } = await supabase
         .from('events')
-        .select('translations, supported_languages')
+        .select('supported_languages')
         .eq('id', event.id)
         .maybeSingle();
-      const translations = eventExtra?.translations ?? null;
       const supported_languages = eventExtra?.supported_languages ?? ['hr'];
 
       // Fetch active ticket tiers within their sales window
@@ -162,7 +164,7 @@ export function useEventFull(slug: string) {
 
       return {
         ...event,
-        translations,
+        translations: rawTranslations as Record<string, any> | null,
         supported_languages,
         ticket_tiers: (tiers ?? []) as TicketTier[],
         event_services: (services ?? []) as EventService[],
