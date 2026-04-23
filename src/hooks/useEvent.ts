@@ -37,6 +37,7 @@ export interface OrganizerInfo {
   phone?: string | null;
   oib?: string | null;
   email?: string | null;
+  same_as_organizer?: boolean | null;
 }
 
 export interface EventWithRelations extends Event {
