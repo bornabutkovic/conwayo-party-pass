@@ -35,6 +35,8 @@ export interface OrganizerInfo {
   country?: string | null;
   website?: string | null;
   phone?: string | null;
+  oib?: string | null;
+  email?: string | null;
 }
 
 export interface EventWithRelations extends Event {
