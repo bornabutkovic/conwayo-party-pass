@@ -445,7 +445,7 @@ export default function EventLanding() {
                         {t("event.organizerLabel")}
                       </p>
                       {institution ? (
-                        <OrganizerCard institution={institution} fallbackPhone={event.support_phone} />
+                        <OrganizerCard institution={institution} />
                       ) : (
                         <Card className="border-border">
                           <CardContent className="p-5 space-y-3 text-sm">
