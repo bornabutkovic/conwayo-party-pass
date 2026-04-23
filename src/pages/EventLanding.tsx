@@ -440,45 +440,35 @@ export default function EventLanding() {
                   </h2>
                   <div className={`grid gap-4 ${gridCols}`}>
                     {/* Main organizer */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {t("event.organizerLabel")}
-                      </p>
-                      {institution ? (
-                        <OrganizerCard institution={institution} />
-                      ) : (
-                        <Card className="border-border">
-                          <CardContent className="p-5 space-y-3 text-sm">
-                            {event.notification_sender_name && (
-                              <div className="flex items-start gap-2">
-                                <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                                <span className="font-medium">{event.notification_sender_name}</span>
-                              </div>
-                            )}
-                            {event.notification_sender_email && (
-                              <div className="flex items-start gap-2">
-                                <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                                <a
-                                  href={`mailto:${event.notification_sender_email}`}
-                                  className="text-primary underline underline-offset-2"
-                                >
-                                  {event.notification_sender_email}
-                                </a>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
+                    {institution ? (
+                      <OrganizerCard institution={institution} />
+                    ) : (
+                      <Card className="border-border">
+                        <CardContent className="p-5 space-y-3 text-sm">
+                          {event.notification_sender_name && (
+                            <div className="flex items-start gap-2">
+                              <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                              <span className="font-medium">{event.notification_sender_name}</span>
+                            </div>
+                          )}
+                          {event.notification_sender_email && (
+                            <div className="flex items-start gap-2">
+                              <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                              <a
+                                href={`mailto:${event.notification_sender_email}`}
+                                className="text-primary underline underline-offset-2"
+                              >
+                                {event.notification_sender_email}
+                              </a>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
 
                     {/* Co-organizers (from organizers_info JSONB only) */}
                     {coInfoList.map((org, idx) => (
-                      <div key={`coorg-${idx}`} className="space-y-2">
-                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          {t("event.coOrganizerLabel")}
-                        </p>
-                        <OrganizerCard institution={org} />
-                      </div>
+                      <OrganizerCard key={`coorg-${idx}`} institution={org} />
                     ))}
                   </div>
                 </section>
@@ -507,6 +497,7 @@ export default function EventLanding() {
             {(() => {
               const techInfo = event.technicalOrganizerInfo;
               if (!techInfo || !techInfo.name) return null;
+              if (techInfo.same_as_organizer === true) return null;
               const techPhone =
                 techInfo.phone && techInfo.phone.trim().length > 0
                   ? techInfo.phone
