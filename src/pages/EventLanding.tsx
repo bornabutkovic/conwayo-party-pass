@@ -64,25 +64,34 @@ export default function EventLanding() {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: event, isLoading, error } = useEventFull(slug ?? "");
-  const { lang, t } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
 
   const supportsEnglish = useMemo(() => {
     return Array.isArray(event?.supported_languages) && event!.supported_languages!.includes("en");
   }, [event?.supported_languages]);
 
-  const displayLang = useMemo<'hr' | 'en'>(() => {
-    if (!supportsEnglish) return 'hr';
-    const params = new URLSearchParams(location.search);
-    return params.get('lang') === 'en' ? 'en' : 'hr';
-  }, [location.search, supportsEnglish]);
+  const displayLang = useMemo<"hr" | "en">(() => {
+    if (!supportsEnglish) return "hr";
+    return lang === "en" ? "en" : "hr";
+  }, [lang, supportsEnglish]);
 
   const switchLang = useCallback((next: "hr" | "en") => {
+    setLang(next);
     const params = new URLSearchParams(location.search);
     if (next === "en") params.set("lang", "en");
     else params.delete("lang");
     const qs = params.toString();
     navigate({ pathname: location.pathname, search: qs ? `?${qs}` : "" }, { replace: true });
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.search, navigate, setLang]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlLang = params.get("lang");
+    if (urlLang === "en" && supportsEnglish) {
+      setLang("en");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
