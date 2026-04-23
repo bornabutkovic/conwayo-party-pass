@@ -188,6 +188,7 @@ export function useAvailableEvents() {
       const { data, error } = await supabase
         .from("events")
         .select("slug, name, status, start_date, end_date, venue_name")
+        .eq("status", "active")
         .order("start_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
