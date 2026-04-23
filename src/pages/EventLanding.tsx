@@ -418,8 +418,8 @@ export default function EventLanding() {
                 city: org.city ?? null,
                 website: org.website ?? org.website_url ?? null,
                 phone: org.phone ?? null,
-                oib: null,
-                invoice_email: null,
+                oib: org.oib ?? null,
+                invoice_email: org.email ?? null,
                 facebook_url: null,
                 linkedin_url: null,
                 instagram_url: null,
@@ -445,7 +445,7 @@ export default function EventLanding() {
                         {t("event.organizerLabel")}
                       </p>
                       {institution ? (
-                        <OrganizerCard institution={institution} fallbackPhone={event.support_phone} />
+                        <OrganizerCard institution={institution} />
                       ) : (
                         <Card className="border-border">
                           <CardContent className="p-5 space-y-3 text-sm">
@@ -503,43 +503,33 @@ export default function EventLanding() {
               </section>
             )}
 
-            {/* SECTION 6b — TECHNICAL ORGANIZER (subtle footer line) */}
+            {/* SECTION 6b — TECHNICAL ORGANIZER */}
             {(() => {
-              const techRel = event.technicalOrganizer?.institutions;
               const techInfo = event.technicalOrganizerInfo;
-              const tech = techRel
-                ? {
-                    name: techRel.name,
-                    website: techRel.website ?? null,
-                    phone: techRel.phone ?? null,
-                  }
-                : techInfo
-                ? {
-                    name: techInfo.name,
-                    website: techInfo.website ?? techInfo.website_url ?? null,
-                    phone: techInfo.phone ?? null,
-                  }
-                : null;
-              if (!tech || !tech.name) return null;
+              if (!techInfo || !techInfo.name) return null;
+              const techPhone =
+                techInfo.phone && techInfo.phone.trim().length > 0
+                  ? techInfo.phone
+                  : event.support_phone ?? null;
+              const techInstitution = {
+                name: techInfo.name,
+                address: techInfo.address ?? null,
+                city: techInfo.city ?? null,
+                oib: techInfo.oib ?? null,
+                invoice_email: techInfo.email ?? null,
+                website: techInfo.website ?? techInfo.website_url ?? null,
+                phone: techPhone,
+                facebook_url: null,
+                linkedin_url: null,
+                instagram_url: null,
+              };
               return (
-                <section className="pt-2">
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                    <span className="text-xs font-medium uppercase tracking-wider">
-                      {t("event.technicalOrganizerTitle")}:
-                    </span>
-                    {tech.website ? (
-                      <a
-                        href={tech.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-foreground underline underline-offset-2 hover:opacity-80"
-                      >
-                        {tech.name}
-                      </a>
-                    ) : (
-                      <span className="text-foreground">{tech.name}</span>
-                    )}
-                    {tech.phone && <span>· {tech.phone}</span>}
+                <section>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      {t("event.technicalOrganizerTitle")}
+                    </p>
+                    <OrganizerCard institution={techInstitution} />
                   </div>
                 </section>
               );
