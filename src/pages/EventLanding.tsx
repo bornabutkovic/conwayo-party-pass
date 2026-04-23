@@ -401,7 +401,7 @@ export default function EventLanding() {
               </section>
             )}
 
-            {/* SECTION 5 — ORGANIZERS (main + co-organizers, equal weight) */}
+            {/* SECTION 5 — ORGANIZERS (main + co-organizers from organizers_info JSONB) */}
             {(() => {
               const coInfoList = (event.coOrganizersInfo ?? []).map((org) => ({
                 name: org.name,
@@ -416,14 +416,9 @@ export default function EventLanding() {
                 instagram_url: null,
               }));
 
-              const coRelList = (event.coOrganizers ?? [])
-                .map((org) => org.institutions)
-                .filter(Boolean) as NonNullable<typeof institution>[];
-
-              const allCoOrganizers = [...coRelList, ...coInfoList];
-              const hasCoOrganizers = allCoOrganizers.length > 0;
+              const hasCoOrganizers = coInfoList.length > 0;
               const gridCols = hasCoOrganizers
-                ? allCoOrganizers.length >= 2
+                ? coInfoList.length >= 2
                   ? "sm:grid-cols-2 lg:grid-cols-3"
                   : "sm:grid-cols-2"
                 : "";
@@ -467,8 +462,8 @@ export default function EventLanding() {
                       )}
                     </div>
 
-                    {/* Co-organizers (relational + info) */}
-                    {allCoOrganizers.map((org, idx) => (
+                    {/* Co-organizers (from organizers_info JSONB only) */}
+                    {coInfoList.map((org, idx) => (
                       <div key={`coorg-${idx}`} className="space-y-2">
                         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                           {t("event.coOrganizerLabel")}
