@@ -371,44 +371,46 @@ export default function EventPreview() {
             )}
 
             {/* ORGANIZER */}
-            {(institution || (event as any).coOrganizers?.length || (event as any).technicalOrganizer) && (
-              <section>
-                <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-foreground">
-                  <Building2 className="h-6 w-6" />
-                  {t("event.organizerTitle")}
-                </h2>
-                {institution && (
-                  <OrganizerCard institution={institution} fallbackPhone={event.support_phone} />
-                )}
+            {(() => {
+              const coOrganizers = ((event as any).coOrganizers ?? []) as any[];
+              const techOrganizer = (event as any).technicalOrganizer;
+              const techInfo = (event as any).technicalOrganizerInfo;
+              const techSameAsOrganizer = techInfo?.same_as_organizer === true;
+              const showTech = !techSameAsOrganizer && techOrganizer?.institutions;
+              if (!institution && coOrganizers.length === 0 && !showTech) return null;
 
-                {(event as any).coOrganizers && (event as any).coOrganizers.length > 0 && (
-                  <div className="mt-6 space-y-3">
-                    <h3 className="text-lg font-semibold text-foreground">
-                      {t("event.coOrganizersTitle")}
-                    </h3>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {(event as any).coOrganizers.map((org: any, idx: number) =>
-                        org.institutions ? (
-                          <OrganizerCard key={`co-${idx}`} institution={org.institutions} />
-                        ) : null,
-                      )}
+              const totalCards = (institution ? 1 : 0) + coOrganizers.filter((o) => o.institutions).length;
+              const gridCols =
+                totalCards >= 3 ? "sm:grid-cols-2 lg:grid-cols-3" : totalCards === 2 ? "sm:grid-cols-2" : "";
+
+              return (
+                <section>
+                  <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-foreground">
+                    <Building2 className="h-6 w-6" />
+                    {t("event.organizerTitle")}
+                  </h2>
+                  <div className={`grid gap-4 ${gridCols}`}>
+                    {institution && (
+                      <OrganizerCard institution={institution} fallbackPhone={event.support_phone} />
+                    )}
+                    {coOrganizers.map((org: any, idx: number) =>
+                      org.institutions ? (
+                        <OrganizerCard key={`co-${idx}`} institution={org.institutions} />
+                      ) : null,
+                    )}
+                  </div>
+
+                  {showTech && (
+                    <div className="mt-6 space-y-3">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {t("event.technicalOrganizerTitle")}
+                      </h3>
+                      <OrganizerCard institution={techOrganizer.institutions} variant="muted" />
                     </div>
-                  </div>
-                )}
-
-                {(event as any).technicalOrganizer?.institutions && (
-                  <div className="mt-6 space-y-3">
-                    <h3 className="text-lg font-semibold text-foreground">
-                      {t("event.technicalOrganizerTitle")}
-                    </h3>
-                    <OrganizerCard
-                      institution={(event as any).technicalOrganizer.institutions}
-                      variant="muted"
-                    />
-                  </div>
-                )}
-              </section>
-            )}
+                  )}
+                </section>
+              );
+            })()}
           </div>
         </div>
       </div>
