@@ -8,6 +8,7 @@ import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { OrganizerCard } from "@/components/event/OrganizerCard";
 import { Separator } from "@/components/ui/separator";
 import {
