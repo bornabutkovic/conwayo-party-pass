@@ -313,7 +313,8 @@ export default function EventLanding() {
                 </div>
 
                 {/* Registration options — equal weight */}
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <h2 className="text-2xl font-bold text-foreground mb-6 mt-10">{t("event.chooseRegistration")}</h2>
+                <div className="mt-6 grid gap-4 sm:grid-cols-3">
                   {/* Card 1 — Online registration */}
                   <Card className="border-border">
                     <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
