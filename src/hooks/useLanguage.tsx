@@ -67,6 +67,13 @@ const translations = {
     en: "Register quickly and easily via the WhatsApp AI agent",
   },
   "event.whatsappButton": { hr: "Otvori WhatsApp", en: "Open WhatsApp" },
+  "event.chooseRegistration": { hr: "Odaberi način prijave", en: "Choose how to register" },
+  "event.voiceTitle": { hr: "Voice Agent", en: "Voice Agent" },
+  "event.voiceDesc": {
+    hr: "Kupi kartu glasovnom naredbom — uskoro dostupno.",
+    en: "Buy your ticket with a voice command — coming soon.",
+  },
+  "event.voiceButton": { hr: "Uskoro dostupno", en: "Coming soon" },
 
   // Registration
   "register.completeTitle": { hr: "Završi registraciju", en: "Complete Registration" },

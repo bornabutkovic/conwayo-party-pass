@@ -8,6 +8,7 @@ import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
 import { EventNotFound } from "@/components/event/EventNotFound";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { OrganizerCard } from "@/components/event/OrganizerCard";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -29,6 +30,7 @@ import {
   Users,
   ShieldCheck,
   MessageCircle,
+  Clock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
@@ -311,7 +313,8 @@ export default function EventLanding() {
                 </div>
 
                 {/* Registration options — equal weight */}
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <h2 className="text-2xl font-bold text-foreground mb-6 mt-10">{t("event.chooseRegistration")}</h2>
+                <div className="mt-6 grid gap-4 sm:grid-cols-3">
                   {/* Card 1 — Online registration */}
                   <Card className="border-border">
                     <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
@@ -362,6 +365,23 @@ export default function EventLanding() {
                         <MessageCircle className="h-4 w-4" />
                         {t("event.whatsappButton")}
                       </a>
+                    </CardContent>
+                  </Card>
+
+                  {/* Card 3 — Voice Agent (coming soon) */}
+                  <Card className="border-border opacity-75">
+                    <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
+                      <div className="space-y-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
+                          <Clock className="h-6 w-6 text-amber-500" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground">{t("event.voiceTitle")}</h3>
+                        <p className="text-sm text-muted-foreground">{t("event.voiceDesc")}</p>
+                        <Badge variant="secondary">In Progress</Badge>
+                      </div>
+                      <Button size="lg" disabled className="w-full gap-2 opacity-50 cursor-not-allowed">
+                        {t("event.voiceButton")}
+                      </Button>
                     </CardContent>
                   </Card>
                 </div>
