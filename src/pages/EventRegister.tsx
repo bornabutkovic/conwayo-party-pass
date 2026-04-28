@@ -497,7 +497,9 @@ export default function EventRegister() {
               company_country_code: countryCode,
               company_country_name: countryName,
               payer_type: payerType,
-              billing_email: billingEmail || attendees[0]?.email,
+              billing_email: payerType === "company"
+                ? (billingEmail || attendees[0]?.email)
+                : (individualBillingEmail || attendees[0]?.email),
               po_number: poNumber || null,
               tickets: tiers
                 .filter(t => (ticketQuantities[t.id] ?? 0) > 0)
