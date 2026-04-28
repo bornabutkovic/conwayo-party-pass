@@ -146,6 +146,8 @@ export default function EventRegister() {
   const [billingEmail, setBillingEmail] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [companyPaymentMethod, setCompanyPaymentMethod] = useState<"stripe" | "invoice">("stripe");
+  const [individualPaymentMethod, setIndividualPaymentMethod] = useState<"stripe" | "invoice">("stripe");
+  const [individualBillingEmail, setIndividualBillingEmail] = useState("");
 
   // Address
   const [street, setStreet] = useState('');
@@ -418,7 +420,7 @@ export default function EventRegister() {
       toast({ title: "OIB must be exactly 11 digits for Croatia", variant: "destructive" });
       return;
     }
-    if (!street.trim() || !city.trim() || !postalCode.trim()) {
+    if (payerType === "company" && (!street.trim() || !city.trim() || !postalCode.trim())) {
       toast({ title: "Please fill in your complete address (street, city, postal code).", variant: "destructive" });
       return;
     }
@@ -450,9 +452,11 @@ export default function EventRegister() {
           payer_name: payerType === "company" ? companyName : payerName,
           company_name: payerType === "company" ? companyName : undefined,
           company_oib: payerType === "company" ? companyOib : undefined,
-          billing_email: payerType === "company" ? (billingEmail || attendees[0]?.email) : attendees[0]?.email,
+          billing_email: payerType === "company"
+            ? (billingEmail || attendees[0]?.email)
+            : (individualBillingEmail || attendees[0]?.email),
           po_number: payerType === "company" ? poNumber : undefined,
-          payment_method: payerType === "company" ? companyPaymentMethod : "stripe",
+          payment_method: payerType === "company" ? companyPaymentMethod : individualPaymentMethod,
           profile_id: user?.id || null,
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
@@ -463,8 +467,11 @@ export default function EventRegister() {
         throw new Error(data?.error || error?.message || "Registration failed");
       }
 
-      if (payerType === "company" && companyPaymentMethod === "invoice") {
-        // Company INVOICE flow — call create-invoice-registration
+      if (
+        (payerType === "company" && companyPaymentMethod === "invoice") ||
+        (payerType === "individual" && individualPaymentMethod === "invoice")
+      ) {
+        // INVOICE flow — call create-invoice-registration
         const { data: invoiceResult, error: invoiceError } = await supabase.functions.invoke(
           "create-invoice-registration",
           {
@@ -1088,6 +1095,65 @@ export default function EventRegister() {
                       <Input id="payer_name" value={payerName} onChange={(e) => setPayerName(e.target.value)} />
                     </div>
 
+                    {payerType === "individual" && (
+                      <div className="sm:col-span-2 mt-2">
+                        <Label className="mb-3 block">{t("register.paymentMethod")} *</Label>
+                        <RadioGroup
+                          value={individualPaymentMethod}
+                          onValueChange={(v) => setIndividualPaymentMethod(v as "stripe" | "invoice")}
+                          className="grid grid-cols-2 gap-4"
+                        >
+                          <label
+                            htmlFor="ind-pay-stripe"
+                            className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                              individualPaymentMethod === "stripe"
+                                ? "border-primary bg-primary/5"
+                                : "border-border bg-card hover:border-muted-foreground/30"
+                            }`}
+                          >
+                            <RadioGroupItem value="stripe" id="ind-pay-stripe" />
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <span className="font-medium text-foreground">{t("register.cardPayment")}</span>
+                                <p className="text-xs text-muted-foreground">{t("register.cardPaymentDesc")}</p>
+                              </div>
+                            </div>
+                          </label>
+                          <label
+                            htmlFor="ind-pay-invoice"
+                            className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                              individualPaymentMethod === "invoice"
+                                ? "border-primary bg-primary/5"
+                                : "border-border bg-card hover:border-muted-foreground/30"
+                            }`}
+                          >
+                            <RadioGroupItem value="invoice" id="ind-pay-invoice" />
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <span className="font-medium text-foreground">{t("register.bankTransfer")}</span>
+                                <p className="text-xs text-muted-foreground">{t("register.bankTransferDesc")}</p>
+                              </div>
+                            </div>
+                          </label>
+                        </RadioGroup>
+                      </div>
+                    )}
+
+                    {payerType === "individual" && individualPaymentMethod === "invoice" && (
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="ind_billing_email">{t("register.billingEmail")}</Label>
+                        <Input
+                          id="ind_billing_email"
+                          type="email"
+                          value={individualBillingEmail}
+                          onChange={(e) => setIndividualBillingEmail(e.target.value)}
+                          placeholder="email@example.com"
+                        />
+                      </div>
+                    )}
+
                     {payerType === "individual" && addressFieldsBlock}
 
                     {payerType === "company" && (
@@ -1252,7 +1318,8 @@ export default function EventRegister() {
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? t("register.processing")
-                    : payerType === "company" && companyPaymentMethod === "invoice"
+                    : ((payerType === "company" && companyPaymentMethod === "invoice") ||
+                       (payerType === "individual" && individualPaymentMethod === "invoice"))
                       ? `${t("register.requestInvoice")} — ${grandTotal.toFixed(2)} ${currency}`
                       : `${t("register.registerAndPay")} — ${grandTotal.toFixed(2)} ${currency}`}
                 </Button>
