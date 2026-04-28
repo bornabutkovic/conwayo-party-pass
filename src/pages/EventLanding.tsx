@@ -36,6 +36,8 @@ import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
 import { QRCodeSVG } from "qrcode.react";
 
+const VOICE_AGENT_ENABLED = false;
+
 function formatDateHr(dateStr: string | null) {
   if (!dateStr) return null;
   return format(new Date(dateStr), "d. MMMM yyyy.", { locale: hrLocale });
@@ -369,21 +371,23 @@ export default function EventLanding() {
                   </Card>
 
                   {/* Card 3 — Voice Agent (coming soon) */}
-                  <Card className="border-border opacity-75">
-                    <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
-                      <div className="space-y-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
-                          <Clock className="h-6 w-6 text-amber-500" />
+                  {VOICE_AGENT_ENABLED && (
+                    <Card className="border-border opacity-75">
+                      <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
+                        <div className="space-y-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
+                            <Clock className="h-6 w-6 text-amber-500" />
+                          </div>
+                          <h3 className="text-xl font-bold text-foreground">{t("event.voiceTitle")}</h3>
+                          <p className="text-sm text-muted-foreground">{t("event.voiceDesc")}</p>
+                          <Badge variant="secondary">In Progress</Badge>
                         </div>
-                        <h3 className="text-xl font-bold text-foreground">{t("event.voiceTitle")}</h3>
-                        <p className="text-sm text-muted-foreground">{t("event.voiceDesc")}</p>
-                        <Badge variant="secondary">In Progress</Badge>
-                      </div>
-                      <Button size="lg" disabled className="w-full gap-2 opacity-50 cursor-not-allowed">
-                        {t("event.voiceButton")}
-                      </Button>
-                    </CardContent>
-                  </Card>
+                        <Button size="lg" disabled className="w-full gap-2 opacity-50 cursor-not-allowed">
+                          {t("event.voiceButton")}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </section>
             )}
