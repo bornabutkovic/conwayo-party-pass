@@ -146,6 +146,8 @@ export default function EventRegister() {
   const [billingEmail, setBillingEmail] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [companyPaymentMethod, setCompanyPaymentMethod] = useState<"stripe" | "invoice">("stripe");
+  const [individualPaymentMethod, setIndividualPaymentMethod] = useState<"stripe" | "invoice">("stripe");
+  const [individualBillingEmail, setIndividualBillingEmail] = useState("");
 
   // Address
   const [street, setStreet] = useState('');
@@ -418,7 +420,7 @@ export default function EventRegister() {
       toast({ title: "OIB must be exactly 11 digits for Croatia", variant: "destructive" });
       return;
     }
-    if (!street.trim() || !city.trim() || !postalCode.trim()) {
+    if (payerType === "company" && (!street.trim() || !city.trim() || !postalCode.trim())) {
       toast({ title: "Please fill in your complete address (street, city, postal code).", variant: "destructive" });
       return;
     }
@@ -450,9 +452,11 @@ export default function EventRegister() {
           payer_name: payerType === "company" ? companyName : payerName,
           company_name: payerType === "company" ? companyName : undefined,
           company_oib: payerType === "company" ? companyOib : undefined,
-          billing_email: payerType === "company" ? (billingEmail || attendees[0]?.email) : attendees[0]?.email,
+          billing_email: payerType === "company"
+            ? (billingEmail || attendees[0]?.email)
+            : (individualBillingEmail || attendees[0]?.email),
           po_number: payerType === "company" ? poNumber : undefined,
-          payment_method: payerType === "company" ? companyPaymentMethod : "stripe",
+          payment_method: payerType === "company" ? companyPaymentMethod : individualPaymentMethod,
           profile_id: user?.id || null,
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
@@ -463,8 +467,11 @@ export default function EventRegister() {
         throw new Error(data?.error || error?.message || "Registration failed");
       }
 
-      if (payerType === "company" && companyPaymentMethod === "invoice") {
-        // Company INVOICE flow — call create-invoice-registration
+      if (
+        (payerType === "company" && companyPaymentMethod === "invoice") ||
+        (payerType === "individual" && individualPaymentMethod === "invoice")
+      ) {
+        // INVOICE flow — call create-invoice-registration
         const { data: invoiceResult, error: invoiceError } = await supabase.functions.invoke(
           "create-invoice-registration",
           {
@@ -1252,7 +1259,8 @@ export default function EventRegister() {
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? t("register.processing")
-                    : payerType === "company" && companyPaymentMethod === "invoice"
+                    : ((payerType === "company" && companyPaymentMethod === "invoice") ||
+                       (payerType === "individual" && individualPaymentMethod === "invoice"))
                       ? `${t("register.requestInvoice")} — ${grandTotal.toFixed(2)} ${currency}`
                       : `${t("register.registerAndPay")} — ${grandTotal.toFixed(2)} ${currency}`}
                 </Button>
