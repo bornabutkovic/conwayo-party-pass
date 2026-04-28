@@ -43,6 +43,7 @@ const translations = {
   "event.coOrganizerLabel": { hr: "Suorganizator", en: "Co-organizer" },
   "event.coOrganizersTitle": { hr: "Suorganizatori", en: "Co-organizers" },
   "event.technicalOrganizerTitle": { hr: "Tehnički organizator", en: "Technical Organizer" },
+  "event.supportTitle": { hr: "Kontakt podrške", en: "Support Contact" },
   "event.cancellationTitle": { hr: "Uvjeti otkazivanja", en: "Cancellation Policy" },
   "event.registerNow": { hr: "Registriraj se", en: "Register Now" },
   "event.freeLabel": { hr: "Besplatno", en: "Free" },
