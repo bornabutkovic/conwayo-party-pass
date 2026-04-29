@@ -33,6 +33,7 @@ import {
   Clock,
   Headphones,
   Smartphone,
+  Eye,
 } from "lucide-react";
 
 interface SupportContact {
@@ -74,11 +75,17 @@ const EVENT_TYPE_LABELS: Record<string, { label: { hr: string; en: string }; ico
 
 
 
-export default function EventLanding() {
+interface EventLandingProps {
+  previewEvent?: any;
+  isPreview?: boolean;
+}
+
+export default function EventLanding({ previewEvent, isPreview = false }: EventLandingProps = {}) {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { data: event, isLoading, error } = useEventFull(slug ?? "");
+  const { data: fetchedEvent, isLoading, error } = useEventFull(previewEvent ? "" : (slug ?? ""));
+  const event = previewEvent ?? fetchedEvent;
   const { lang, setLang, t } = useLanguage();
 
   const supportsEnglish = useMemo(() => {
