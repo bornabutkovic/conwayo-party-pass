@@ -141,7 +141,10 @@ export default function EventLanding() {
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
   const isVirtual = event.event_type === "virtual";
 
-  const whatsappUrl = `https://wa.me/385912015954?text=Prijava%20za%3A%20${slug}`;
+  const whatsappMessage = displayLang === "en"
+    ? `Sign up for: ${slug}`
+    : `Prijava za: ${slug}`;
+  const whatsappUrl = `https://wa.me/385912015954?text=${encodeURIComponent(whatsappMessage)}`;
 
   const enTrans = (event.translations as any)?.en ?? {};
 
