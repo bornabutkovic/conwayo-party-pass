@@ -368,8 +368,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                         <h3 className="text-xl font-bold text-foreground">{t("event.onlineTitle")}</h3>
                         <p className="text-sm text-muted-foreground">{t("event.onlineDesc")}</p>
                       </div>
-                      <Button asChild size="lg" className="w-full gap-2">
-                        <Link to={`/event/${slug}/register`}>
+                      <Button asChild size="lg" className={`w-full gap-2 ${isPreview ? "pointer-events-none opacity-50" : ""}`}>
+                        <Link to={`/event/${slug}/register`} aria-disabled={isPreview} tabIndex={isPreview ? -1 : undefined}>
                           {t("event.registerNow")}
                           <ArrowRight className="h-4 w-4" />
                         </Link>
