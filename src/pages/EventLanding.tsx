@@ -119,10 +119,11 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [slug]);
 
-  if (isLoading) return <EventPageSkeleton />;
-  if (error || !event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
+  if (!previewEvent && isLoading) return <EventPageSkeleton />;
+  if (!event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
+  if (!previewEvent && error) return <EventNotFound slug={slug} errorMessage={error?.message} />;
 
-  if (event.status !== "active") {
+  if (!isPreview && event.status !== "active") {
     return (
       <div className="min-h-screen flex flex-col">
         <ConvwayoHeader showBackToEvents />
@@ -174,6 +175,25 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   return (
     <EventBrandingProvider event={event}>
       <div className="min-h-screen bg-background text-foreground">
+        {isPreview && (
+          <div
+            className="sticky top-0 z-50 w-full border-b-2 border-yellow-600 bg-yellow-400 text-yellow-950"
+            role="alert"
+          >
+            <div className="container mx-auto flex flex-col items-center justify-center gap-1 px-4 py-2 text-center sm:flex-row sm:gap-3">
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wide">
+                <Eye className="h-4 w-4" />
+                {displayLang === "hr" ? "NAČIN PREGLEDA" : "PREVIEW MODE"}
+              </div>
+              <span className="text-sm font-medium">
+                {displayLang === "hr"
+                  ? "Ovo je pregled. Registracija je onemogućena u načinu pregleda."
+                  : "This is a preview. Registration is disabled in preview mode."}
+              </span>
+            </div>
+          </div>
+        )}
+
         <ConvwayoHeader showBackToEvents />
 
         {/* SECTION 1 — HERO (clean, no text) */}
