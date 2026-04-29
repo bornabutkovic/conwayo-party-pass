@@ -33,6 +33,7 @@ import {
   Clock,
   Headphones,
   Smartphone,
+  Eye,
 } from "lucide-react";
 
 interface SupportContact {
@@ -74,11 +75,17 @@ const EVENT_TYPE_LABELS: Record<string, { label: { hr: string; en: string }; ico
 
 
 
-export default function EventLanding() {
+interface EventLandingProps {
+  previewEvent?: any;
+  isPreview?: boolean;
+}
+
+export default function EventLanding({ previewEvent, isPreview = false }: EventLandingProps = {}) {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { data: event, isLoading, error } = useEventFull(slug ?? "");
+  const { data: fetchedEvent, isLoading, error } = useEventFull(previewEvent ? "" : (slug ?? ""));
+  const event = previewEvent ?? fetchedEvent;
   const { lang, setLang, t } = useLanguage();
 
   const supportsEnglish = useMemo(() => {
@@ -112,10 +119,11 @@ export default function EventLanding() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [slug]);
 
-  if (isLoading) return <EventPageSkeleton />;
-  if (error || !event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
+  if (!previewEvent && isLoading) return <EventPageSkeleton />;
+  if (!event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
+  if (!previewEvent && error) return <EventNotFound slug={slug} errorMessage={error?.message} />;
 
-  if (event.status !== "active") {
+  if (!isPreview && event.status !== "active") {
     return (
       <div className="min-h-screen flex flex-col">
         <ConvwayoHeader showBackToEvents />
@@ -167,6 +175,25 @@ export default function EventLanding() {
   return (
     <EventBrandingProvider event={event}>
       <div className="min-h-screen bg-background text-foreground">
+        {isPreview && (
+          <div
+            className="sticky top-0 z-50 w-full border-b-2 border-yellow-600 bg-yellow-400 text-yellow-950"
+            role="alert"
+          >
+            <div className="container mx-auto flex flex-col items-center justify-center gap-1 px-4 py-2 text-center sm:flex-row sm:gap-3">
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wide">
+                <Eye className="h-4 w-4" />
+                {displayLang === "hr" ? "NAČIN PREGLEDA" : "PREVIEW MODE"}
+              </div>
+              <span className="text-sm font-medium">
+                {displayLang === "hr"
+                  ? "Ovo je pregled. Registracija je onemogućena u načinu pregleda."
+                  : "This is a preview. Registration is disabled in preview mode."}
+              </span>
+            </div>
+          </div>
+        )}
+
         <ConvwayoHeader showBackToEvents />
 
         {/* SECTION 1 — HERO (clean, no text) */}
@@ -341,8 +368,8 @@ export default function EventLanding() {
                         <h3 className="text-xl font-bold text-foreground">{t("event.onlineTitle")}</h3>
                         <p className="text-sm text-muted-foreground">{t("event.onlineDesc")}</p>
                       </div>
-                      <Button asChild size="lg" className="w-full gap-2">
-                        <Link to={`/event/${slug}/register`}>
+                      <Button asChild size="lg" className={`w-full gap-2 ${isPreview ? "pointer-events-none opacity-50" : ""}`}>
+                        <Link to={`/event/${slug}/register`} aria-disabled={isPreview} tabIndex={isPreview ? -1 : undefined}>
                           {t("event.registerNow")}
                           <ArrowRight className="h-4 w-4" />
                         </Link>
