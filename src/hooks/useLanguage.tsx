@@ -114,7 +114,7 @@ const translations = {
   "register.total": { hr: "Ukupno", en: "Total" },
   "register.additionalServices": { hr: "Dodatne usluge", en: "Additional services" },
   "register.processing": { hr: "Obrada...", en: "Processing..." },
-  "register.requestInvoice": { hr: "Zatraži fakturu", en: "Request Invoice" },
+  "register.requestInvoice": { hr: "Zatraži ponudu", en: "Request Quote" },
   "register.registerAndPay": { hr: "Registriraj se i plati", en: "Register & Pay" },
   "register.termsAgree": {
     hr: "Slažem se s",
