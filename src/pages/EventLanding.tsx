@@ -545,24 +545,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               );
             })()}
 
-            {/* SECTION 6 — CANCELLATION POLICY */}
-            {cancellationPolicy && cancellationPolicy.trim().length > 0 && (
-              <section>
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="cancellation" className="border-border">
-                    <AccordionTrigger className="text-base font-semibold">
-                      {t("event.cancellationTitle")}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="whitespace-pre-line text-sm text-muted-foreground leading-relaxed">
-                        {cancellationPolicy}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </section>
-            )}
-
             {/* SECTION 6b — TECHNICAL ORGANIZER */}
             {(() => {
               const techInfo = event.technicalOrganizerInfo;
