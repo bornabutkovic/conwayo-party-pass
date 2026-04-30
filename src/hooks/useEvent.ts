@@ -91,7 +91,7 @@ export function useEventFull(slug: string) {
           location_city, location_country, location_postal_code,
           website_url, support_phone, event_type, currency, vat_rate,
           payment_due_days, branding_primary_color, branding_secondary_color,
-          branding_text_color, branding_logo_url, branding_banner_url,
+          branding_text_color, branding_logo_url, branding_banner_url, branding_banner_height,
           branding_favicon_url, notification_sender_name, notification_sender_email,
           institutions!events_institution_uuid_fkey(
             name, address, city, oib, invoice_email,
