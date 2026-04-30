@@ -586,12 +586,11 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               };
               return (
                 <section>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {t("event.technicalOrganizerTitle")}
-                    </p>
-                    <OrganizerCard institution={techInstitution} />
-                  </div>
+                  <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
+                    <Building2 className="h-6 w-6" />
+                    {t("event.technicalOrganizerTitle")}
+                  </h2>
+                  <OrganizerCard institution={techInstitution} />
                 </section>
               );
             })()}
