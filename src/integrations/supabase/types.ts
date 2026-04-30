@@ -615,6 +615,7 @@ export type Database = {
           bc_position: string | null
           bc_reference: string | null
           bc_vat_bus_posting_group: string | null
+          branding_banner_height: number | null
           branding_banner_url: string | null
           branding_favicon_url: string | null
           branding_logo_url: string | null
@@ -666,6 +667,7 @@ export type Database = {
           bc_position?: string | null
           bc_reference?: string | null
           bc_vat_bus_posting_group?: string | null
+          branding_banner_height?: number | null
           branding_banner_url?: string | null
           branding_favicon_url?: string | null
           branding_logo_url?: string | null
@@ -717,6 +719,7 @@ export type Database = {
           bc_position?: string | null
           bc_reference?: string | null
           bc_vat_bus_posting_group?: string | null
+          branding_banner_height?: number | null
           branding_banner_url?: string | null
           branding_favicon_url?: string | null
           branding_logo_url?: string | null
@@ -1702,6 +1705,7 @@ export type Database = {
           event_slug: string | null
           first_name: string | null
           lang: string | null
+          language: string | null
           last_ai_message: string | null
           last_human_message: string | null
           last_intent: string | null
@@ -1748,6 +1752,7 @@ export type Database = {
           event_slug?: string | null
           first_name?: string | null
           lang?: string | null
+          language?: string | null
           last_ai_message?: string | null
           last_human_message?: string | null
           last_intent?: string | null
@@ -1794,6 +1799,7 @@ export type Database = {
           event_slug?: string | null
           first_name?: string | null
           lang?: string | null
+          language?: string | null
           last_ai_message?: string | null
           last_human_message?: string | null
           last_intent?: string | null
