@@ -202,7 +202,12 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
             <img
               src={bannerUrl}
               alt={`${eventName} banner`}
-              className="block w-full h-auto object-contain"
+              className="block w-full object-contain"
+              style={{
+                maxHeight: event.branding_banner_height
+                  ? `${event.branding_banner_height}px`
+                  : undefined,
+              }}
             />
           </section>
         ) : (

@@ -807,14 +807,16 @@ export default function EventRegister() {
 
       {/* HERO — clean banner only */}
       {bannerUrl ? (
-        <section
-          className="relative w-full overflow-hidden"
-          style={{ backgroundColor: (event as any).branding_secondary_color ?? "hsl(var(--muted))" }}
-        >
+        <section className="relative w-full overflow-hidden">
           <img
             src={bannerUrl}
             alt={`${eventName} banner`}
-            className="block w-full h-auto object-contain"
+            className="block w-full object-contain"
+            style={{
+              maxHeight: (event as any).branding_banner_height
+                ? `${(event as any).branding_banner_height}px`
+                : undefined,
+            }}
           />
         </section>
       ) : (
