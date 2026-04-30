@@ -545,24 +545,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               );
             })()}
 
-            {/* SECTION 6 — CANCELLATION POLICY */}
-            {cancellationPolicy && cancellationPolicy.trim().length > 0 && (
-              <section>
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="cancellation" className="border-border">
-                    <AccordionTrigger className="text-base font-semibold">
-                      {t("event.cancellationTitle")}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="whitespace-pre-line text-sm text-muted-foreground leading-relaxed">
-                        {cancellationPolicy}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </section>
-            )}
-
             {/* SECTION 6b — TECHNICAL ORGANIZER */}
             {(() => {
               const techInfo = event.technicalOrganizerInfo;
@@ -586,12 +568,11 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               };
               return (
                 <section>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {t("event.technicalOrganizerTitle")}
-                    </p>
-                    <OrganizerCard institution={techInstitution} />
-                  </div>
+                  <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
+                    <Building2 className="h-6 w-6" />
+                    {t("event.technicalOrganizerTitle")}
+                  </h2>
+                  <OrganizerCard institution={techInstitution} />
                 </section>
               );
             })()}
@@ -669,6 +650,24 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                 </section>
               );
             })()}
+
+            {/* SECTION 6d — CANCELLATION POLICY */}
+            {cancellationPolicy && cancellationPolicy.trim().length > 0 && (
+              <section>
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="cancellation" className="border-border">
+                    <AccordionTrigger className="text-base font-semibold">
+                      {t("event.cancellationTitle")}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="whitespace-pre-line text-sm text-muted-foreground leading-relaxed">
+                        {cancellationPolicy}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </section>
+            )}
           </div>
         </div>
 
