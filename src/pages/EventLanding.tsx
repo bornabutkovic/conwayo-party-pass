@@ -50,6 +50,24 @@ import { QRCodeSVG } from "qrcode.react";
 
 const VOICE_AGENT_ENABLED = false;
 
+function localiseWorkingHours(value: string, lang: string): string {
+  if (lang !== "hr") return value;
+  const map: Record<string, string> = {
+    Monday: "Pon",
+    Tuesday: "Uto",
+    Wednesday: "Sri",
+    Thursday: "Čet",
+    Friday: "Pet",
+    Saturday: "Sub",
+    Sunday: "Ned",
+  };
+  let result = value;
+  for (const [en, hr] of Object.entries(map)) {
+    result = result.replace(new RegExp(en, "g"), hr);
+  }
+  return result;
+}
+
 function formatDateHr(dateStr: string | null) {
   if (!dateStr) return null;
   return format(new Date(dateStr), "d. MMMM yyyy.", { locale: hrLocale });
@@ -629,7 +647,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                       {supportContact.working_hours && supportContact.working_hours.trim().length > 0 && (
                         <div className="flex items-start gap-3">
                           <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm text-foreground">{supportContact.working_hours}</p>
+                          <p className="text-sm text-foreground">{localiseWorkingHours(supportContact.working_hours, displayLang)}</p>
                         </div>
                       )}
                       {supportContact.website && supportContact.website.trim().length > 0 && (
