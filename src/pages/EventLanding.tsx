@@ -361,9 +361,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                       d.toLocaleDateString(localeStr, { day: "numeric", month: "short", year: "numeric" });
 
                     const dimmed = status !== "active";
-                    const handleBuy = () => {
-                      document.getElementById("registration-options")?.scrollIntoView({ behavior: "smooth" });
-                    };
 
                     return (
                       <Card key={tier.id} className={`border-border ${dimmed ? "opacity-40 pointer-events-none" : ""}`}>
@@ -377,30 +374,28 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           )}
 
-                          {status === "upcoming" && start ? (
-                            <p className="mt-3 text-2xl font-bold text-primary">
-                              {displayLang === "hr"
-                                ? `Dostupno od ${fmtTierDate(start)}`
-                                : `Available from ${fmtTierDate(start)}`}
-                            </p>
-                          ) : (
-                            <>
-                              <p className="mt-3 text-2xl font-bold text-primary">
-                                {tier.price === 0
-                                  ? t("event.freeLabel")
-                                  : `${Number(tier.price).toFixed(2)} ${currency}`}
-                              </p>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {t("event.priceIncludesVat")}
-                              </p>
-                            </>
-                          )}
+                          <p className="mt-3 text-2xl font-bold text-primary">
+                            {tier.price === 0
+                              ? t("event.freeLabel")
+                              : `${Number(tier.price).toFixed(2)} ${currency}`}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t("event.priceIncludesVat")}
+                          </p>
 
                           {status === "active" && end && (
                             <p className="mt-2 text-xs font-medium text-muted-foreground">
                               {displayLang === "hr"
                                 ? `Do ${fmtTierDate(end)}`
                                 : `Until ${fmtTierDate(end)}`}
+                            </p>
+                          )}
+
+                          {status === "upcoming" && start && (
+                            <p className="mt-2 text-xs font-medium text-muted-foreground">
+                              {displayLang === "hr"
+                                ? `Dostupno od ${fmtTierDate(start)}`
+                                : `Available from ${fmtTierDate(start)}`}
                             </p>
                           )}
 
@@ -414,17 +409,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             <p className="mt-2 text-xs text-muted-foreground">
                               {t("event.spotsLeft")}: {tier.capacity}
                             </p>
-                          )}
-
-                          {status === "active" && (
-                            <Button
-                              type="button"
-                              onClick={handleBuy}
-                              size="lg"
-                              className="mt-4 w-full"
-                            >
-                              {displayLang === "hr" ? "Kupi kartu" : "Buy Ticket"}
-                            </Button>
                           )}
                         </CardContent>
                       </Card>
