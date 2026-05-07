@@ -348,8 +348,25 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     const tierTrans = ((tier.translations as Record<string, any>)?.['en'] as Record<string, any>) ?? {};
                     const tierName = displayLang === 'en' && tierTrans['name'] ? String(tierTrans['name']) : tier.name;
                     const tierDesc = displayLang === 'en' && tierTrans['description'] ? String(tierTrans['description']) : (tier.description ?? '');
+
+                    const now = new Date();
+                    const start = tier.sales_start ? new Date(tier.sales_start) : null;
+                    const end = tier.sales_end ? new Date(tier.sales_end) : null;
+                    let status: "active" | "upcoming" | "expired" = "active";
+                    if (start && now < start) status = "upcoming";
+                    else if (end && now > end) status = "expired";
+
+                    const localeStr = displayLang === "hr" ? "hr-HR" : "en-GB";
+                    const fmtTierDate = (d: Date) =>
+                      d.toLocaleDateString(localeStr, { day: "numeric", month: "short", year: "numeric" });
+
+                    const dimmed = status !== "active";
+                    const handleBuy = () => {
+                      document.getElementById("registration-options")?.scrollIntoView({ behavior: "smooth" });
+                    };
+
                     return (
-                      <Card key={tier.id} className="border-border">
+                      <Card key={tier.id} className={`border-border ${dimmed ? "opacity-40 pointer-events-none" : ""}`}>
                         <CardContent className="p-5">
                           <h3 className="text-lg font-semibold text-card-foreground">
                             {tierName}
@@ -359,18 +376,55 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                               {tierDesc}
                             </p>
                           )}
-                          <p className="mt-3 text-2xl font-bold text-primary">
-                            {tier.price === 0
-                              ? t("event.freeLabel")
-                              : `${Number(tier.price).toFixed(2)} ${currency}`}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {t("event.priceIncludesVat")}
-                          </p>
-                          {tier.capacity != null && tier.capacity > 0 && (
+
+                          {status === "upcoming" && start ? (
+                            <p className="mt-3 text-2xl font-bold text-primary">
+                              {displayLang === "hr"
+                                ? `Dostupno od ${fmtTierDate(start)}`
+                                : `Available from ${fmtTierDate(start)}`}
+                            </p>
+                          ) : (
+                            <>
+                              <p className="mt-3 text-2xl font-bold text-primary">
+                                {tier.price === 0
+                                  ? t("event.freeLabel")
+                                  : `${Number(tier.price).toFixed(2)} ${currency}`}
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {t("event.priceIncludesVat")}
+                              </p>
+                            </>
+                          )}
+
+                          {status === "active" && end && (
+                            <p className="mt-2 text-xs font-medium text-muted-foreground">
+                              {displayLang === "hr"
+                                ? `Do ${fmtTierDate(end)}`
+                                : `Until ${fmtTierDate(end)}`}
+                            </p>
+                          )}
+
+                          {status === "expired" && (
+                            <p className="mt-2 text-sm font-medium text-muted-foreground">
+                              {displayLang === "hr" ? "Prodaja završena" : "Sales ended"}
+                            </p>
+                          )}
+
+                          {tier.capacity != null && tier.capacity > 0 && status === "active" && (
                             <p className="mt-2 text-xs text-muted-foreground">
                               {t("event.spotsLeft")}: {tier.capacity}
                             </p>
+                          )}
+
+                          {status === "active" && (
+                            <Button
+                              type="button"
+                              onClick={handleBuy}
+                              size="lg"
+                              className="mt-4 w-full"
+                            >
+                              {displayLang === "hr" ? "Kupi kartu" : "Buy Ticket"}
+                            </Button>
                           )}
                         </CardContent>
                       </Card>
@@ -379,6 +433,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                 </div>
 
                 {/* Registration options — equal weight */}
+                <div id="registration-options">
                 <h2 className="text-2xl font-bold text-foreground mb-6 mt-10">{t("event.chooseRegistration")}</h2>
                 <div className="mt-6 grid gap-4 sm:grid-cols-3">
                   {/* Card 1 — Online registration */}
