@@ -508,6 +508,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     </Card>
                   )}
                 </div>
+                </div>
               </section>
             )}
 
