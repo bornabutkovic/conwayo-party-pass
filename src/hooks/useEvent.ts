@@ -123,15 +123,12 @@ export function useEventFull(slug: string) {
         .maybeSingle();
       const supported_languages = eventExtra?.supported_languages ?? ['hr'];
 
-      // Fetch active ticket tiers within their sales window
-      const now = new Date().toISOString();
+      // Fetch all active ticket tiers (sales window logic moved to UI layer)
       const { data: tiers } = await supabase
         .from("ticket_tiers")
         .select("*")
         .eq("event_id", event.id)
         .eq("status", "active")
-        .or(`sales_start.is.null,sales_start.lte.${now}`)
-        .or(`sales_end.is.null,sales_end.gte.${now}`)
         .order("price", { ascending: true });
 
       // Fetch active services
