@@ -45,6 +45,7 @@ const App = () => (
                 <Route path="/preview/:eventId" element={<EventPreview />} />
                 <Route path="/event/:slug/auth" element={<EventAuth />} />
                 <Route path="/event/:slug/register" element={<EventRegister />} />
+                <Route path="/event/:slug/voice" element={<EventVoice />} />
                 <Route path="/event/:slug/dashboard" element={<EventDashboard />} />
                 <Route path="/ticket/:attendeeId" element={<TicketPage />} />
                 <Route path="/my-tickets" element={<MyTickets />} />
