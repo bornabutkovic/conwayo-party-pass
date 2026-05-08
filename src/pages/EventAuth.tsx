@@ -93,7 +93,8 @@ export default function EventAuth() {
   const isEventPage = !!slug;
 
   const prefillEmail = searchParams.get("email") || "";
-  const defaultTab = searchParams.get("tab") || "register";
+  const redirectTo = searchParams.get("redirect");
+  const defaultTab = searchParams.get("tab") || searchParams.get("mode") || "register";
 
   const [tab, setTab] = useState<string>(defaultTab);
   const [submitting, setSubmitting] = useState(false);
@@ -135,9 +136,9 @@ export default function EventAuth() {
         .maybeSingle();
 
       if (existing) {
-        navigate(`/event/${slug}/dashboard`, { replace: true });
+        navigate(redirectTo || `/event/${slug}/dashboard`, { replace: true });
       } else {
-        navigate(`/event/${slug}/register`, { replace: true });
+        navigate(redirectTo || `/event/${slug}/register`, { replace: true });
       }
     };
 
@@ -189,7 +190,9 @@ export default function EventAuth() {
           role: "user",
         });
 
-        if (isEventPage) {
+        if (redirectTo) {
+          navigate(redirectTo, { replace: true });
+        } else if (isEventPage) {
           navigate(`/event/${slug}/register`);
         } else {
           navigate("/my-tickets");
@@ -235,10 +238,12 @@ export default function EventAuth() {
         .eq("profile_id", session.user.id)
         .maybeSingle();
 
-      if (attendee) {
-        navigate(`/event/${slug}/dashboard`);
+      if (redirectTo) {
+        navigate(redirectTo, { replace: true });
+      } else if (attendee) {
+        navigate(`/event/${slug}/dashboard`, { replace: true });
       } else {
-        navigate(`/event/${slug}/register`);
+        navigate(`/event/${slug}/register`, { replace: true });
       }
     } catch (err: any) {
       toast({ title: "Login failed", description: err.message, variant: "destructive" });
