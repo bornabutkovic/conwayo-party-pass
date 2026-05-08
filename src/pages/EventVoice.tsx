@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { ConvwayoHeader } from '@/components/ConvwayoHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Headphones } from 'lucide-react';
+import { ArrowLeft, Headphones, Lock } from 'lucide-react';
 
 type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
 
@@ -28,10 +28,7 @@ export default function EventVoice() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate(`/event/${slug}`);
-      return;
-    }
+    if (!user) return;
     initCall();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -178,115 +175,192 @@ export default function EventVoice() {
         </button>
       </div>
 
-      {/* Main content */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '24px',
-          gap: 32,
-          maxWidth: 320,
-          margin: '0 auto',
-          width: '100%',
-        }}
-      >
-        <style>{`
-          @keyframes orbPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.06); }
-          }
-          @keyframes orbTalk {
-            0%, 100% { transform: scale(0.93); }
-            50% { transform: scale(1.07); }
-          }
-        `}</style>
+      {/* Not logged in screen */}
+      {!user && (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            gap: 0,
+          }}
+        >
+          {/* Static orb */}
+          <div
+            style={{
+              width: 180,
+              height: 180,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 40% 40%, #818cf8, #6366f1, #4f46e5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: 0.5,
+            }}
+          >
+            <Headphones size={48} color="white" style={{ opacity: 0.9 }} />
+          </div>
 
-        {/* Orb */}
-        <div style={getOrbStyle()}>
-          <Headphones size={48} color="white" style={{ opacity: 0.9 }} />
+          <Lock size={24} color="white" style={{ opacity: 0.4, marginTop: 16 }} />
+
+          <p style={{ fontSize: 20, fontWeight: 600, color: 'white', textAlign: 'center', marginTop: 24 }}>
+            Glasovna registracija
+          </p>
+          <p
+            style={{
+              fontSize: 14,
+              color: 'rgba(255,255,255,0.5)',
+              textAlign: 'center',
+              maxWidth: 280,
+              marginTop: 8,
+            }}
+          >
+            Za korištenje glasovnog agenta potrebna je prijava ili registracija u Conwayo.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24, maxWidth: 280, width: '100%' }}>
+            <Button
+              onClick={() => navigate(`/event/${slug}/auth?redirect=/event/${slug}/voice`)}
+              style={{
+                width: '100%',
+                background: '#6366f1',
+                color: 'white',
+                borderRadius: 12,
+                fontWeight: 600,
+              }}
+            >
+              Prijavi se
+            </Button>
+            <Button
+              onClick={() => navigate(`/event/${slug}/auth?redirect=/event/${slug}/voice&mode=register`)}
+              variant="ghost"
+              style={{
+                width: '100%',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: 'white',
+                borderRadius: 12,
+              }}
+            >
+              Registriraj se
+            </Button>
+          </div>
         </div>
+      )}
 
-        {/* Status */}
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: 0 }}>{getStatusText()}</p>
-          {callStatus === 'active' && (
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>{formatTime(callSeconds)}</p>
+      {/* Main content (logged in) */}
+      {user && (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            gap: 32,
+            maxWidth: 320,
+            margin: '0 auto',
+            width: '100%',
+          }}
+        >
+          <style>{`
+            @keyframes orbPulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.06); }
+            }
+            @keyframes orbTalk {
+              0%, 100% { transform: scale(0.93); }
+              50% { transform: scale(1.07); }
+            }
+          `}</style>
+
+          {/* Orb */}
+          <div style={getOrbStyle()}>
+            <Headphones size={48} color="white" style={{ opacity: 0.9 }} />
+          </div>
+
+          {/* Status */}
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: 0 }}>{getStatusText()}</p>
+            {callStatus === 'active' && (
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>{formatTime(callSeconds)}</p>
+            )}
+          </div>
+
+          {/* Active/connecting: end call button */}
+          {(callStatus === 'active' || callStatus === 'connecting') && (
+            <Button
+              onClick={endCall}
+              style={{ width: '100%', background: 'rgba(239,68,68,0.9)', color: 'white' }}
+            >
+              Završi poziv
+            </Button>
+          )}
+
+          {/* Error: retry */}
+          {callStatus === 'error' && (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Button onClick={initCall} style={{ width: '100%', background: '#6366f1', color: 'white' }}>
+                Pokušaj ponovo
+              </Button>
+              <Button
+                onClick={() => navigate(`/event/${slug}`)}
+                variant="ghost"
+                style={{ color: 'rgba(255,255,255,0.4)', width: '100%' }}
+              >
+                Natrag na event
+              </Button>
+            </div>
+          )}
+
+          {/* Ended: result */}
+          {callStatus === 'ended' && paymentMethod && (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {paymentMethod === 'stripe' && paymentUrl ? (
+                <>
+                  <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
+                    Registracija završena. Link za plaćanje poslan je i na email.
+                  </p>
+                  <a
+                    href={paymentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      padding: '14px 24px',
+                      background: '#6366f1',
+                      color: 'white',
+                      borderRadius: 12,
+                      fontSize: 15,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Plati karticom
+                  </a>
+                </>
+              ) : (
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
+                  Registracija završena. Ponuda s uputama za plaćanje stiže na email.
+                </p>
+              )}
+              <Button
+                onClick={() => navigate(`/event/${slug}`)}
+                variant="ghost"
+                style={{ color: 'rgba(255,255,255,0.4)', width: '100%', marginTop: 8 }}
+              >
+                Natrag na event
+              </Button>
+            </div>
           )}
         </div>
-
-        {/* Active/connecting: end call button */}
-        {(callStatus === 'active' || callStatus === 'connecting') && (
-          <Button
-            onClick={endCall}
-            style={{ width: '100%', background: 'rgba(239,68,68,0.9)', color: 'white' }}
-          >
-            Završi poziv
-          </Button>
-        )}
-
-        {/* Error: retry */}
-        {callStatus === 'error' && (
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Button onClick={initCall} style={{ width: '100%', background: '#6366f1', color: 'white' }}>
-              Pokušaj ponovo
-            </Button>
-            <Button
-              onClick={() => navigate(`/event/${slug}`)}
-              variant="ghost"
-              style={{ color: 'rgba(255,255,255,0.4)', width: '100%' }}
-            >
-              Natrag na event
-            </Button>
-          </div>
-        )}
-
-        {/* Ended: result */}
-        {callStatus === 'ended' && paymentMethod && (
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {paymentMethod === 'stripe' && paymentUrl ? (
-              <>
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
-                  Registracija završena. Link za plaćanje poslan je i na email.
-                </p>
-                <a
-                  href={paymentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    padding: '14px 24px',
-                    background: '#6366f1',
-                    color: 'white',
-                    borderRadius: 12,
-                    fontSize: 15,
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                  }}
-                >
-                  Plati karticom
-                </a>
-              </>
-            ) : (
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
-                Registracija završena. Ponuda s uputama za plaćanje stiže na email.
-              </p>
-            )}
-            <Button
-              onClick={() => navigate(`/event/${slug}`)}
-              variant="ghost"
-              style={{ color: 'rgba(255,255,255,0.4)', width: '100%', marginTop: 8 }}
-            >
-              Natrag na event
-            </Button>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
