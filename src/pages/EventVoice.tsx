@@ -10,8 +10,6 @@ import { ArrowLeft, Headphones, Lock } from 'lucide-react';
 
 type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
 
-type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
-
 export default function EventVoice() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
