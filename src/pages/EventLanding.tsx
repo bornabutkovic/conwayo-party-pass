@@ -105,79 +105,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const { data: fetchedEvent, isLoading, error } = useEventFull(previewEvent ? "" : (slug ?? ""));
   const event = previewEvent ?? fetchedEvent;
   const { lang, setLang, t } = useLanguage();
-  const { user } = useAuth();
-  const [callStatus, setCallStatus] = useState<'idle' | 'connecting' | 'active' | 'ended'>('idle');
-  const [callSeconds, setCallSeconds] = useState(0);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
-  const retellClientRef = useRef<RetellWebClient | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startVoiceCall = async () => {
-    if (!user) {
-      setVoiceError(displayLang === 'en' ? 'Sign in required for voice registration.' : 'Za glasovnu registraciju potrebna je prijava.');
-      return;
-    }
-    setVoiceError(null);
-    setCallStatus('connecting');
-    try {
-      const { data, error } = await supabase.functions.invoke('voice-init-session', {
-        body: { event_slug: slug, profile_id: user.id, lang: displayLang }
-      });
-      if (error || !data?.access_token) {
-        setVoiceError(displayLang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
-        setCallStatus('idle');
-        return;
-      }
-      setVoiceSessionId(data.session_id);
-      const client = new RetellWebClient();
-      retellClientRef.current = client;
-      client.on('call_started', () => {
-        setCallStatus('active');
-        setCallSeconds(0);
-        timerRef.current = setInterval(() => setCallSeconds(s => s + 1), 1000);
-      });
-      client.on('call_ended', async () => {
-        setCallStatus('ended');
-        if (timerRef.current) clearInterval(timerRef.current);
-        await new Promise(r => setTimeout(r, 2000));
-        if (data.session_id) {
-          const { data: sessionData } = await (supabase as any)
-            .from('voice_session')
-            .select('payment_url')
-            .eq('id', data.session_id)
-            .single();
-          if (sessionData?.payment_url) setPaymentUrl(sessionData.payment_url);
-        }
-      });
-      client.on('error', () => {
-        setVoiceError(displayLang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
-        setCallStatus('idle');
-        if (timerRef.current) clearInterval(timerRef.current);
-      });
-      await client.startCall({ accessToken: data.access_token });
-    } catch {
-      setVoiceError(displayLang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
-      setCallStatus('idle');
-    }
-  };
-
-  const endVoiceCall = () => {
-    retellClientRef.current?.stopCall();
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
-
-  const resetVoiceCall = () => {
-    setCallStatus('idle');
-    setPaymentUrl(null);
-    setVoiceSessionId(null);
-    setVoiceError(null);
-    setCallSeconds(0);
-  };
-
-  const formatCallTime = (s: number) =>
-    String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 
   const supportsEnglish = useMemo(() => {
     return Array.isArray(event?.supported_languages) && event!.supported_languages!.includes("en");
