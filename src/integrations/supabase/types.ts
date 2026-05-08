@@ -1070,6 +1070,7 @@ export type Database = {
           payment_method: string | null
           pdf_url: string | null
           po_number: string | null
+          source: string | null
           status: Database["public"]["Enums"]["payment_status"] | null
           stripe_session_expires_at: string | null
           stripe_session_id: string | null
@@ -1108,6 +1109,7 @@ export type Database = {
           payment_method?: string | null
           pdf_url?: string | null
           po_number?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           stripe_session_expires_at?: string | null
           stripe_session_id?: string | null
@@ -1146,6 +1148,7 @@ export type Database = {
           payment_method?: string | null
           pdf_url?: string | null
           po_number?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           stripe_session_expires_at?: string | null
           stripe_session_id?: string | null
@@ -1519,12 +1522,14 @@ export type Database = {
           event_slug: string | null
           first_name: string | null
           id: string
+          lang: string | null
           last_name: string | null
           oib: string | null
           order_id: string | null
           payer_type: string | null
           payment_method: string | null
           payment_url: string | null
+          profile_id: string | null
           retell_call_id: string | null
           status: string | null
           ticket_tier_id: string | null
@@ -1542,12 +1547,14 @@ export type Database = {
           event_slug?: string | null
           first_name?: string | null
           id?: string
+          lang?: string | null
           last_name?: string | null
           oib?: string | null
           order_id?: string | null
           payer_type?: string | null
           payment_method?: string | null
           payment_url?: string | null
+          profile_id?: string | null
           retell_call_id?: string | null
           status?: string | null
           ticket_tier_id?: string | null
@@ -1565,12 +1572,14 @@ export type Database = {
           event_slug?: string | null
           first_name?: string | null
           id?: string
+          lang?: string | null
           last_name?: string | null
           oib?: string | null
           order_id?: string | null
           payer_type?: string | null
           payment_method?: string | null
           payment_url?: string | null
+          profile_id?: string | null
           retell_call_id?: string | null
           status?: string | null
           ticket_tier_id?: string | null
@@ -1597,6 +1606,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_session_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
