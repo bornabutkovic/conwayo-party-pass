@@ -13,7 +13,7 @@ type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
 export default function EventVoice() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { lang } = useLanguage();
 
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
@@ -175,8 +175,33 @@ export default function EventVoice() {
         </button>
       </div>
 
+      {/* Loading auth: minimal state */}
+      {authLoading && (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: '2px solid rgba(255,255,255,0.15)',
+              borderTopColor: 'rgba(255,255,255,0.6)',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
       {/* Not logged in screen */}
-      {!user && (
+      {!user && !authLoading && (
         <div
           style={{
             flex: 1,
@@ -223,7 +248,7 @@ export default function EventVoice() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24, maxWidth: 280, width: '100%' }}>
             <Button
-              onClick={() => navigate(`/event/${slug}/auth?redirect=/event/${slug}/voice`)}
+              onClick={() => navigate(`/event/${slug}/auth?tab=login&redirect=/event/${slug}/voice`)}
               style={{
                 width: '100%',
                 background: '#6366f1',
@@ -235,7 +260,7 @@ export default function EventVoice() {
               Prijavi se
             </Button>
             <Button
-              onClick={() => navigate(`/event/${slug}/auth?redirect=/event/${slug}/voice&mode=register`)}
+              onClick={() => navigate(`/event/${slug}/auth?tab=register&redirect=/event/${slug}/voice`)}
               variant="ghost"
               style={{
                 width: '100%',
