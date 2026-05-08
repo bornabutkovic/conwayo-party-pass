@@ -6,7 +6,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { ConvwayoHeader } from '@/components/ConvwayoHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Headphones } from 'lucide-react';
+import { ArrowLeft, Headphones, Lock } from 'lucide-react';
+
+type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
 
 type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
 
