@@ -28,10 +28,7 @@ export default function EventVoice() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate(`/event/${slug}`);
-      return;
-    }
+    if (!user) return;
     initCall();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
