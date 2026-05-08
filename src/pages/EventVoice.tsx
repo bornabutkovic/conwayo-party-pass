@@ -6,225 +6,287 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { ConvwayoHeader } from '@/components/ConvwayoHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Headphones, PhoneOff } from 'lucide-react';
+import { ArrowLeft, Headphones } from 'lucide-react';
 
-type CallStatus = 'idle' | 'connecting' | 'active' | 'ended';
-
-const orbStyle: React.CSSProperties = {
-  width: 180,
-  height: 180,
-  borderRadius: '50%',
-  background: 'radial-gradient(circle at 30% 30%, #6366f1 0%, #8b5cf6 100%)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
+type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
 
 export default function EventVoice() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { lang } = useLanguage();
 
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [agentTalking, setAgentTalking] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'invoice' | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [, setSessionId] = useState<string | null>(null);
 
   const clientRef = useRef<RetellWebClient | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedRef = useRef(false);
-
-  const formatTime = (s: number) =>
-    String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 
   useEffect(() => {
-    if (authLoading) return;
     if (!user) {
       navigate(`/event/${slug}`);
       return;
     }
-    if (startedRef.current) return;
-    startedRef.current = true;
-
-    (async () => {
-      setCallStatus('connecting');
-      try {
-        const { data, error } = await supabase.functions.invoke('voice-init-session', {
-          body: { event_slug: slug, profile_id: user.id, lang },
-        });
-        if (error || !data?.access_token) {
-          setErrorMsg(lang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
-          setCallStatus('ended');
-          return;
-        }
-        const sessionId = data.session_id as string | undefined;
-
-        const client = new RetellWebClient();
-        clientRef.current = client;
-
-        client.on('call_started', () => {
-          setCallStatus('active');
-          setCallSeconds(0);
-          timerRef.current = setInterval(() => setCallSeconds((s) => s + 1), 1000);
-        });
-        client.on('agent_start_talking', () => setAgentTalking(true));
-        client.on('agent_stop_talking', () => setAgentTalking(false));
-        client.on('call_ended', async () => {
-          setCallStatus('ended');
-          setAgentTalking(false);
-          if (timerRef.current) clearInterval(timerRef.current);
-          await new Promise((r) => setTimeout(r, 2000));
-          if (sessionId) {
-            const { data: sd } = await (supabase as any)
-              .from('voice_session')
-              .select('payment_url')
-              .eq('id', sessionId)
-              .single();
-            if (sd?.payment_url) setPaymentUrl(sd.payment_url);
-          }
-        });
-        client.on('error', () => {
-          setErrorMsg(lang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
-          setCallStatus('ended');
-          if (timerRef.current) clearInterval(timerRef.current);
-        });
-
-        await client.startCall({ accessToken: data.access_token });
-      } catch {
-        setErrorMsg(lang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
-        setCallStatus('ended');
-      }
-    })();
-
+    initCall();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      try {
-        clientRef.current?.stopCall();
-      } catch {
-        // noop
-      }
+      clientRef.current?.stopCall();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, slug, lang]);
+  }, []);
 
-  const endCall = () => {
+  const initCall = async () => {
+    setCallStatus('connecting');
     try {
-      clientRef.current?.stopCall();
+      const { data, error } = await supabase.functions.invoke('voice-init-session', {
+        body: { event_slug: slug, profile_id: user!.id, lang: lang === 'en' ? 'en' : 'hr' },
+      });
+
+      if (error || !data?.access_token) {
+        setErrorMsg('Greška pri spajanju. Pokušajte ponovo.');
+        setCallStatus('error');
+        return;
+      }
+
+      setSessionId(data.session_id);
+
+      const client = new RetellWebClient();
+      clientRef.current = client;
+
+      client.on('call_started', () => {
+        setCallStatus('active');
+        setCallSeconds(0);
+        timerRef.current = setInterval(() => setCallSeconds((s) => s + 1), 1000);
+      });
+
+      client.on('agent_start_talking', () => setAgentTalking(true));
+      client.on('agent_stop_talking', () => setAgentTalking(false));
+
+      client.on('call_ended', async () => {
+        setCallStatus('ended');
+        setAgentTalking(false);
+        if (timerRef.current) clearInterval(timerRef.current);
+
+        await new Promise((r) => setTimeout(r, 2000));
+
+        if (data.session_id) {
+          const { data: sessionData } = await supabase
+            .from('voice_session')
+            .select('payment_url, status')
+            .eq('id', data.session_id)
+            .single();
+
+          if (sessionData?.payment_url) {
+            setPaymentUrl(sessionData.payment_url);
+            setPaymentMethod('stripe');
+          } else {
+            setPaymentMethod('invoice');
+          }
+        }
+      });
+
+      client.on('error', () => {
+        setErrorMsg('Greška pri spajanju. Pokušajte ponovo.');
+        setCallStatus('error');
+        if (timerRef.current) clearInterval(timerRef.current);
+      });
+
+      await client.startCall({ accessToken: data.access_token });
     } catch {
-      // noop
+      setErrorMsg('Greška pri spajanju. Pokušajte ponovo.');
+      setCallStatus('error');
     }
   };
 
-  const statusText = (() => {
-    if (errorMsg) return errorMsg;
-    if (callStatus === 'idle') return lang === 'en' ? 'Preparing call...' : 'Pripremam poziv...';
-    if (callStatus === 'connecting') return lang === 'en' ? 'Connecting...' : 'Spajanje...';
-    if (callStatus === 'active') {
-      if (agentTalking) return lang === 'en' ? 'Agent is speaking...' : 'Agent govori...';
-      return lang === 'en' ? 'Listening...' : 'Slušam...';
-    }
-    return lang === 'en' ? 'Call ended' : 'Poziv završen';
-  })();
+  const endCall = () => {
+    clientRef.current?.stopCall();
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
 
-  // Orb dynamic styles
-  const orbAnimation = (() => {
-    if (callStatus === 'connecting') return 'voiceOrbSlow 1.5s ease-in-out infinite';
-    if (callStatus === 'active' && agentTalking) return 'voiceOrbFast 0.6s ease-in-out infinite';
-    if (callStatus === 'active') return 'voiceOrbCalm 2s ease-in-out infinite';
-    return 'none';
-  })();
-  const orbShadow = (() => {
-    if (callStatus === 'active' && agentTalking) return '0 0 60px rgba(99,102,241,0.6)';
-    if (callStatus === 'ended') return '0 0 20px rgba(99,102,241,0.15)';
-    return '0 0 40px rgba(99,102,241,0.3)';
-  })();
-  const orbOpacity = callStatus === 'ended' ? 0.5 : 1;
+  const formatTime = (s: number) =>
+    String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+
+  const getOrbStyle = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      width: 180,
+      height: 180,
+      borderRadius: '50%',
+      background: 'radial-gradient(circle at 40% 40%, #818cf8, #6366f1, #4f46e5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'box-shadow 0.3s ease',
+    };
+    if (callStatus === 'idle' || callStatus === 'connecting') {
+      return { ...base, boxShadow: '0 0 40px rgba(99,102,241,0.35)', animation: 'orbPulse 1.8s ease-in-out infinite' };
+    }
+    if (callStatus === 'active' && agentTalking) {
+      return { ...base, boxShadow: '0 0 70px rgba(99,102,241,0.65)', animation: 'orbTalk 0.6s ease-in-out infinite' };
+    }
+    if (callStatus === 'active' && !agentTalking) {
+      return { ...base, boxShadow: '0 0 40px rgba(99,102,241,0.35)', animation: 'orbPulse 2.2s ease-in-out infinite' };
+    }
+    if (callStatus === 'ended') {
+      return { ...base, opacity: 0.45, boxShadow: 'none', animation: 'none' };
+    }
+    if (callStatus === 'error') {
+      return {
+        ...base,
+        background: 'radial-gradient(circle at 40% 40%, #f87171, #ef4444)',
+        boxShadow: '0 0 40px rgba(239,68,68,0.3)',
+        animation: 'none',
+      };
+    }
+    return base;
+  };
+
+  const getStatusText = () => {
+    if (callStatus === 'idle') return 'Pripremam poziv...';
+    if (callStatus === 'connecting') return 'Spajanje...';
+    if (callStatus === 'active') return agentTalking ? 'Agent govori...' : 'Slušam...';
+    if (callStatus === 'ended') return 'Poziv završen';
+    if (callStatus === 'error') return errorMsg || 'Greška pri spajanju.';
+    return '';
+  };
 
   return (
-    <div className="min-h-screen bg-[#0f0f1a] text-white flex flex-col">
-      <style>{`
-        @keyframes voiceOrbSlow { 0%,100% { transform: scale(0.95); } 50% { transform: scale(1.05); } }
-        @keyframes voiceOrbFast { 0%,100% { transform: scale(0.92); } 50% { transform: scale(1.08); } }
-        @keyframes voiceOrbCalm { 0%,100% { transform: scale(0.97); } 50% { transform: scale(1.03); } }
-      `}</style>
-
+    <div style={{ minHeight: '100vh', background: '#0f0f1a', color: 'white', display: 'flex', flexDirection: 'column' }}>
       <ConvwayoHeader />
 
-      <div className="px-4 pt-4">
+      {/* Back button */}
+      <div style={{ padding: '16px 24px' }}>
         <button
           onClick={() => navigate(`/event/${slug}`)}
-          className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
-          aria-label={lang === 'en' ? 'Back' : 'Natrag'}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            color: 'rgba(255,255,255,0.5)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 14,
+          }}
         >
-          <ArrowLeft className="h-4 w-4" />
-          {lang === 'en' ? 'Back' : 'Natrag'}
+          <ArrowLeft size={16} />
+          Natrag na event
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <div
-          style={{
-            ...orbStyle,
-            boxShadow: orbShadow,
-            opacity: orbOpacity,
-            animation: orbAnimation,
-          }}
-        >
-          <Headphones size={48} color="#ffffff" />
+      {/* Main content */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          gap: 32,
+          maxWidth: 320,
+          margin: '0 auto',
+          width: '100%',
+        }}
+      >
+        <style>{`
+          @keyframes orbPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+          }
+          @keyframes orbTalk {
+            0%, 100% { transform: scale(0.93); }
+            50% { transform: scale(1.07); }
+          }
+        `}</style>
+
+        {/* Orb */}
+        <div style={getOrbStyle()}>
+          <Headphones size={48} color="white" style={{ opacity: 0.9 }} />
         </div>
 
-        <p className="mt-10 text-base text-white/60 text-center min-h-[1.5rem]">
-          {statusText}
-        </p>
+        {/* Status */}
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: 0 }}>{getStatusText()}</p>
+          {callStatus === 'active' && (
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>{formatTime(callSeconds)}</p>
+          )}
+        </div>
 
-        {callStatus === 'active' && (
-          <p className="mt-2 text-2xl font-mono text-white tabular-nums">{formatTime(callSeconds)}</p>
-        )}
-
-        {(callStatus === 'connecting' || callStatus === 'active') && (
+        {/* Active/connecting: end call button */}
+        {(callStatus === 'active' || callStatus === 'connecting') && (
           <Button
-            variant="destructive"
-            size="lg"
             onClick={endCall}
-            className="mt-8 rounded-full gap-2 px-8"
+            style={{ width: '100%', background: 'rgba(239,68,68,0.9)', color: 'white' }}
           >
-            <PhoneOff className="h-4 w-4" />
-            {lang === 'en' ? 'End call' : 'Završi poziv'}
+            Završi poziv
           </Button>
         )}
 
-        {callStatus === 'ended' && (
-          <div className="mt-10 w-full max-w-[320px] flex flex-col items-center gap-4">
-            {paymentUrl ? (
-              <a
-                href={paymentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
-              >
-                {lang === 'en' ? 'Pay by card' : 'Plati karticom'}
-              </a>
-            ) : (
-              !errorMsg && (
-                <p className="text-sm text-white/60 text-center">
-                  {lang === 'en'
-                    ? 'Registration complete. Confirmation and payment instructions will arrive by email.'
-                    : 'Registracija završena. Potvrda i uputa za plaćanje stižu na email.'}
-                </p>
-              )
-            )}
+        {/* Error: retry */}
+        {callStatus === 'error' && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Button onClick={initCall} style={{ width: '100%', background: '#6366f1', color: 'white' }}>
+              Pokušaj ponovo
+            </Button>
             <Button
-              variant="outline"
-              className="w-full bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white"
               onClick={() => navigate(`/event/${slug}`)}
+              variant="ghost"
+              style={{ color: 'rgba(255,255,255,0.4)', width: '100%' }}
             >
-              {lang === 'en' ? 'Back to event' : 'Natrag na event'}
+              Natrag na event
             </Button>
           </div>
         )}
-      </main>
+
+        {/* Ended: result */}
+        {callStatus === 'ended' && paymentMethod && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {paymentMethod === 'stripe' && paymentUrl ? (
+              <>
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
+                  Registracija završena. Link za plaćanje poslan je i na email.
+                </p>
+                <a
+                  href={paymentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    padding: '14px 24px',
+                    background: '#6366f1',
+                    color: 'white',
+                    borderRadius: 12,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Plati karticom
+                </a>
+              </>
+            ) : (
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
+                Registracija završena. Ponuda s uputama za plaćanje stiže na email.
+              </p>
+            )}
+            <Button
+              onClick={() => navigate(`/event/${slug}`)}
+              variant="ghost"
+              style={{ color: 'rgba(255,255,255,0.4)', width: '100%', marginTop: 8 }}
+            >
+              Natrag na event
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
