@@ -1,10 +1,7 @@
-import { useEffect, useMemo, useCallback, useState, useRef } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
-import { RetellWebClient } from "retell-client-js-sdk";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
