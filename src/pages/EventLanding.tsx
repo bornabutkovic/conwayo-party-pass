@@ -493,7 +493,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                           size="lg"
                           className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
                           disabled={isPreview}
-                          onClick={() => navigate(`/event/${slug}/voice`)}
+                          onClick={() => window.location.href = `/event/${slug}/voice`}
                         >
                           <Headphones className="h-4 w-4" />
                           {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
