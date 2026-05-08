@@ -549,21 +549,73 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     </CardContent>
                   </Card>
 
-                  {/* Card 3 — Voice Agent (coming soon) */}
+                  {/* Card 3 — Voice Agent */}
                   {VOICE_AGENT_ENABLED && (
-                    <Card className="border-border opacity-75">
+                    <Card className="border-border">
                       <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                         <div className="space-y-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
-                            <Clock className="h-6 w-6 text-amber-500" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                            <Headphones className="h-6 w-6 text-primary" />
                           </div>
                           <h3 className="text-xl font-bold text-foreground">{t("event.voiceTitle")}</h3>
-                          <p className="text-sm text-muted-foreground">{t("event.voiceDesc")}</p>
-                          <Badge variant="secondary">In Progress</Badge>
+                          <p className="text-sm text-muted-foreground">
+                            {displayLang === 'en'
+                              ? 'Register by voice call in under 2 minutes.'
+                              : 'Registriraj se glasovnim pozivom za manje od 2 minute.'}
+                          </p>
+                          {voiceError && (
+                            <p className="text-sm text-destructive">{voiceError}</p>
+                          )}
+                          {callStatus === 'active' && (
+                            <div className="flex items-center gap-2 text-sm text-foreground">
+                              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                              {displayLang === 'en' ? 'Active call' : 'Aktivan poziv'} · {formatCallTime(callSeconds)}
+                            </div>
+                          )}
+                          {callStatus === 'connecting' && (
+                            <p className="text-sm text-muted-foreground">
+                              {displayLang === 'en' ? 'Connecting...' : 'Spajanje...'}
+                            </p>
+                          )}
+                          {callStatus === 'ended' && !paymentUrl && (
+                            <p className="text-sm text-foreground">
+                              {displayLang === 'en'
+                                ? 'Registration complete. Confirmation sent to email.'
+                                : 'Registracija završena. Potvrda stiže na email.'}
+                            </p>
+                          )}
+                          {paymentUrl && (
+                            <a
+                              href={paymentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+                            >
+                              {displayLang === 'en' ? 'Pay by card' : 'Plati karticom'}
+                            </a>
+                          )}
                         </div>
-                        <Button size="lg" disabled className="w-full gap-2 opacity-50 cursor-not-allowed">
-                          {t("event.voiceButton")}
-                        </Button>
+                        {callStatus === 'idle' && (
+                          <Button
+                            size="lg"
+                            onClick={startVoiceCall}
+                            disabled={isPreview}
+                            className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
+                          >
+                            <Headphones className="h-4 w-4" />
+                            {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
+                          </Button>
+                        )}
+                        {(callStatus === 'connecting' || callStatus === 'active') && (
+                          <Button size="lg" variant="destructive" onClick={endVoiceCall} className="w-full gap-2">
+                            {displayLang === 'en' ? 'End call' : 'Završi poziv'}
+                          </Button>
+                        )}
+                        {callStatus === 'ended' && (
+                          <Button size="lg" variant="outline" onClick={resetVoiceCall} className="w-full gap-2">
+                            {displayLang === 'en' ? 'Close' : 'Zatvori'}
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   )}
