@@ -307,7 +307,7 @@ export default function EventVoice() {
           {/* Error: retry */}
           {callStatus === 'error' && (
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Button onClick={initCall} style={{ width: '100%', background: '#6366f1', color: 'white' }}>
+              <Button onClick={run} style={{ width: '100%', background: '#6366f1', color: 'white' }}>
                 Pokušaj ponovo
               </Button>
               <Button
