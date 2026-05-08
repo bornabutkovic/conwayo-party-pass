@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { RetellWebClient } from 'retell-client-js-sdk';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { ConvwayoHeader } from '@/components/ConvwayoHeader';
 import { Button } from '@/components/ui/button';
@@ -13,10 +12,9 @@ type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
 export default function EventVoice() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
   const { lang } = useLanguage();
 
-  const [callStatus, setCallStatus] = useState<CallStatus>('idle');
+  const [callStatus, setCallStatus] = useState<CallStatus>('connecting');
   const [agentTalking, setAgentTalking] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
@@ -28,8 +26,8 @@ export default function EventVoice() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    initCall();
+    setCallStatus('connecting');
+    run();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       clientRef.current?.stopCall();
@@ -37,11 +35,17 @@ export default function EventVoice() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const initCall = async () => {
-    setCallStatus('connecting');
+  const run = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      setCallStatus('idle');
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('voice-init-session', {
-        body: { event_slug: slug, profile_id: user!.id, lang: lang === 'en' ? 'en' : 'hr' },
+        body: { event_slug: slug, profile_id: session.user.id, lang: lang === 'en' ? 'en' : 'hr' },
       });
 
       if (error || !data?.access_token) {
@@ -175,33 +179,8 @@ export default function EventVoice() {
         </button>
       </div>
 
-      {/* Loading auth: minimal state */}
-      {authLoading && (
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '24px',
-          }}
-        >
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              border: '2px solid rgba(255,255,255,0.15)',
-              borderTopColor: 'rgba(255,255,255,0.6)',
-              animation: 'spin 0.8s linear infinite',
-            }}
-          />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      )}
-
       {/* Not logged in screen */}
-      {!user && !authLoading && (
+      {callStatus === 'idle' && (
         <div
           style={{
             flex: 1,
@@ -276,7 +255,7 @@ export default function EventVoice() {
       )}
 
       {/* Main content (logged in) */}
-      {user && (
+      {callStatus !== 'idle' && (
         <div
           style={{
             flex: 1,
@@ -328,7 +307,7 @@ export default function EventVoice() {
           {/* Error: retry */}
           {callStatus === 'error' && (
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Button onClick={initCall} style={{ width: '100%', background: '#6366f1', color: 'white' }}>
+              <Button onClick={run} style={{ width: '100%', background: '#6366f1', color: 'white' }}>
                 Pokušaj ponovo
               </Button>
               <Button
