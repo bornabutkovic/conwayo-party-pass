@@ -488,59 +488,16 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                               ? 'Register by voice call in under 2 minutes.'
                               : 'Registriraj se glasovnim pozivom za manje od 2 minute.'}
                           </p>
-                          {voiceError && (
-                            <p className="text-sm text-destructive">{voiceError}</p>
-                          )}
-                          {callStatus === 'active' && (
-                            <div className="flex items-center gap-2 text-sm text-foreground">
-                              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                              {displayLang === 'en' ? 'Active call' : 'Aktivan poziv'} · {formatCallTime(callSeconds)}
-                            </div>
-                          )}
-                          {callStatus === 'connecting' && (
-                            <p className="text-sm text-muted-foreground">
-                              {displayLang === 'en' ? 'Connecting...' : 'Spajanje...'}
-                            </p>
-                          )}
-                          {callStatus === 'ended' && !paymentUrl && (
-                            <p className="text-sm text-foreground">
-                              {displayLang === 'en'
-                                ? 'Registration complete. Confirmation sent to email.'
-                                : 'Registracija završena. Potvrda stiže na email.'}
-                            </p>
-                          )}
-                          {paymentUrl && (
-                            <a
-                              href={paymentUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
-                            >
-                              {displayLang === 'en' ? 'Pay by card' : 'Plati karticom'}
-                            </a>
-                          )}
                         </div>
-                        {callStatus === 'idle' && (
-                          <Button
-                            size="lg"
-                            onClick={startVoiceCall}
-                            disabled={isPreview}
-                            className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
-                          >
-                            <Headphones className="h-4 w-4" />
-                            {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
-                          </Button>
-                        )}
-                        {(callStatus === 'connecting' || callStatus === 'active') && (
-                          <Button size="lg" variant="destructive" onClick={endVoiceCall} className="w-full gap-2">
-                            {displayLang === 'en' ? 'End call' : 'Završi poziv'}
-                          </Button>
-                        )}
-                        {callStatus === 'ended' && (
-                          <Button size="lg" variant="outline" onClick={resetVoiceCall} className="w-full gap-2">
-                            {displayLang === 'en' ? 'Close' : 'Zatvori'}
-                          </Button>
-                        )}
+                        <Button
+                          size="lg"
+                          className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
+                          disabled={isPreview}
+                          onClick={() => navigate(`/event/${slug}/voice`)}
+                        >
+                          <Headphones className="h-4 w-4" />
+                          {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
+                        </Button>
                       </CardContent>
                     </Card>
                   )}
