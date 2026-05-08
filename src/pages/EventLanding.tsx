@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo, useCallback, useState, useRef } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
+import { RetellWebClient } from "retell-client-js-sdk";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { EventBrandingProvider } from "@/components/event/EventBrandingProvider";
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
@@ -48,7 +51,7 @@ import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
 import { QRCodeSVG } from "qrcode.react";
 
-const VOICE_AGENT_ENABLED = false;
+const VOICE_AGENT_ENABLED = true;
 
 function localiseWorkingHours(value: string, lang: string): string {
   if (lang !== "hr") return value;
@@ -105,6 +108,79 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const { data: fetchedEvent, isLoading, error } = useEventFull(previewEvent ? "" : (slug ?? ""));
   const event = previewEvent ?? fetchedEvent;
   const { lang, setLang, t } = useLanguage();
+  const { user } = useAuth();
+  const [callStatus, setCallStatus] = useState<'idle' | 'connecting' | 'active' | 'ended'>('idle');
+  const [callSeconds, setCallSeconds] = useState(0);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const retellClientRef = useRef<RetellWebClient | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startVoiceCall = async () => {
+    if (!user) {
+      setVoiceError(displayLang === 'en' ? 'Sign in required for voice registration.' : 'Za glasovnu registraciju potrebna je prijava.');
+      return;
+    }
+    setVoiceError(null);
+    setCallStatus('connecting');
+    try {
+      const { data, error } = await supabase.functions.invoke('voice-init-session', {
+        body: { event_slug: slug, profile_id: user.id, lang: displayLang }
+      });
+      if (error || !data?.access_token) {
+        setVoiceError(displayLang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
+        setCallStatus('idle');
+        return;
+      }
+      setVoiceSessionId(data.session_id);
+      const client = new RetellWebClient();
+      retellClientRef.current = client;
+      client.on('call_started', () => {
+        setCallStatus('active');
+        setCallSeconds(0);
+        timerRef.current = setInterval(() => setCallSeconds(s => s + 1), 1000);
+      });
+      client.on('call_ended', async () => {
+        setCallStatus('ended');
+        if (timerRef.current) clearInterval(timerRef.current);
+        await new Promise(r => setTimeout(r, 2000));
+        if (data.session_id) {
+          const { data: sessionData } = await (supabase as any)
+            .from('voice_session')
+            .select('payment_url')
+            .eq('id', data.session_id)
+            .single();
+          if (sessionData?.payment_url) setPaymentUrl(sessionData.payment_url);
+        }
+      });
+      client.on('error', () => {
+        setVoiceError(displayLang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
+        setCallStatus('idle');
+        if (timerRef.current) clearInterval(timerRef.current);
+      });
+      await client.startCall({ accessToken: data.access_token });
+    } catch {
+      setVoiceError(displayLang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
+      setCallStatus('idle');
+    }
+  };
+
+  const endVoiceCall = () => {
+    retellClientRef.current?.stopCall();
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
+  const resetVoiceCall = () => {
+    setCallStatus('idle');
+    setPaymentUrl(null);
+    setVoiceSessionId(null);
+    setVoiceError(null);
+    setCallSeconds(0);
+  };
+
+  const formatCallTime = (s: number) =>
+    String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 
   const supportsEnglish = useMemo(() => {
     return Array.isArray(event?.supported_languages) && event!.supported_languages!.includes("en");
@@ -473,21 +549,73 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     </CardContent>
                   </Card>
 
-                  {/* Card 3 — Voice Agent (coming soon) */}
+                  {/* Card 3 — Voice Agent */}
                   {VOICE_AGENT_ENABLED && (
-                    <Card className="border-border opacity-75">
+                    <Card className="border-border">
                       <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                         <div className="space-y-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
-                            <Clock className="h-6 w-6 text-amber-500" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                            <Headphones className="h-6 w-6 text-primary" />
                           </div>
                           <h3 className="text-xl font-bold text-foreground">{t("event.voiceTitle")}</h3>
-                          <p className="text-sm text-muted-foreground">{t("event.voiceDesc")}</p>
-                          <Badge variant="secondary">In Progress</Badge>
+                          <p className="text-sm text-muted-foreground">
+                            {displayLang === 'en'
+                              ? 'Register by voice call in under 2 minutes.'
+                              : 'Registriraj se glasovnim pozivom za manje od 2 minute.'}
+                          </p>
+                          {voiceError && (
+                            <p className="text-sm text-destructive">{voiceError}</p>
+                          )}
+                          {callStatus === 'active' && (
+                            <div className="flex items-center gap-2 text-sm text-foreground">
+                              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                              {displayLang === 'en' ? 'Active call' : 'Aktivan poziv'} · {formatCallTime(callSeconds)}
+                            </div>
+                          )}
+                          {callStatus === 'connecting' && (
+                            <p className="text-sm text-muted-foreground">
+                              {displayLang === 'en' ? 'Connecting...' : 'Spajanje...'}
+                            </p>
+                          )}
+                          {callStatus === 'ended' && !paymentUrl && (
+                            <p className="text-sm text-foreground">
+                              {displayLang === 'en'
+                                ? 'Registration complete. Confirmation sent to email.'
+                                : 'Registracija završena. Potvrda stiže na email.'}
+                            </p>
+                          )}
+                          {paymentUrl && (
+                            <a
+                              href={paymentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+                            >
+                              {displayLang === 'en' ? 'Pay by card' : 'Plati karticom'}
+                            </a>
+                          )}
                         </div>
-                        <Button size="lg" disabled className="w-full gap-2 opacity-50 cursor-not-allowed">
-                          {t("event.voiceButton")}
-                        </Button>
+                        {callStatus === 'idle' && (
+                          <Button
+                            size="lg"
+                            onClick={startVoiceCall}
+                            disabled={isPreview}
+                            className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
+                          >
+                            <Headphones className="h-4 w-4" />
+                            {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
+                          </Button>
+                        )}
+                        {(callStatus === 'connecting' || callStatus === 'active') && (
+                          <Button size="lg" variant="destructive" onClick={endVoiceCall} className="w-full gap-2">
+                            {displayLang === 'en' ? 'End call' : 'Završi poziv'}
+                          </Button>
+                        )}
+                        {callStatus === 'ended' && (
+                          <Button size="lg" variant="outline" onClick={resetVoiceCall} className="w-full gap-2">
+                            {displayLang === 'en' ? 'Close' : 'Zatvori'}
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   )}
