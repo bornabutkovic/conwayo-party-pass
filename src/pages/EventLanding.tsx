@@ -126,13 +126,13 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   }, [location.pathname, location.search, navigate, setLang]);
 
   useEffect(() => {
+    if (!supportsEnglish) return;
     const params = new URLSearchParams(location.search);
     const urlLang = params.get("lang");
-    if (urlLang === "en" && supportsEnglish) {
+    if (urlLang === "en") {
       setLang("en");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supportsEnglish]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
