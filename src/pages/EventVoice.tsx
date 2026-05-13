@@ -49,7 +49,7 @@ export default function EventVoice() {
       });
 
       if (error || !data?.access_token) {
-        setErrorMsg('Greška pri spajanju. Pokušajte ponovo.');
+        setErrorMsg(lang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
         setCallStatus('error');
         return;
       }
@@ -92,14 +92,14 @@ export default function EventVoice() {
       });
 
       client.on('error', () => {
-        setErrorMsg('Greška pri spajanju. Pokušajte ponovo.');
+        setErrorMsg(lang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
         setCallStatus('error');
         if (timerRef.current) clearInterval(timerRef.current);
       });
 
       await client.startCall({ accessToken: data.access_token });
     } catch {
-      setErrorMsg('Greška pri spajanju. Pokušajte ponovo.');
+      setErrorMsg(lang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
       setCallStatus('error');
     }
   };
@@ -147,11 +147,11 @@ export default function EventVoice() {
   };
 
   const getStatusText = () => {
-    if (callStatus === 'idle') return 'Pripremam poziv...';
-    if (callStatus === 'connecting') return 'Spajanje...';
-    if (callStatus === 'active') return agentTalking ? 'Agent govori...' : 'Slušam...';
-    if (callStatus === 'ended') return 'Poziv završen';
-    if (callStatus === 'error') return errorMsg || 'Greška pri spajanju.';
+    if (callStatus === 'idle') return lang === 'en' ? 'Preparing call...' : 'Pripremam poziv...';
+    if (callStatus === 'connecting') return lang === 'en' ? 'Connecting...' : 'Spajanje...';
+    if (callStatus === 'active') return agentTalking ? (lang === 'en' ? 'Agent speaking...' : 'Agent govori...') : (lang === 'en' ? 'Listening...' : 'Slušam...');
+    if (callStatus === 'ended') return lang === 'en' ? 'Call ended' : 'Poziv završen';
+    if (callStatus === 'error') return errorMsg || (lang === 'en' ? 'Connection error.' : 'Greška pri spajanju.');
     return '';
   };
 
@@ -175,7 +175,7 @@ export default function EventVoice() {
           }}
         >
           <ArrowLeft size={16} />
-          Natrag na event
+          {lang === 'en' ? 'Back to event' : 'Natrag na event'}
         </button>
       </div>
 
@@ -211,7 +211,7 @@ export default function EventVoice() {
           <Lock size={24} color="white" style={{ opacity: 0.4, marginTop: 16 }} />
 
           <p style={{ fontSize: 20, fontWeight: 600, color: 'white', textAlign: 'center', marginTop: 24 }}>
-            Glasovna registracija
+            {lang === 'en' ? 'Voice Registration' : 'Glasovna registracija'}
           </p>
           <p
             style={{
@@ -222,7 +222,7 @@ export default function EventVoice() {
               marginTop: 8,
             }}
           >
-            Za korištenje glasovnog agenta potrebna je prijava ili registracija u Conwayo.
+            {lang === 'en' ? 'To use the voice agent, please sign in or create a Conwayo account.' : 'Za korištenje glasovnog agenta potrebna je prijava ili registracija u Conwayo.'}
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24, maxWidth: 280, width: '100%' }}>
@@ -236,7 +236,7 @@ export default function EventVoice() {
                 fontWeight: 600,
               }}
             >
-              Prijavi se
+              {lang === 'en' ? 'Sign in' : 'Prijavi se'}
             </Button>
             <Button
               onClick={() => navigate(`/event/${slug}/auth?tab=register&redirect=/event/${slug}/voice`)}
@@ -248,7 +248,7 @@ export default function EventVoice() {
                 borderRadius: 12,
               }}
             >
-              Registriraj se
+              {lang === 'en' ? 'Create account' : 'Registriraj se'}
             </Button>
           </div>
         </div>
@@ -300,7 +300,7 @@ export default function EventVoice() {
               onClick={endCall}
               style={{ width: '100%', background: 'rgba(239,68,68,0.9)', color: 'white' }}
             >
-              Završi poziv
+              {lang === 'en' ? 'End call' : 'Završi poziv'}
             </Button>
           )}
 
@@ -308,14 +308,14 @@ export default function EventVoice() {
           {callStatus === 'error' && (
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Button onClick={run} style={{ width: '100%', background: '#6366f1', color: 'white' }}>
-                Pokušaj ponovo
+                {lang === 'en' ? 'Try again' : 'Pokušaj ponovo'}
               </Button>
               <Button
                 onClick={() => navigate(`/event/${slug}`)}
                 variant="ghost"
                 style={{ color: 'rgba(255,255,255,0.4)', width: '100%' }}
               >
-                Natrag na event
+                {lang === 'en' ? 'Back to event' : 'Natrag na event'}
               </Button>
             </div>
           )}
@@ -326,7 +326,7 @@ export default function EventVoice() {
               {paymentMethod === 'stripe' && paymentUrl ? (
                 <>
                   <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
-                    Registracija završena. Link za plaćanje poslan je i na email.
+                    {lang === 'en' ? 'Registration complete. A payment link has been sent to your email.' : 'Registracija završena. Link za plaćanje poslan je i na email.'}
                   </p>
                   <a
                     href={paymentUrl}
@@ -346,12 +346,12 @@ export default function EventVoice() {
                       textDecoration: 'none',
                     }}
                   >
-                    Plati karticom
+                    {lang === 'en' ? 'Pay by card' : 'Plati karticom'}
                   </a>
                 </>
               ) : (
                 <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
-                  Registracija završena. Ponuda s uputama za plaćanje stiže na email.
+                  {lang === 'en' ? 'Registration complete. An invoice with payment instructions will be sent to your email.' : 'Registracija završena. Ponuda s uputama za plaćanje stiže na email.'}
                 </p>
               )}
               <Button
@@ -359,7 +359,7 @@ export default function EventVoice() {
                 variant="ghost"
                 style={{ color: 'rgba(255,255,255,0.4)', width: '100%', marginTop: 8 }}
               >
-                Natrag na event
+                {lang === 'en' ? 'Back to event' : 'Natrag na event'}
               </Button>
             </div>
           )}
