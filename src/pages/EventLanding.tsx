@@ -249,6 +249,34 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   return (
     <EventBrandingProvider event={event}>
       <div className="min-h-screen bg-background text-foreground">
+        {event && (
+          <script type="application/ld+json">
+            {(() => {
+              const plainDesc = eventDescription
+                ? ((html: string) => {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    return (tmp.textContent || tmp.innerText || '').slice(0, 160);
+                  })(eventDescription)
+                : '';
+              return JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Event',
+                'name': eventName,
+                'startDate': event.start_date,
+                'endDate': event.end_date,
+                'location': {
+                  '@type': 'Place',
+                  'name': event.venue_name,
+                  'address': event.location_city,
+                },
+                'url': `https://conwayo.io/event/${slug}`,
+                'description': plainDesc,
+                ...(event.branding_banner_url ? { 'image': event.branding_banner_url } : {}),
+              });
+            })()}
+          </script>
+        )}
         {isPreview && (
           <div
             className="sticky top-0 z-50 w-full border-b-2 border-yellow-600 bg-yellow-400 text-yellow-950"
