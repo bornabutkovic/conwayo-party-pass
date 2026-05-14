@@ -147,8 +147,18 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
       return tmp.textContent || tmp.innerText || '';
     };
 
-    const plainDescription = eventDescription ? stripHtml(eventDescription).slice(0, 160) : '';
-    const description = plainDescription || `Registrirajte se na ${eventName} putem Conwayo platforme.`;
+    const displayLangForMeta = supportsEnglish ? (lang === 'en' ? 'en' : 'hr') : 'hr';
+    const enTransMeta = (event.translations as any)?.en ?? {};
+    const metaEventName = displayLangForMeta === 'en' && enTransMeta.name
+      ? String(enTransMeta.name)
+      : event.name ?? '';
+    const metaEventDescription = displayLangForMeta === 'en' && enTransMeta.description
+      ? String(enTransMeta.description)
+      : event.description ?? '';
+    const metaBannerUrl = event.branding_banner_url;
+
+    const plainDescription = metaEventDescription ? stripHtml(metaEventDescription).slice(0, 160) : '';
+    const description = plainDescription || `Registrirajte se na ${metaEventName} putem Conwayo platforme.`;
     const canonicalUrl = `https://conwayo.io/event/${slug}`;
 
     const setMeta = (selector: string, attr: string, value: string) => {
@@ -162,26 +172,26 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
       el.setAttribute(attr, value);
     };
 
-    document.title = `${eventName} — Conwayo`;
+    document.title = `${metaEventName} — Conwayo`;
 
     setMeta('meta[name="description"]', 'content', description);
-    setMeta('meta[property="og:title"]', 'content', `${eventName} — Conwayo`);
+    setMeta('meta[property="og:title"]', 'content', `${metaEventName} — Conwayo`);
     setMeta('meta[property="og:description"]', 'content', description);
     setMeta('meta[property="og:url"]', 'content', canonicalUrl);
     setMeta('meta[property="og:type"]', 'content', 'event');
-    if (bannerUrl) {
-      setMeta('meta[property="og:image"]', 'content', bannerUrl);
+    if (metaBannerUrl) {
+      setMeta('meta[property="og:image"]', 'content', metaBannerUrl);
     }
-    setMeta('meta[name="twitter:title"]', 'content', `${eventName} — Conwayo`);
+    setMeta('meta[name="twitter:title"]', 'content', `${metaEventName} — Conwayo`);
     setMeta('meta[name="twitter:description"]', 'content', description);
-    if (bannerUrl) {
-      setMeta('meta[name="twitter:image"]', 'content', bannerUrl);
+    if (metaBannerUrl) {
+      setMeta('meta[name="twitter:image"]', 'content', metaBannerUrl);
     }
 
     return () => {
       document.title = 'CONWAYO — AI-Powered Congress Registration';
     };
-  }, [event, eventName, eventDescription, bannerUrl, slug]);
+  }, [event, lang, supportsEnglish, slug]);
 
   if (!previewEvent && isLoading) return <EventPageSkeleton />;
   if (!event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
