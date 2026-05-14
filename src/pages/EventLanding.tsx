@@ -557,35 +557,37 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     </CardContent>
                   </Card>
 
-                  {/* Card 3 — Voice Agent */}
-                  {VOICE_AGENT_ENABLED && (
-                    <Card className="border-border">
-                      <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
-                        <div className="space-y-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                            <Headphones className="h-6 w-6 text-primary" />
+                  <div className="hidden">
+                    {/* Card 3 — Voice Agent */}
+                    {VOICE_AGENT_ENABLED && (
+                      <Card className="border-border">
+                        <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
+                          <div className="space-y-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                              <Headphones className="h-6 w-6 text-primary" />
+                            </div>
+                            <h3 className="text-xl font-bold text-foreground">{t("event.voiceTitle")}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {displayLang === 'en'
+                                ? 'Register by voice call in under 2 minutes.'
+                                : 'Registriraj se glasovnim pozivom za manje od 2 minute.'}
+                            </p>
                           </div>
-                          <h3 className="text-xl font-bold text-foreground">{t("event.voiceTitle")}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {displayLang === 'en'
-                              ? 'Register by voice call in under 2 minutes.'
-                              : 'Registriraj se glasovnim pozivom za manje od 2 minute.'}
-                          </p>
-                        </div>
-                        <div className="hidden">
-                          <Button
-                            size="lg"
-                            className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
-                            disabled={isPreview}
-                            onClick={() => window.location.href = `/event/${slug}/voice`}
-                          >
-                            <Headphones className="h-4 w-4" />
-                            {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                          <div className="hidden">
+                            <Button
+                              size="lg"
+                              className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
+                              disabled={isPreview}
+                              onClick={() => window.location.href = `/event/${slug}/voice`}
+                            >
+                              <Headphones className="h-4 w-4" />
+                              {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 </div>
                 </div>
               </section>
