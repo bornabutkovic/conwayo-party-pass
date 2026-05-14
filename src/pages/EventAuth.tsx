@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEvent } from "@/hooks/useEvent";
+import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 
 import { EventPageSkeleton } from "@/components/event/EventPageSkeleton";
@@ -10,6 +11,7 @@ import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -87,6 +89,7 @@ export default function EventAuth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading, signUp, signIn } = useAuth();
+  const { lang } = useLanguage();
 
   // slug may be undefined for /auth route
   const { data: event, isLoading, error } = useEvent(slug ?? "__none__");
@@ -99,6 +102,7 @@ export default function EventAuth() {
   const [tab, setTab] = useState<string>(defaultTab);
   const [submitting, setSubmitting] = useState(false);
   const [additionalOpen, setAdditionalOpen] = useState(false);
+  const [addCompany, setAddCompany] = useState(false);
 
   const [regForm, setRegForm] = useState({
     first_name: "",
@@ -114,6 +118,8 @@ export default function EventAuth() {
     country_name: "Croatia",
     date_of_birth: "",
     gender: "",
+    company_name: "",
+    company_oib: "",
   });
 
   const [loginForm, setLoginForm] = useState({ email: prefillEmail, password: "" });
@@ -187,6 +193,8 @@ export default function EventAuth() {
           country_name: regForm.country_name,
           date_of_birth: regForm.date_of_birth || null,
           gender: regForm.gender || null,
+          company_name: addCompany ? (regForm.company_name || null) : null,
+          company_oib: addCompany ? (regForm.company_oib || null) : null,
           role: "user",
         });
 
@@ -307,6 +315,44 @@ export default function EventAuth() {
                     <Label htmlFor="reg_email">Email *</Label>
                     <Input id="reg_email" type="email" value={regForm.email} onChange={e => updateReg("email", e.target.value)} />
                   </div>
+
+                  {/* Company checkbox */}
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="add_company"
+                      checked={addCompany}
+                      onCheckedChange={(checked) => setAddCompany(checked === true)}
+                    />
+                    <Label htmlFor="add_company" className="cursor-pointer">
+                      {lang === "en" ? "Add my company" : "Dodaj svoju tvrtku"}
+                    </Label>
+                  </div>
+
+                  {addCompany && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="company_name">
+                          {lang === "en" ? "Company name" : "Naziv tvrtke"}
+                        </Label>
+                        <Input
+                          id="company_name"
+                          value={regForm.company_name}
+                          onChange={e => updateReg("company_name", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="company_oib">
+                          {lang === "en" ? "Company OIB / VAT number" : "OIB / PDV broj tvrtke"}
+                        </Label>
+                        <Input
+                          id="company_oib"
+                          value={regForm.company_oib}
+                          onChange={e => updateReg("company_oib", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <Label htmlFor="reg_password">Password *</Label>
                     <Input id="reg_password" type="password" value={regForm.password} onChange={e => updateReg("password", e.target.value)} />
