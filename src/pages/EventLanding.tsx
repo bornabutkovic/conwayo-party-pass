@@ -138,6 +138,51 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [slug]);
 
+  useEffect(() => {
+    if (!event) return;
+
+    const stripHtml = (html: string) => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return tmp.textContent || tmp.innerText || '';
+    };
+
+    const plainDescription = eventDescription ? stripHtml(eventDescription).slice(0, 160) : '';
+    const description = plainDescription || `Registrirajte se na ${eventName} putem Conwayo platforme.`;
+    const canonicalUrl = `https://conwayo.io/event/${slug}`;
+
+    const setMeta = (selector: string, attr: string, value: string) => {
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        const [attrName, attrValue] = selector.replace('meta[', '').replace(']', '').split('="');
+        el.setAttribute(attrName as string, (attrValue as string).replace('"', ''));
+        document.head.appendChild(el);
+      }
+      el.setAttribute(attr, value);
+    };
+
+    document.title = `${eventName} — Conwayo`;
+
+    setMeta('meta[name="description"]', 'content', description);
+    setMeta('meta[property="og:title"]', 'content', `${eventName} — Conwayo`);
+    setMeta('meta[property="og:description"]', 'content', description);
+    setMeta('meta[property="og:url"]', 'content', canonicalUrl);
+    setMeta('meta[property="og:type"]', 'content', 'event');
+    if (bannerUrl) {
+      setMeta('meta[property="og:image"]', 'content', bannerUrl);
+    }
+    setMeta('meta[name="twitter:title"]', 'content', `${eventName} — Conwayo`);
+    setMeta('meta[name="twitter:description"]', 'content', description);
+    if (bannerUrl) {
+      setMeta('meta[name="twitter:image"]', 'content', bannerUrl);
+    }
+
+    return () => {
+      document.title = 'CONWAYO — AI-Powered Congress Registration';
+    };
+  }, [event, eventName, eventDescription, bannerUrl, slug]);
+
   if (!previewEvent && isLoading) return <EventPageSkeleton />;
   if (!event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
   if (!previewEvent && error) return <EventNotFound slug={slug} errorMessage={error?.message} />;
