@@ -89,6 +89,7 @@ export default function EventAuth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading, signUp, signIn } = useAuth();
+  const { lang } = useLanguage();
 
   // slug may be undefined for /auth route
   const { data: event, isLoading, error } = useEvent(slug ?? "__none__");
@@ -101,6 +102,7 @@ export default function EventAuth() {
   const [tab, setTab] = useState<string>(defaultTab);
   const [submitting, setSubmitting] = useState(false);
   const [additionalOpen, setAdditionalOpen] = useState(false);
+  const [addCompany, setAddCompany] = useState(false);
 
   const [regForm, setRegForm] = useState({
     first_name: "",
@@ -116,6 +118,8 @@ export default function EventAuth() {
     country_name: "Croatia",
     date_of_birth: "",
     gender: "",
+    company_name: "",
+    company_oib: "",
   });
 
   const [loginForm, setLoginForm] = useState({ email: prefillEmail, password: "" });
