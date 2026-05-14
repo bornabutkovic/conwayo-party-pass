@@ -193,6 +193,8 @@ export default function EventAuth() {
           country_name: regForm.country_name,
           date_of_birth: regForm.date_of_birth || null,
           gender: regForm.gender || null,
+          company_name: addCompany ? (regForm.company_name || null) : null,
+          company_oib: addCompany ? (regForm.company_oib || null) : null,
           role: "user",
         });
 
