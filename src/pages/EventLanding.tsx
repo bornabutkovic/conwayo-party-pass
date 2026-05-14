@@ -138,6 +138,61 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [slug]);
 
+  useEffect(() => {
+    if (!event) return;
+
+    const stripHtml = (html: string) => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return tmp.textContent || tmp.innerText || '';
+    };
+
+    const displayLangForMeta = supportsEnglish ? (lang === 'en' ? 'en' : 'hr') : 'hr';
+    const enTransMeta = (event.translations as any)?.en ?? {};
+    const metaEventName = displayLangForMeta === 'en' && enTransMeta.name
+      ? String(enTransMeta.name)
+      : event.name ?? '';
+    const metaEventDescription = displayLangForMeta === 'en' && enTransMeta.description
+      ? String(enTransMeta.description)
+      : event.description ?? '';
+    const metaBannerUrl = event.branding_banner_url;
+
+    const plainDescription = metaEventDescription ? stripHtml(metaEventDescription).slice(0, 160) : '';
+    const description = plainDescription || `Registrirajte se na ${metaEventName} putem Conwayo platforme.`;
+    const canonicalUrl = `https://conwayo.io/event/${slug}`;
+
+    const setMeta = (selector: string, attr: string, value: string) => {
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        const [attrName, attrValue] = selector.replace('meta[', '').replace(']', '').split('="');
+        el.setAttribute(attrName as string, (attrValue as string).replace('"', ''));
+        document.head.appendChild(el);
+      }
+      el.setAttribute(attr, value);
+    };
+
+    document.title = `${metaEventName} — Conwayo`;
+
+    setMeta('meta[name="description"]', 'content', description);
+    setMeta('meta[property="og:title"]', 'content', `${metaEventName} — Conwayo`);
+    setMeta('meta[property="og:description"]', 'content', description);
+    setMeta('meta[property="og:url"]', 'content', canonicalUrl);
+    setMeta('meta[property="og:type"]', 'content', 'event');
+    if (metaBannerUrl) {
+      setMeta('meta[property="og:image"]', 'content', metaBannerUrl);
+    }
+    setMeta('meta[name="twitter:title"]', 'content', `${metaEventName} — Conwayo`);
+    setMeta('meta[name="twitter:description"]', 'content', description);
+    if (metaBannerUrl) {
+      setMeta('meta[name="twitter:image"]', 'content', metaBannerUrl);
+    }
+
+    return () => {
+      document.title = 'CONWAYO — AI-Powered Congress Registration';
+    };
+  }, [event, lang, supportsEnglish, slug]);
+
   if (!previewEvent && isLoading) return <EventPageSkeleton />;
   if (!event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
   if (!previewEvent && error) return <EventNotFound slug={slug} errorMessage={error?.message} />;
@@ -194,6 +249,34 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   return (
     <EventBrandingProvider event={event}>
       <div className="min-h-screen bg-background text-foreground">
+        {event && (
+          <script type="application/ld+json">
+            {(() => {
+              const plainDesc = eventDescription
+                ? ((html: string) => {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    return (tmp.textContent || tmp.innerText || '').slice(0, 160);
+                  })(eventDescription)
+                : '';
+              return JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Event',
+                'name': eventName,
+                'startDate': event.start_date,
+                'endDate': event.end_date,
+                'location': {
+                  '@type': 'Place',
+                  'name': event.venue_name,
+                  'address': event.location_city,
+                },
+                'url': `https://conwayo.io/event/${slug}`,
+                'description': plainDesc,
+                ...(event.branding_banner_url ? { 'image': event.branding_banner_url } : {}),
+              });
+            })()}
+          </script>
+        )}
         {isPreview && (
           <div
             className="sticky top-0 z-50 w-full border-b-2 border-yellow-600 bg-yellow-400 text-yellow-950"
