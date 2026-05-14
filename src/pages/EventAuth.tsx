@@ -315,6 +315,44 @@ export default function EventAuth() {
                     <Label htmlFor="reg_email">Email *</Label>
                     <Input id="reg_email" type="email" value={regForm.email} onChange={e => updateReg("email", e.target.value)} />
                   </div>
+
+                  {/* Company checkbox */}
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="add_company"
+                      checked={addCompany}
+                      onCheckedChange={(checked) => setAddCompany(checked === true)}
+                    />
+                    <Label htmlFor="add_company" className="cursor-pointer">
+                      {lang === "en" ? "Add my company" : "Dodaj svoju tvrtku"}
+                    </Label>
+                  </div>
+
+                  {addCompany && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="company_name">
+                          {lang === "en" ? "Company name" : "Naziv tvrtke"}
+                        </Label>
+                        <Input
+                          id="company_name"
+                          value={regForm.company_name}
+                          onChange={e => updateReg("company_name", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="company_oib">
+                          {lang === "en" ? "Company OIB / VAT number" : "OIB / PDV broj tvrtke"}
+                        </Label>
+                        <Input
+                          id="company_oib"
+                          value={regForm.company_oib}
+                          onChange={e => updateReg("company_oib", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <Label htmlFor="reg_password">Password *</Label>
                     <Input id="reg_password" type="password" value={regForm.password} onChange={e => updateReg("password", e.target.value)} />
