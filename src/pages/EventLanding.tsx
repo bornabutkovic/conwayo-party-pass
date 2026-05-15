@@ -557,7 +557,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     </CardContent>
                   </Card>
 
-                  <div className="hidden">
+                  <div>
                     {/* Card 3 — Voice Agent */}
                     {VOICE_AGENT_ENABLED && (
                       <Card className="border-border">
@@ -573,7 +573,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                                 : 'Registriraj se glasovnim pozivom za manje od 2 minute.'}
                             </p>
                           </div>
-                          <div className="hidden">
+                          <div>
                             <Button
                               size="lg"
                               className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
