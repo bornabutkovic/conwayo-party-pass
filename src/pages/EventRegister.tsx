@@ -710,10 +710,14 @@ export default function EventRegister() {
               />
             </div>
             <div className="max-h-48 overflow-y-auto">
-              {COUNTRIES.filter(c =>
+              {[
+                ...COUNTRIES.filter(c => c.code !== 'OTHER').sort((a, b) => a.name.localeCompare(b.name)),
+                COUNTRIES.find(c => c.code === 'OTHER')!,
+              ].filter(Boolean).filter(c =>
                 c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
                 c.code.toLowerCase().includes(countrySearch.toLowerCase())
               ).map(c => (
+
                 <div
                   key={c.code}
                   className={`px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground ${countryCode === c.code ? 'bg-accent/50 font-medium' : ''}`}
