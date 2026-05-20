@@ -434,7 +434,7 @@ export default function EventRegister() {
               payer_postal_code: postalCode,
               payer_country_code: countryCode,
               payer_country_name: countryName,
-              bc_posting_zone: getZone(countryCode),
+              bc_posting_zone: getCountryZone(countryCode),
               company_address: street,
               company_city: city,
               company_postal_code: postalCode,
@@ -565,7 +565,7 @@ export default function EventRegister() {
             payer_postal_code: postalCode,
             payer_country_code: countryCode,
             payer_country_name: countryName,
-            bc_posting_zone: getZone(countryCode),
+            bc_posting_zone: getCountryZone(countryCode),
             // Company billing metadata
             ...(payerType === "company" ? {
               company_name: companyName,
