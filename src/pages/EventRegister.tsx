@@ -22,64 +22,8 @@ import { OrderConfirmation } from "@/components/event/OrderConfirmation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
+import { COUNTRIES, getCountryZone } from '@/lib/countries';
 
-// ── Country list & zone helper ──
-const EU_CODES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
-
-const COUNTRIES = [
-  { code: 'HR', name: 'Croatia' },
-  { code: 'AT', name: 'Austria' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'BG', name: 'Bulgaria' },
-  { code: 'CY', name: 'Cyprus' },
-  { code: 'CZ', name: 'Czech Republic' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'DK', name: 'Denmark' },
-  { code: 'EE', name: 'Estonia' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'FI', name: 'Finland' },
-  { code: 'FR', name: 'France' },
-  { code: 'GR', name: 'Greece' },
-  { code: 'HU', name: 'Hungary' },
-  { code: 'IE', name: 'Ireland' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'LT', name: 'Lithuania' },
-  { code: 'LU', name: 'Luxembourg' },
-  { code: 'LV', name: 'Latvia' },
-  { code: 'MT', name: 'Malta' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'PL', name: 'Poland' },
-  { code: 'PT', name: 'Portugal' },
-  { code: 'RO', name: 'Romania' },
-  { code: 'SE', name: 'Sweden' },
-  { code: 'SI', name: 'Slovenia' },
-  { code: 'SK', name: 'Slovakia' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-  { code: 'CH', name: 'Switzerland' },
-  { code: 'NO', name: 'Norway' },
-  { code: 'BA', name: 'Bosnia and Herzegovina' },
-  { code: 'RS', name: 'Serbia' },
-  { code: 'ME', name: 'Montenegro' },
-  { code: 'MK', name: 'North Macedonia' },
-  { code: 'AL', name: 'Albania' },
-  { code: 'TR', name: 'Turkey' },
-  { code: 'RU', name: 'Russia' },
-  { code: 'CN', name: 'China' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'BR', name: 'Brazil' },
-  { code: 'IN', name: 'India' },
-  { code: 'ZA', name: 'South Africa' },
-  { code: 'OTHER', name: 'Other' },
-];
-
-const getZone = (code: string) => {
-  if (code === 'HR') return 'HR';
-  if (EU_CODES.includes(code)) return 'EU';
-  return 'INO';
-};
 
 interface AttendeeRow {
   firstName: string;
@@ -490,7 +434,7 @@ export default function EventRegister() {
               payer_postal_code: postalCode,
               payer_country_code: countryCode,
               payer_country_name: countryName,
-              bc_posting_zone: getZone(countryCode),
+              bc_posting_zone: getCountryZone(countryCode),
               company_address: street,
               company_city: city,
               company_postal_code: postalCode,
@@ -621,7 +565,7 @@ export default function EventRegister() {
             payer_postal_code: postalCode,
             payer_country_code: countryCode,
             payer_country_name: countryName,
-            bc_posting_zone: getZone(countryCode),
+            bc_posting_zone: getCountryZone(countryCode),
             // Company billing metadata
             ...(payerType === "company" ? {
               company_name: companyName,

@@ -1075,12 +1075,18 @@ export type Database = {
           bc_invoice_id: string | null
           bc_quote_number: string | null
           billing_email: string | null
+          card_brand: string | null
+          card_country: string | null
+          card_funding: string | null
+          card_last4: string | null
+          card_wallet: string | null
           company_name: string | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
           created_at: string | null
           customer_posting_group: string | null
+          due_date: string | null
           event_id: string | null
           fiscal_invoice_number: string | null
           gen_bus_posting_group: string | null
@@ -1115,12 +1121,18 @@ export type Database = {
           bc_invoice_id?: string | null
           bc_quote_number?: string | null
           billing_email?: string | null
+          card_brand?: string | null
+          card_country?: string | null
+          card_funding?: string | null
+          card_last4?: string | null
+          card_wallet?: string | null
           company_name?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string | null
           customer_posting_group?: string | null
+          due_date?: string | null
           event_id?: string | null
           fiscal_invoice_number?: string | null
           gen_bus_posting_group?: string | null
@@ -1155,12 +1167,18 @@ export type Database = {
           bc_invoice_id?: string | null
           bc_quote_number?: string | null
           billing_email?: string | null
+          card_brand?: string | null
+          card_country?: string | null
+          card_funding?: string | null
+          card_last4?: string | null
+          card_wallet?: string | null
           company_name?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string | null
           customer_posting_group?: string | null
+          due_date?: string | null
           event_id?: string | null
           fiscal_invoice_number?: string | null
           gen_bus_posting_group?: string | null
@@ -1940,6 +1958,8 @@ export type Database = {
           bc_customer_no: string | null
           bc_invoice_id: string | null
           bc_quote_number: string | null
+          card_brand: string | null
+          card_wallet: string | null
           checked_in: boolean | null
           email: string | null
           event_id: string | null
@@ -1956,6 +1976,7 @@ export type Database = {
           payment_due_days: number | null
           payment_method: string | null
           payment_status: string | null
+          price_paid: number | null
           registered_at: string | null
           registration_status:
             | Database["public"]["Enums"]["registration_status"]
