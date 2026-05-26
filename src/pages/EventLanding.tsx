@@ -574,12 +574,12 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           </div>
                           <div>
-                            <Button
-                              size="lg"
-                              className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
-                              disabled={isPreview}
-                              onClick={() => window.location.href = `/event/${slug}/voice`}
-                            >
+                          <Button
+                            size="lg"
+                            className={`w-full gap-2 bg-[#0891b2] text-white hover:bg-[#0e7490] ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
+                            disabled={isPreview}
+                            onClick={() => window.location.href = `/event/${slug}/voice`}
+                          >
                               <Headphones className="h-4 w-4" />
                               {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
                             </Button>
