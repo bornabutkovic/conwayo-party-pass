@@ -499,9 +499,12 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     );
                   })}
                 </div>
+              </section>
+            )}
 
-                {/* Registration options — equal weight */}
-                <div id="registration-options">
+            {/* Registration options — equal weight */}
+            <section>
+              <div id="registration-options">
                 <h2 className="text-2xl font-bold text-foreground mb-6 mt-10">{t("event.chooseRegistration")}</h2>
                 <div className="mt-6 grid gap-4 sm:grid-cols-3">
                   {/* Card 1 — Online registration */}
@@ -589,9 +592,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     )}
                   </div>
                 </div>
-                </div>
-              </section>
-            )}
+              </div>
+            </section>
 
             {/* SECTION 4b — ADDITIONAL SERVICES */}
             {services.length > 0 && (
