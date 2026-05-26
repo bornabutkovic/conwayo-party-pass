@@ -563,8 +563,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                       <Card className="border-border h-full flex flex-col">
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                           <div className="space-y-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                              <Headphones className="h-6 w-6 text-primary" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#0891b2]/10">
+                              <Headphones className="h-6 w-6 text-[#0891b2]" />
                             </div>
                             <h3 className="text-xl font-bold text-foreground">{t("event.voiceTitle")}</h3>
                             <p className="text-sm text-muted-foreground">
