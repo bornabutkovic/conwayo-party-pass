@@ -557,7 +557,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     </CardContent>
                   </Card>
 
-                  <div style={{ display: 'none' }}>
+                  <div>
                     {/* Card 3 — Voice Agent */}
                     {VOICE_AGENT_ENABLED && (
                       <Card className="border-border">
