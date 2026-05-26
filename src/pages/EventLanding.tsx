@@ -557,10 +557,10 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     </CardContent>
                   </Card>
 
-                  <div>
+                  <div className="h-full flex flex-col">
                     {/* Card 3 — Voice Agent */}
                     {VOICE_AGENT_ENABLED && (
-                      <Card className="border-border">
+                      <Card className="border-border h-full flex flex-col">
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                           <div className="space-y-3">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
@@ -574,12 +574,12 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           </div>
                           <div>
-                            <Button
-                              size="lg"
-                              className={`w-full gap-2 ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
-                              disabled={isPreview}
-                              onClick={() => window.location.href = `/event/${slug}/voice`}
-                            >
+                          <Button
+                            size="lg"
+                            className={`w-full gap-2 bg-[#0891b2] text-white hover:bg-[#0e7490] ${isPreview ? 'pointer-events-none opacity-50' : ''}`}
+                            disabled={isPreview}
+                            onClick={() => window.location.href = `/event/${slug}/voice`}
+                          >
                               <Headphones className="h-4 w-4" />
                               {displayLang === 'en' ? 'Start voice registration' : 'Pokreni glasovnu registraciju'}
                             </Button>
