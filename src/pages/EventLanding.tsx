@@ -557,10 +557,10 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     </CardContent>
                   </Card>
 
-                  <div>
+                  <div className="h-full flex flex-col">
                     {/* Card 3 — Voice Agent */}
                     {VOICE_AGENT_ENABLED && (
-                      <Card className="border-border">
+                      <Card className="border-border h-full flex flex-col">
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                           <div className="space-y-3">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
