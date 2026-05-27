@@ -48,7 +48,7 @@ import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
 import { QRCodeSVG } from "qrcode.react";
 
-const VOICE_AGENT_ENABLED = true;
+const VOICE_AGENT_ENABLED = false;
 
 function localiseWorkingHours(value: string, lang: string): string {
   if (lang !== "hr") return value;
