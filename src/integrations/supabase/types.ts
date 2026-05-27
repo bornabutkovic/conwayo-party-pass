@@ -1092,6 +1092,7 @@ export type Database = {
           gen_bus_posting_group: string | null
           id: string
           is_group_order: boolean | null
+          lang: string
           order_number: number
           paid_at: string | null
           payer_address: string | null
@@ -1138,6 +1139,7 @@ export type Database = {
           gen_bus_posting_group?: string | null
           id?: string
           is_group_order?: boolean | null
+          lang?: string
           order_number?: number
           paid_at?: string | null
           payer_address?: string | null
@@ -1184,6 +1186,7 @@ export type Database = {
           gen_bus_posting_group?: string | null
           id?: string
           is_group_order?: boolean | null
+          lang?: string
           order_number?: number
           paid_at?: string | null
           payer_address?: string | null
