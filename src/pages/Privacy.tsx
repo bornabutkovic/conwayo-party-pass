@@ -1,140 +1,110 @@
-import { useState } from "react";
+import { useLanguage } from "@/hooks/useLanguage";
+import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-type Lang = "hr" | "en";
-
-const LAST_UPDATED = "19.04.2026.";
+const LAST_UPDATED = { hr: "Zadnja izmjena: 19.04.2026.", en: "Last updated: 19.04.2026." };
 
 const content = {
   hr: {
-    brand: "Conwayo",
-    title: "Politika privatnosti",
-    subtitle: `Zadnja izmjena: ${LAST_UPDATED}`,
-    back: "Natrag",
-    footer: `© Conwayo ${new Date().getFullYear()}`,
+    title: "Pravila privatnosti",
     sections: [
       {
-        h: "Voditelj obrade podataka",
-        p: "Penta d.o.o., Izidora Kršnjavoga 25, 10000 Zagreb, Hrvatska, kao vlasnik platforme Conwayo, voditelj je obrade osobnih podataka prikupljenih putem platforme.",
+        h: "Voditelj obrade",
+        p: "Penta turistička agencija d.o.o., Izidora Kršnjavoga 25, 10000 Zagreb, OIB: 31375495391. Za pitanja o zaštiti podataka kontaktirajte privacy@conwayo.ai.",
       },
       {
         h: "Koje podatke prikupljamo",
-        p: "Prikupljamo osnovne osobne podatke (ime, prezime, e-mail, telefon), podatke za naplatu (adresa, OIB/VAT, naziv tvrtke) te tehničke podatke o korištenju platforme.",
+        p: "Prikupljamo ime i prezime, e-mail adresu, telefonski broj te OIB za tvrtke. Također prikupljamo automatske podatke kao što su IP adresa i kolačići, kao i podatke koje nam dostave organizatori događaja.",
       },
       {
-        h: "Svrha obrade",
-        p: "Podatke obrađujemo radi registracije sudionika na događaje, izdavanja računa, dostave ulaznica i komunikacije vezane uz događaj.",
+        h: "Pravna osnova obrade",
+        p: "Podatke obrađujemo na temelju ugovora (registracija na događaj), zakonske obveze (računovodstvo), legitimnog interesa (sigurnost platforme) te privole (marketing i voice kanal).",
       },
       {
-        h: "Rok čuvanja podataka",
-        p: "Osobne podatke čuvamo onoliko dugo koliko je potrebno za ispunjenje navedenih svrha te u skladu sa zakonskim obvezama (npr. porezni propisi).",
+        h: "Kanali obrade",
+        p: "Obrada se odvija putem web platforme, WhatsApp AI agenta (+385 91 201 5954) te glasovnog AI agenta (Retell AI Inc., SAD). Audio snimke se čuvaju najviše 30 dana. Za glasovni kanal potrebna je eksplicitna privola; ako korisnik odbije pristanak, svi prikupljeni podaci se brišu.",
       },
       {
-        h: "Treće strane kojima prosljeđujemo podatke",
-        p: "Podatke dijelimo s pružateljima usluga koji nam pomažu u radu platforme (npr. Stripe za plaćanja, pružatelji e-mail i hosting usluga), isključivo u nužnoj mjeri.",
+        h: "Primatelji podataka",
+        p: "Podaci se mogu proslijediti sljedećim primateljima: Retell AI (SAD, SCC+DPA), Stripe (SAD, SCC), Meta/WhatsApp (SCC), Supabase (DPA), OpenAI (SCC), Google Analytics (SCC) te organizatorima događaja.",
+      },
+      {
+        h: "Rokovi čuvanja",
+        p: "Transakcijski podaci čuvaju se 11 godina, računi i korisnički računi do prestanka aktivnosti plus 3 godine, registracije 2 godine, audio snimke najviše 30 dana, a privola za voice kanal trajno.",
       },
       {
         h: "Vaša prava",
-        p: "Imate pravo na pristup, ispravak, brisanje, ograničenje obrade i prenosivost svojih osobnih podataka, kao i pravo na prigovor te pravo podnijeti pritužbu nadležnom tijelu (AZOP).",
+        p: "Imate pravo na pristup, ispravak, brisanje, prenosivost, prigovor te povlačenje privole. Za ostvarivanje prava kontaktirajte privacy@conwayo.ai. Pritužbu možete podnijeti AZOP-u na www.azop.hr.",
+      },
+      {
+        h: "Sigurnost",
+        p: "Podaci se štite SSL/TLS enkripcijom i kontrolom pristupa. U slučaju povrede podataka obavijestit ćemo vas u roku od 72 sata.",
       },
       {
         h: "Kontakt",
-        p: "Za sva pitanja vezana uz zaštitu osobnih podataka možete nas kontaktirati e-mailom na info@conwayo.io.",
+        p: "Za sva pitanja vezana uz privatnost kontaktirajte nas na privacy@conwayo.ai.",
       },
     ],
   },
   en: {
-    brand: "Conwayo",
     title: "Privacy Policy",
-    subtitle: `Last updated: ${LAST_UPDATED}`,
-    back: "Back",
-    footer: `© Conwayo ${new Date().getFullYear()}`,
     sections: [
       {
         h: "Data Controller",
-        p: "Penta d.o.o., Izidora Kršnjavoga 25, 10000 Zagreb, Croatia, as the owner of the Conwayo platform, is the data controller for personal data collected through the platform.",
+        p: "Penta Tourist Agency LLC, Izidora Kršnjavoga 25, 10000 Zagreb, Croatia, VAT ID: 31375495391. For data protection questions contact privacy@conwayo.ai.",
       },
       {
         h: "What data we collect",
-        p: "We collect basic personal data (first name, last name, email, phone), billing information (address, OIB/VAT, company name), and technical data about the use of the platform.",
+        p: "We collect first and last name, email address, phone number and VAT ID for companies. We also collect automatic data such as IP address and cookies, as well as data provided by event organizers.",
       },
       {
-        h: "Purpose of processing",
-        p: "We process data to register attendees for events, issue invoices, deliver tickets, and handle event-related communication.",
+        h: "Legal basis for processing",
+        p: "We process data on the basis of contract (event registration), legal obligation (accounting), legitimate interest (platform security) and consent (marketing and voice channel).",
       },
       {
-        h: "Data retention",
-        p: "We retain personal data for as long as necessary to fulfill the above purposes and in accordance with legal obligations (e.g. tax regulations).",
+        h: "Processing channels",
+        p: "Processing takes place via the web platform, WhatsApp AI agent (+385 91 201 5954) and voice AI agent (Retell AI Inc., USA). Audio recordings are kept for a maximum of 30 days. Explicit consent is required for the voice channel; if the user declines consent, all collected data is deleted.",
       },
       {
-        h: "Third parties",
-        p: "We share data with service providers that help us operate the platform (e.g. Stripe for payments, email and hosting providers), strictly to the extent necessary.",
+        h: "Data recipients",
+        p: "Data may be shared with the following recipients: Retell AI (USA, SCC+DPA), Stripe (USA, SCC), Meta/WhatsApp (SCC), Supabase (DPA), OpenAI (SCC), Google Analytics (SCC) and event organizers.",
+      },
+      {
+        h: "Retention periods",
+        p: "Transaction data is kept for 11 years, invoices and user accounts until end of activity plus 3 years, registrations for 2 years, audio recordings for a maximum of 30 days, and voice consent permanently.",
       },
       {
         h: "Your rights",
-        p: "You have the right to access, rectify, erase, restrict processing of, and port your personal data, as well as the right to object and to lodge a complaint with the competent authority (AZOP).",
+        p: "You have the right to access, rectification, erasure, portability, objection and withdrawal of consent. To exercise your rights contact privacy@conwayo.ai. You may lodge a complaint with AZOP at www.azop.hr.",
+      },
+      {
+        h: "Security",
+        p: "Data is protected by SSL/TLS encryption and access control. In the event of a data breach we will notify you within 72 hours.",
       },
       {
         h: "Contact",
-        p: "For any questions regarding the protection of personal data, you can contact us by email at info@conwayo.io.",
+        p: "For all privacy-related questions contact us at privacy@conwayo.ai.",
       },
     ],
   },
 } as const;
 
 export default function Privacy() {
-  const [lang, setLang] = useState<Lang>("hr");
+  const { lang } = useLanguage();
   const c = content[lang];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto w-full max-w-3xl px-6 py-12 md:py-16">
-        {/* Top bar */}
-        <div className="flex items-center justify-between mb-10">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {c.back}
-          </Link>
+      <ConvwayoHeader showBackToEvents />
 
-          <div className="inline-flex items-center rounded-full border bg-muted/40 p-0.5">
-            <Button
-              type="button"
-              size="sm"
-              variant={lang === "hr" ? "default" : "ghost"}
-              className="h-7 rounded-full px-3 text-xs"
-              onClick={() => setLang("hr")}
-            >
-              HR
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={lang === "en" ? "default" : "ghost"}
-              className="h-7 rounded-full px-3 text-xs"
-              onClick={() => setLang("en")}
-            >
-              EN
-            </Button>
-          </div>
-        </div>
-
-        {/* Header */}
+      <main className="container mx-auto px-4 max-w-4xl py-12 md:py-16">
         <header className="mb-10">
-          <div className="font-display text-sm uppercase tracking-[0.2em] text-primary mb-3">
-            {c.brand}
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
             {c.title}
           </h1>
-          <p className="text-sm text-muted-foreground">{c.subtitle}</p>
+          <p className="text-sm text-muted-foreground">{LAST_UPDATED[lang]}</p>
         </header>
 
-        {/* Sections */}
         <article className="space-y-10">
           {c.sections.map((s) => (
             <section key={s.h}>
@@ -146,11 +116,12 @@ export default function Privacy() {
           ))}
         </article>
 
-        {/* Footer */}
         <footer className="mt-16 pt-8 border-t">
-          <p className="text-xs text-muted-foreground text-center">{c.footer}</p>
+          <p className="text-xs text-muted-foreground text-center">
+            © Conwayo {new Date().getFullYear()}
+          </p>
         </footer>
-      </div>
+      </main>
     </div>
   );
 }
