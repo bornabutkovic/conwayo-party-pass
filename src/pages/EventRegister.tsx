@@ -449,6 +449,7 @@ export default function EventRegister() {
                 .filter(t => (ticketQuantities[t.id] ?? 0) > 0)
                 .map(t => ({ ticket_tier_id: t.id, quantity: ticketQuantities[t.id] })),
               services: [],
+              lang: lang,
             },
           },
         );
