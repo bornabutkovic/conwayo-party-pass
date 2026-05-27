@@ -1,17 +1,19 @@
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { hr } from "date-fns/locale";
+
 import { CalendarDays, MapPin, ArrowRight, Sparkles } from "lucide-react";
 
 function formatEventDateRange(startStr: string | null, endStr: string | null): string | null {
   const startDate = startStr ? new Date(startStr) : null;
   const endDate = endStr ? new Date(endStr) : null;
   if (!startDate) return null;
+
+  const fmt = (d: Date) =>
+    `${d.getDate().toString().padStart(2, "0")}. ${(d.getMonth() + 1).toString().padStart(2, "0")}. ${d.getFullYear()}.`;
+
   const isSameDay = endDate && startDate.toDateString() === endDate.toDateString();
-  if (isSameDay || !endDate) {
-    return format(startDate, "d. MMM yyyy.", { locale: hr });
-  }
-  return `${format(startDate, "d. MMM", { locale: hr })} – ${format(endDate, "d. MMM yyyy.", { locale: hr })}`;
+  if (isSameDay || !endDate) return fmt(startDate);
+  return `${fmt(startDate)} – ${fmt(endDate)}`;
 }
 import { useAvailableEvents } from "@/hooks/useEvent";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
