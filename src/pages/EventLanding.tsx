@@ -830,7 +830,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
 
         {/* SECTION 7 — PLATFORM FOOTER */}
         <footer className="border-t border-border bg-muted/50 py-6">
-          <div className="container mx-auto px-4 text-center text-xs text-muted-foreground leading-relaxed">
+          <div className="container mx-auto px-4 text-center text-xs text-muted-foreground leading-relaxed space-y-1">
             <p>{t("footer.poweredBy")}</p>
             <p>{t("footer.owner")}</p>
             <p>
@@ -838,6 +838,11 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               <a href="mailto:info@penta-zagreb.hr" className="underline underline-offset-2">
                 info@penta-zagreb.hr
               </a>
+            </p>
+            <p>
+              <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                Pravila privatnosti / Privacy Policy
+              </Link>
             </p>
           </div>
         </footer>

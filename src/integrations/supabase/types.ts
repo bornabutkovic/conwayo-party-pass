@@ -1579,6 +1579,9 @@ export type Database = {
           event_name: string | null
           event_slug: string | null
           first_name: string | null
+          gdpr_consent_at: string | null
+          gdpr_consent_given: boolean | null
+          gdpr_disclosure_version: string | null
           id: string
           lang: string | null
           last_name: string | null
@@ -1606,6 +1609,9 @@ export type Database = {
           event_name?: string | null
           event_slug?: string | null
           first_name?: string | null
+          gdpr_consent_at?: string | null
+          gdpr_consent_given?: boolean | null
+          gdpr_disclosure_version?: string | null
           id?: string
           lang?: string | null
           last_name?: string | null
@@ -1633,6 +1639,9 @@ export type Database = {
           event_name?: string | null
           event_slug?: string | null
           first_name?: string | null
+          gdpr_consent_at?: string | null
+          gdpr_consent_given?: boolean | null
+          gdpr_disclosure_version?: string | null
           id?: string
           lang?: string | null
           last_name?: string | null
