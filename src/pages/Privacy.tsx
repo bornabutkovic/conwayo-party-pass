@@ -30,7 +30,7 @@ const content = {
       },
       {
         h: "Rokovi čuvanja",
-        p: "Transakcijski podaci čuvaju se 11 godina, računi i korisnički računi do prestanka aktivnosti plus 3 godine, registracije 2 godine, audio snimke najviše 30 dana, a privola za voice kanal trajno.",
+        p: "Transakcijski podaci čuvaju se 11 godina, računi i korisnički računi do prestanka aktivnosti plus 3 godine, registracije 2 godine, metadata glasovnih poziva 30 dana, audio snimke i transkripti se ne pohranjuju, privola za voice kanal trajno.",
       },
       {
         h: "Vaša prava",
