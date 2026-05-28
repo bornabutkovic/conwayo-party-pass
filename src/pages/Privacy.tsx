@@ -22,7 +22,7 @@ const content = {
       },
       {
         h: "Kanali obrade",
-        p: "Obrada se odvija putem web platforme, WhatsApp AI agenta (+385 91 201 5954) te glasovnog AI agenta (Retell AI Inc., SAD). Audio snimke se čuvaju najviše 30 dana. Za glasovni kanal potrebna je eksplicitna privola; ako korisnik odbije pristanak, svi prikupljeni podaci se brišu.",
+        p: "Obrada se odvija putem web platforme, WhatsApp AI agenta (+385 91 201 5954) te glasovnog AI agenta (Retell AI Inc., SAD). Audio snimke i transkripti se ne pohranjuju (postavka: Basic Attributes Only). Za glasovni kanal potrebna je eksplicitna privola; ako korisnik odbije pristanak, svi prikupljeni podaci se brišu.",
       },
       {
         h: "Primatelji podataka",
@@ -30,7 +30,7 @@ const content = {
       },
       {
         h: "Rokovi čuvanja",
-        p: "Transakcijski podaci čuvaju se 11 godina, računi i korisnički računi do prestanka aktivnosti plus 3 godine, registracije 2 godine, audio snimke najviše 30 dana, a privola za voice kanal trajno.",
+        p: "Transakcijski podaci čuvaju se 11 godina, računi i korisnički računi do prestanka aktivnosti plus 3 godine, registracije 2 godine, metadata glasovnih poziva 30 dana, audio snimke i transkripti se ne pohranjuju, privola za voice kanal trajno.",
       },
       {
         h: "Vaša prava",
@@ -63,7 +63,7 @@ const content = {
       },
       {
         h: "Processing channels",
-        p: "Processing takes place via the web platform, WhatsApp AI agent (+385 91 201 5954) and voice AI agent (Retell AI Inc., USA). Audio recordings are kept for a maximum of 30 days. Explicit consent is required for the voice channel; if the user declines consent, all collected data is deleted.",
+        p: "Processing takes place via the web platform, WhatsApp AI agent (+385 91 201 5954) and voice AI agent (Retell AI Inc., USA). Audio recordings and transcripts are not stored (Basic Attributes Only setting). Explicit consent is required for the voice channel; if the user declines consent, all collected data is deleted.",
       },
       {
         h: "Data recipients",
@@ -71,7 +71,7 @@ const content = {
       },
       {
         h: "Retention periods",
-        p: "Transaction data is kept for 11 years, invoices and user accounts until end of activity plus 3 years, registrations for 2 years, audio recordings for a maximum of 30 days, and voice consent permanently.",
+        p: "Transaction data is kept for 11 years, invoices and user accounts until end of activity plus 3 years, registrations for 2 years, voice call metadata for 30 days, audio recordings and transcripts are not stored, and voice consent permanently.",
       },
       {
         h: "Your rights",
