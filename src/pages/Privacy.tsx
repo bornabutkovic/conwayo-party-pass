@@ -71,7 +71,7 @@ const content = {
       },
       {
         h: "Retention periods",
-        p: "Transaction data is kept for 11 years, invoices and user accounts until end of activity plus 3 years, registrations for 2 years, audio recordings for a maximum of 30 days, and voice consent permanently.",
+        p: "Transaction data is kept for 11 years, invoices and user accounts until end of activity plus 3 years, registrations for 2 years, voice call metadata for 30 days, audio recordings and transcripts are not stored, and voice consent permanently.",
       },
       {
         h: "Your rights",
