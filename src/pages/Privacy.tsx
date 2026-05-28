@@ -10,7 +10,7 @@ const content = {
     sections: [
       {
         h: "Voditelj obrade",
-        p: "Penta turistička agencija d.o.o., Izidora Kršnjavoga 25, 10000 Zagreb, OIB: 31375495391. Za pitanja o zaštiti podataka kontaktirajte privacy@conwayo.ai.",
+        p: "Penta turistička agencija d.o.o., Izidora Kršnjavoga 25, 10000 Zagreb, OIB: 31375495391. Za pitanja o zaštiti podataka kontaktirajte registration@conwayo.ai.",
       },
       {
         h: "Koje podatke prikupljamo",
@@ -34,7 +34,7 @@ const content = {
       },
       {
         h: "Vaša prava",
-        p: "Imate pravo na pristup, ispravak, brisanje, prenosivost, prigovor te povlačenje privole. Za ostvarivanje prava kontaktirajte privacy@conwayo.ai. Pritužbu možete podnijeti AZOP-u na www.azop.hr.",
+        p: "Imate pravo na pristup, ispravak, brisanje, prenosivost, prigovor te povlačenje privole. Za ostvarivanje prava kontaktirajte registration@conwayo.ai. Pritužbu možete podnijeti AZOP-u na www.azop.hr.",
       },
       {
         h: "Sigurnost",
@@ -42,7 +42,7 @@ const content = {
       },
       {
         h: "Kontakt",
-        p: "Za sva pitanja vezana uz privatnost kontaktirajte nas na privacy@conwayo.ai.",
+        p: "Za sva pitanja vezana uz privatnost kontaktirajte nas na registration@conwayo.ai.",
       },
     ],
   },
@@ -51,7 +51,7 @@ const content = {
     sections: [
       {
         h: "Data Controller",
-        p: "Penta Tourist Agency LLC, Izidora Kršnjavoga 25, 10000 Zagreb, Croatia, VAT ID: 31375495391. For data protection questions contact privacy@conwayo.ai.",
+        p: "Penta Tourist Agency LLC, Izidora Kršnjavoga 25, 10000 Zagreb, Croatia, VAT ID: 31375495391. For data protection questions contact registration@conwayo.ai.",
       },
       {
         h: "What data we collect",
@@ -75,7 +75,7 @@ const content = {
       },
       {
         h: "Your rights",
-        p: "You have the right to access, rectification, erasure, portability, objection and withdrawal of consent. To exercise your rights contact privacy@conwayo.ai. You may lodge a complaint with AZOP at www.azop.hr.",
+        p: "You have the right to access, rectification, erasure, portability, objection and withdrawal of consent. To exercise your rights contact registration@conwayo.ai. You may lodge a complaint with AZOP at www.azop.hr.",
       },
       {
         h: "Security",
@@ -83,7 +83,7 @@ const content = {
       },
       {
         h: "Contact",
-        p: "For all privacy-related questions contact us at privacy@conwayo.ai.",
+        p: "For all privacy-related questions contact us at registration@conwayo.ai.",
       },
     ],
   },
