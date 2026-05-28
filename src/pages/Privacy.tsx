@@ -63,7 +63,7 @@ const content = {
       },
       {
         h: "Processing channels",
-        p: "Processing takes place via the web platform, WhatsApp AI agent (+385 91 201 5954) and voice AI agent (Retell AI Inc., USA). Audio recordings are kept for a maximum of 30 days. Explicit consent is required for the voice channel; if the user declines consent, all collected data is deleted.",
+        p: "Processing takes place via the web platform, WhatsApp AI agent (+385 91 201 5954) and voice AI agent (Retell AI Inc., USA). Audio recordings and transcripts are not stored (Basic Attributes Only setting). Explicit consent is required for the voice channel; if the user declines consent, all collected data is deleted.",
       },
       {
         h: "Data recipients",
