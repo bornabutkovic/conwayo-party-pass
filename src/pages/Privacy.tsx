@@ -22,7 +22,7 @@ const content = {
       },
       {
         h: "Kanali obrade",
-        p: "Obrada se odvija putem web platforme, WhatsApp AI agenta (+385 91 201 5954) te glasovnog AI agenta (Retell AI Inc., SAD). Audio snimke se čuvaju najviše 30 dana. Za glasovni kanal potrebna je eksplicitna privola; ako korisnik odbije pristanak, svi prikupljeni podaci se brišu.",
+        p: "Obrada se odvija putem web platforme, WhatsApp AI agenta (+385 91 201 5954) te glasovnog AI agenta (Retell AI Inc., SAD). Audio snimke i transkripti se ne pohranjuju (postavka: Basic Attributes Only). Za glasovni kanal potrebna je eksplicitna privola; ako korisnik odbije pristanak, svi prikupljeni podaci se brišu.",
       },
       {
         h: "Primatelji podataka",
