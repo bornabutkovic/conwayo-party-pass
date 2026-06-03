@@ -105,7 +105,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const { data: fetchedEvent, isLoading, error } = useEventFull(previewEvent ? "" : (slug ?? ""));
   const event = previewEvent ?? fetchedEvent;
   const { lang, setLang, t } = useLanguage();
-  const descriptionRef = useRef<HTMLDivElement>(null);
+  
 
   const supportsEnglish = useMemo(() => {
     return Array.isArray(event?.supported_languages) && event!.supported_languages!.includes("en");
