@@ -1415,6 +1415,36 @@ export type Database = {
           },
         ]
       }
+      retention_audit_log: {
+        Row: {
+          attendees_anonymized: number
+          chat_deleted: number
+          executed_at: string
+          id: string
+          profiles_anonymized: number
+          voice_sessions_deleted: number
+          wa_sessions_deleted: number
+        }
+        Insert: {
+          attendees_anonymized?: number
+          chat_deleted?: number
+          executed_at?: string
+          id?: string
+          profiles_anonymized?: number
+          voice_sessions_deleted?: number
+          wa_sessions_deleted?: number
+        }
+        Update: {
+          attendees_anonymized?: number
+          chat_deleted?: number
+          executed_at?: string
+          id?: string
+          profiles_anonymized?: number
+          voice_sessions_deleted?: number
+          wa_sessions_deleted?: number
+        }
+        Relationships: []
+      }
       salespersons: {
         Row: {
           bc_code: string
@@ -1439,6 +1469,51 @@ export type Database = {
           id?: number
           is_active?: boolean | null
           name?: string
+        }
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          actor_email: string | null
+          actor_uid: string | null
+          created_at: string | null
+          details: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          new_value: Json | null
+          old_value: Json | null
+          severity: string
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_uid?: string | null
+          created_at?: string | null
+          details?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          severity?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          actor_uid?: string | null
+          created_at?: string | null
+          details?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          severity?: string
+          target_id?: string | null
+          target_table?: string | null
         }
         Relationships: []
       }
@@ -2373,6 +2448,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      run_data_retention_cleanup: { Args: { dry_run?: boolean }; Returns: Json }
       unaccent: { Args: { "": string }; Returns: string }
       update_completed_events: { Args: never; Returns: undefined }
       upsert_wa_session: {
