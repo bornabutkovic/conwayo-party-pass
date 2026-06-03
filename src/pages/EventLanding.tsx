@@ -1,31 +1,4 @@
-import { useEffect, useMemo, useCallback } from "react";
-const sanitizeHtml = (html: string): string => {
-  const div = document.createElement('div');
-
-  div.innerHTML = html;
-
-  // Remove dangerous elements entirely
-  div.querySelectorAll('script, iframe, object, embed, form').forEach(el => el.remove());
-
-  // Remove any element that has an event handler attribute
-  div.querySelectorAll('*').forEach(el => {
-    const attrs = Array.from(el.attributes);
-    const hasEventHandler = attrs.some(attr => attr.name.startsWith('on'));
-    if (hasEventHandler) {
-      el.remove();
-      return;
-    }
-    // Remove javascript: hrefs and srcs
-    ['href', 'src', 'action'].forEach(attr => {
-      const val = el.getAttribute(attr);
-      if (val && val.trim().toLowerCase().startsWith('javascript:')) {
-        el.removeAttribute(attr);
-      }
-    });
-  });
-
-  return div.innerHTML;
-};
+import { useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
@@ -132,6 +105,29 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const { data: fetchedEvent, isLoading, error } = useEventFull(previewEvent ? "" : (slug ?? ""));
   const event = previewEvent ?? fetchedEvent;
   const { lang, setLang, t } = useLanguage();
+  const descriptionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (descriptionRef.current && eventDescription) {
+      const div = document.createElement('div');
+      div.innerHTML = eventDescription;
+
+      div.querySelectorAll('script,iframe,object,embed,form,base').forEach(el => el.remove());
+      div.querySelectorAll('*').forEach(el => {
+        if (Array.from(el.attributes).some(a => a.name.startsWith('on'))) {
+          el.remove();
+          return;
+        }
+
+        ['href','src','action','formaction','data'].forEach(attr => {
+          const val = el.getAttribute(attr);
+          if (val && /^\s*javascript:/i.test(val)) el.removeAttribute(attr);
+        });
+      });
+
+      descriptionRef.current.innerHTML = div.innerHTML;
+    }
+  }, [eventDescription]);
 
 
   const supportsEnglish = useMemo(() => {
@@ -441,8 +437,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                   {t("event.aboutTitle")}
                 </h2>
                 <div
+                  ref={descriptionRef}
                   className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(eventDescription || '') }}
                 />
               </section>
             )}
