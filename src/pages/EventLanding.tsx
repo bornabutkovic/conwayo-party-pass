@@ -434,7 +434,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                 </h2>
                 <div
                   className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(eventDescription || '') }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(eventDescription || '') }}
                 />
               </section>
             )}
