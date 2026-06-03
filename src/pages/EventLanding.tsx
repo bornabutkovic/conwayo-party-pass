@@ -1,21 +1,29 @@
 import { useEffect, useMemo, useCallback } from "react";
 const sanitizeHtml = (html: string): string => {
   const div = document.createElement('div');
+
   div.innerHTML = html;
-  const scripts = div.querySelectorAll('script');
-  scripts.forEach(s => s.remove());
-  const allElements = div.querySelectorAll('*');
-  allElements.forEach(el => {
+
+  // Remove dangerous elements entirely
+  div.querySelectorAll('script, iframe, object, embed, form').forEach(el => el.remove());
+
+  // Remove any element that has an event handler attribute
+  div.querySelectorAll('*').forEach(el => {
     const attrs = Array.from(el.attributes);
-    attrs.forEach(attr => {
-      if (attr.name.startsWith('on')) {
-        el.removeAttribute(attr.name);
+    const hasEventHandler = attrs.some(attr => attr.name.startsWith('on'));
+    if (hasEventHandler) {
+      el.remove();
+      return;
+    }
+    // Remove javascript: hrefs and srcs
+    ['href', 'src', 'action'].forEach(attr => {
+      const val = el.getAttribute(attr);
+      if (val && val.trim().toLowerCase().startsWith('javascript:')) {
+        el.removeAttribute(attr);
       }
     });
-    if (el.tagName === 'IMG' && el.getAttribute('src')?.startsWith('javascript:')) {
-      el.removeAttribute('src');
-    }
   });
+
   return div.innerHTML;
 };
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
