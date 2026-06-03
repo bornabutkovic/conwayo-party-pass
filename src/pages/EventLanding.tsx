@@ -98,7 +98,38 @@ interface EventLandingProps {
   isPreview?: boolean;
 }
 
+function stripUnsafeHtml(html: string): string {
+  const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','ul','ol','li','h1','h2','h3','h4','a','span','div'];
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  function clean(node: Node): Node | null {
+    if (node.nodeType === Node.TEXT_NODE) return node.cloneNode();
+    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+    const el = node as Element;
+    const tag = el.tagName.toLowerCase();
+    if (!ALLOWED_TAGS.includes(tag)) return null;
+    const safe = document.createElement(tag);
+    if (tag === 'a') {
+      const href = el.getAttribute('href') || '';
+      if (/^https?:\/\//i.test(href)) safe.setAttribute('href', href);
+      safe.setAttribute('target', '_blank');
+      safe.setAttribute('rel', 'noopener noreferrer');
+    }
+    el.childNodes.forEach(child => {
+      const cleaned = clean(child);
+      if (cleaned) safe.appendChild(cleaned);
+    });
+    return safe;
+  }
+  const out = document.createElement('div');
+  doc.body.childNodes.forEach(child => {
+    const cleaned = clean(child);
+    if (cleaned) out.appendChild(cleaned);
+  });
+  return out.innerHTML;
+}
+
 export default function EventLanding({ previewEvent, isPreview = false }: EventLandingProps = {}) {
+
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const navigate = useNavigate();
@@ -416,7 +447,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                 </h2>
                 <div
                   className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
-                  dangerouslySetInnerHTML={{ __html: (eventDescription || '').replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '') }}
+                  dangerouslySetInnerHTML={{ __html: stripUnsafeHtml(eventDescription || '') }}
                 />
               </section>
             )}
