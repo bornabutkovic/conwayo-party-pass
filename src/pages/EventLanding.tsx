@@ -107,29 +107,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const { lang, setLang, t } = useLanguage();
   const descriptionRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (descriptionRef.current && eventDescription) {
-      const div = document.createElement('div');
-      div.innerHTML = eventDescription;
-
-      div.querySelectorAll('script,iframe,object,embed,form,base').forEach(el => el.remove());
-      div.querySelectorAll('*').forEach(el => {
-        if (Array.from(el.attributes).some(a => a.name.startsWith('on'))) {
-          el.remove();
-          return;
-        }
-
-        ['href','src','action','formaction','data'].forEach(attr => {
-          const val = el.getAttribute(attr);
-          if (val && /^\s*javascript:/i.test(val)) el.removeAttribute(attr);
-        });
-      });
-
-      descriptionRef.current.innerHTML = div.innerHTML;
-    }
-  }, [eventDescription]);
-
-
   const supportsEnglish = useMemo(() => {
     return Array.isArray(event?.supported_languages) && event!.supported_languages!.includes("en");
   }, [event?.supported_languages]);
@@ -264,6 +241,28 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const cancellationPolicy = displayLang === 'en' && enTrans.cancellation_policy
     ? String(enTrans.cancellation_policy)
     : event.cancellation_policy ?? '';
+
+  useEffect(() => {
+    if (descriptionRef.current && eventDescription) {
+      const div = document.createElement('div');
+      div.innerHTML = eventDescription;
+
+      div.querySelectorAll('script,iframe,object,embed,form,base').forEach(el => el.remove());
+      div.querySelectorAll('*').forEach(el => {
+        if (Array.from(el.attributes).some(a => a.name.startsWith('on'))) {
+          el.remove();
+          return;
+        }
+
+        ['href','src','action','formaction','data'].forEach(attr => {
+          const val = el.getAttribute(attr);
+          if (val && /^\s*javascript:/i.test(val)) el.removeAttribute(attr);
+        });
+      });
+
+      descriptionRef.current.innerHTML = div.innerHTML;
+    }
+  }, [eventDescription]);
 
   console.log('DEBUG:', { displayLang, enTrans, eventDescription: eventDescription?.slice(0,50) });
 
