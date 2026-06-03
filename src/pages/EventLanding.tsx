@@ -242,29 +242,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
     ? String(enTrans.cancellation_policy)
     : event.cancellation_policy ?? '';
 
-  useEffect(() => {
-    if (descriptionRef.current && eventDescription) {
-      const div = document.createElement('div');
-      div.innerHTML = eventDescription;
 
-      div.querySelectorAll('script,iframe,object,embed,form,base').forEach(el => el.remove());
-      div.querySelectorAll('*').forEach(el => {
-        if (Array.from(el.attributes).some(a => a.name.startsWith('on'))) {
-          el.remove();
-          return;
-        }
 
-        ['href','src','action','formaction','data'].forEach(attr => {
-          const val = el.getAttribute(attr);
-          if (val && /^\s*javascript:/i.test(val)) el.removeAttribute(attr);
-        });
-      });
-
-      descriptionRef.current.innerHTML = div.innerHTML;
-    }
-  }, [eventDescription]);
-
-  console.log('DEBUG:', { displayLang, enTrans, eventDescription: eventDescription?.slice(0,50) });
 
   const formatDate = displayLang === "hr" ? formatDateHr : formatDateEn;
 
