@@ -1,5 +1,23 @@
 import { useEffect, useMemo, useCallback } from "react";
-import DOMPurify from "dompurify";
+const sanitizeHtml = (html: string): string => {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const scripts = div.querySelectorAll('script');
+  scripts.forEach(s => s.remove());
+  const allElements = div.querySelectorAll('*');
+  allElements.forEach(el => {
+    const attrs = Array.from(el.attributes);
+    attrs.forEach(attr => {
+      if (attr.name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+      }
+    });
+    if (el.tagName === 'IMG' && el.getAttribute('src')?.startsWith('javascript:')) {
+      el.removeAttribute('src');
+    }
+  });
+  return div.innerHTML;
+};
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
@@ -416,7 +434,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                 </h2>
                 <div
                   className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(eventDescription || '') }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(eventDescription || '') }}
                 />
               </section>
             )}
