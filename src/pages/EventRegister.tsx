@@ -62,8 +62,33 @@ export default function EventRegister() {
   const { user, loading: authLoading } = useAuth();
   const { lang, t } = useLanguage();
   const { data: event, isLoading: eventLoading, error: eventError } = useEvent(slug ?? "");
-  const { data: tiers = [] } = useTicketTiers(event?.id);
+  const { data: rawTiers = [] } = useTicketTiers(event?.id);
   const { data: services = [] } = useEventServices(event?.id);
+
+  // Fetch real-time availability via RPC (capacity/sold/remaining/is_sold_out)
+  const [availability, setAvailability] = useState<Array<{ tier_id: string; tier_name: string; capacity: number | null; sold: number; remaining: number | null; is_sold_out: boolean }>>([]);
+  useEffect(() => {
+    if (!event?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc('get_ticket_tier_availability', { p_event_id: event.id });
+      if (!cancelled && !error && data) setAvailability(data as any);
+    })();
+    return () => { cancelled = true; };
+  }, [event?.id]);
+
+  // Merge availability onto tiers (preserve price/translations from rawTiers)
+  const tiers = useMemo(() => {
+    return rawTiers.map(t => {
+      const a = availability.find(x => x.tier_id === t.id);
+      return {
+        ...t,
+        remaining: a ? a.remaining : null,
+        sold: a ? a.sold : 0,
+        is_sold_out: a ? a.is_sold_out : false,
+      };
+    });
+  }, [rawTiers, availability]);
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -295,7 +320,9 @@ export default function EventRegister() {
   const setTierQty = (tierId: string, delta: number) => {
     setTicketQuantities(prev => {
       const current = prev[tierId] ?? 0;
-      const next = Math.max(0, current + delta);
+      const tier = tiers.find(t => t.id === tierId);
+      const max = tier && tier.remaining !== null && tier.remaining !== undefined ? tier.remaining : Infinity;
+      const next = Math.max(0, Math.min(max, current + delta));
       return { ...prev, [tierId]: next };
     });
   };
@@ -875,9 +902,11 @@ export default function EventRegister() {
                           <p className="mt-1 text-sm font-semibold text-primary">
                             {tier.price > 0 ? `€${Number(tier.price).toFixed(2)}` : t("event.freeLabel")}
                           </p>
-                          {tier.capacity !== null && (
-                            <p className="text-xs text-muted-foreground">{tier.capacity} {t("event.spotsLeft").toLowerCase()}</p>
-                          )}
+                          {tier.is_sold_out ? (
+                            <p className="text-xs font-semibold text-destructive">Sold out</p>
+                          ) : tier.remaining !== null && tier.remaining !== undefined && tier.remaining > 0 ? (
+                            <p className="text-xs text-muted-foreground">{tier.remaining} {t("event.spotsLeft").toLowerCase()}</p>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -897,6 +926,7 @@ export default function EventRegister() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => setTierQty(tier.id, 1)}
+                            disabled={tier.is_sold_out || (tier.remaining !== null && tier.remaining !== undefined && qty >= tier.remaining)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
