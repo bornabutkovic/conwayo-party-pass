@@ -543,9 +543,15 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           )}
 
-                          {tier.capacity != null && tier.capacity > 0 && status === "active" && (
+                          {status === "active" && tier.is_sold_out && (
+                            <p className="mt-2 text-sm font-medium text-destructive">
+                              {displayLang === "hr" ? "Rasprodano" : "Sold out"}
+                            </p>
+                          )}
+
+                          {status === "active" && !tier.is_sold_out && tier.remaining != null && (
                             <p className="mt-2 text-xs text-muted-foreground">
-                              {t("event.spotsLeft")}: {tier.capacity}
+                              {t("event.spotsLeft")}: {tier.remaining}
                             </p>
                           )}
                         </CardContent>
