@@ -225,6 +225,23 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
     };
   }, [event, lang, supportsEnglish, slug]);
 
+  const [availability, setAvailability] = useState<Record<string, { remaining: number | null; is_sold_out: boolean }>>({});
+
+  useEffect(() => {
+    if (!event?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc('get_ticket_tier_availability', { p_event_id: event.id });
+      if (cancelled || !data) return;
+      const map: Record<string, { remaining: number | null; is_sold_out: boolean }> = {};
+      (data as any[]).forEach((t) => {
+        map[t.tier_id] = { remaining: t.remaining, is_sold_out: !!t.is_sold_out };
+      });
+      setAvailability(map);
+    })();
+    return () => { cancelled = true; };
+  }, [event?.id]);
+
   if (!previewEvent && isLoading) return <EventPageSkeleton />;
   if (!event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
   if (!previewEvent && error) return <EventNotFound slug={slug} errorMessage={error?.message} />;
