@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo, useCallback, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
@@ -224,6 +225,23 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
     };
   }, [event, lang, supportsEnglish, slug]);
 
+  const [availability, setAvailability] = useState<Record<string, { remaining: number | null; is_sold_out: boolean }>>({});
+
+  useEffect(() => {
+    if (!event?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc('get_ticket_tier_availability', { p_event_id: event.id });
+      if (cancelled || !data) return;
+      const map: Record<string, { remaining: number | null; is_sold_out: boolean }> = {};
+      (data as any[]).forEach((t) => {
+        map[t.tier_id] = { remaining: t.remaining, is_sold_out: !!t.is_sold_out };
+      });
+      setAvailability(map);
+    })();
+    return () => { cancelled = true; };
+  }, [event?.id]);
+
   if (!previewEvent && isLoading) return <EventPageSkeleton />;
   if (!event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
   if (!previewEvent && error) return <EventNotFound slug={slug} errorMessage={error?.message} />;
@@ -243,7 +261,11 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   }
 
   const currency = event.currency ?? "EUR";
-  const tiers = event.ticket_tiers ?? [];
+  const rawTiers = event.ticket_tiers ?? [];
+  const tiers = rawTiers.map((t: any) => {
+    const a = availability[t.id];
+    return { ...t, remaining: a?.remaining ?? null, is_sold_out: a?.is_sold_out ?? false };
+  });
   const services = event.event_services ?? [];
   const institution = event.institutions;
   const primaryColor = event.branding_primary_color ?? "#6366f1";
@@ -521,9 +543,15 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           )}
 
-                          {tier.capacity != null && tier.capacity > 0 && status === "active" && (
+                          {status === "active" && tier.is_sold_out && (
+                            <p className="mt-2 text-sm font-medium text-destructive">
+                              {displayLang === "hr" ? "Rasprodano" : "Sold out"}
+                            </p>
+                          )}
+
+                          {status === "active" && !tier.is_sold_out && tier.remaining != null && (
                             <p className="mt-2 text-xs text-muted-foreground">
-                              {t("event.spotsLeft")}: {tier.capacity}
+                              {t("event.spotsLeft")}: {tier.remaining}
                             </p>
                           )}
                         </CardContent>

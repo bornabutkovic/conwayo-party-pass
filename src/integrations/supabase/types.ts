@@ -2386,6 +2386,7 @@ export type Database = {
         }
         Returns: string
       }
+      expire_stale_orders: { Args: never; Returns: Json }
       get_admin_users: {
         Args: never
         Returns: {
