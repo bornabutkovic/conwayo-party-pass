@@ -543,13 +543,13 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           )}
 
-                          {status === "active" && tier.is_sold_out && (
+                          {status === "active" && typeof tier.remaining === 'number' && tier.is_sold_out && (
                             <p className="mt-2 text-sm font-medium text-destructive">
                               {displayLang === "hr" ? "Rasprodano" : "Sold out"}
                             </p>
                           )}
 
-                          {status === "active" && !tier.is_sold_out && tier.remaining != null && (
+                          {status === "active" && typeof tier.remaining === 'number' && !tier.is_sold_out && (
                             <p className="mt-2 text-xs text-muted-foreground">
                               {t("event.spotsLeft")}: {tier.remaining}
                             </p>
