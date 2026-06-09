@@ -2414,6 +2414,17 @@ export type Database = {
           summary: string
         }[]
       }
+      get_ticket_tier_availability: {
+        Args: { p_event_id: string }
+        Returns: {
+          capacity: number
+          is_sold_out: boolean
+          remaining: number
+          sold: number
+          tier_id: string
+          tier_name: string
+        }[]
+      }
       get_user_event_status: {
         Args: { p_event_id: string; p_phone: string }
         Returns: {
