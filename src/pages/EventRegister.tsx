@@ -320,7 +320,9 @@ export default function EventRegister() {
   const setTierQty = (tierId: string, delta: number) => {
     setTicketQuantities(prev => {
       const current = prev[tierId] ?? 0;
-      const next = Math.max(0, current + delta);
+      const tier = tiers.find(t => t.id === tierId);
+      const max = tier && tier.remaining !== null && tier.remaining !== undefined ? tier.remaining : Infinity;
+      const next = Math.max(0, Math.min(max, current + delta));
       return { ...prev, [tierId]: next };
     });
   };
