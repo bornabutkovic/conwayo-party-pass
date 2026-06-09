@@ -903,7 +903,7 @@ export default function EventRegister() {
                             {tier.price > 0 ? `€${Number(tier.price).toFixed(2)}` : t("event.freeLabel")}
                           </p>
                           {tier.is_sold_out ? (
-                            <p className="text-xs font-semibold text-destructive">{t("register.soldOut") || "Sold out"}</p>
+                            <p className="text-xs font-semibold text-destructive">Sold out</p>
                           ) : tier.remaining !== null && tier.remaining !== undefined && tier.remaining > 0 ? (
                             <p className="text-xs text-muted-foreground">{tier.remaining} {t("event.spotsLeft").toLowerCase()}</p>
                           ) : null}
