@@ -62,8 +62,33 @@ export default function EventRegister() {
   const { user, loading: authLoading } = useAuth();
   const { lang, t } = useLanguage();
   const { data: event, isLoading: eventLoading, error: eventError } = useEvent(slug ?? "");
-  const { data: tiers = [] } = useTicketTiers(event?.id);
+  const { data: rawTiers = [] } = useTicketTiers(event?.id);
   const { data: services = [] } = useEventServices(event?.id);
+
+  // Fetch real-time availability via RPC (capacity/sold/remaining/is_sold_out)
+  const [availability, setAvailability] = useState<Array<{ tier_id: string; tier_name: string; capacity: number | null; sold: number; remaining: number | null; is_sold_out: boolean }>>([]);
+  useEffect(() => {
+    if (!event?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc('get_ticket_tier_availability', { p_event_id: event.id });
+      if (!cancelled && !error && data) setAvailability(data as any);
+    })();
+    return () => { cancelled = true; };
+  }, [event?.id]);
+
+  // Merge availability onto tiers (preserve price/translations from rawTiers)
+  const tiers = useMemo(() => {
+    return rawTiers.map(t => {
+      const a = availability.find(x => x.tier_id === t.id);
+      return {
+        ...t,
+        remaining: a ? a.remaining : null,
+        sold: a ? a.sold : 0,
+        is_sold_out: a ? a.is_sold_out : false,
+      };
+    });
+  }, [rawTiers, availability]);
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
