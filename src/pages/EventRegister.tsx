@@ -902,9 +902,11 @@ export default function EventRegister() {
                           <p className="mt-1 text-sm font-semibold text-primary">
                             {tier.price > 0 ? `€${Number(tier.price).toFixed(2)}` : t("event.freeLabel")}
                           </p>
-                          {tier.capacity !== null && (
-                            <p className="text-xs text-muted-foreground">{tier.capacity} {t("event.spotsLeft").toLowerCase()}</p>
-                          )}
+                          {tier.is_sold_out ? (
+                            <p className="text-xs font-semibold text-destructive">{t("register.soldOut") || "Sold out"}</p>
+                          ) : tier.remaining !== null && tier.remaining !== undefined && tier.remaining > 0 ? (
+                            <p className="text-xs text-muted-foreground">{tier.remaining} {t("event.spotsLeft").toLowerCase()}</p>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -924,6 +926,7 @@ export default function EventRegister() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => setTierQty(tier.id, 1)}
+                            disabled={tier.is_sold_out || (tier.remaining !== null && tier.remaining !== undefined && qty >= tier.remaining)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
