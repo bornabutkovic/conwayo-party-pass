@@ -2145,6 +2145,7 @@ export type Database = {
           bc_invoice_id: string | null
           bc_quote_number: string | null
           card_brand: string | null
+          card_last4: string | null
           card_wallet: string | null
           checked_in: boolean | null
           email: string | null
@@ -2455,6 +2456,15 @@ export type Database = {
         Returns: string
       }
       cancel_expired_pending_orders: { Args: never; Returns: undefined }
+      check_tier_capacity: {
+        Args: { p_tier_requests: Json }
+        Returns: {
+          remaining: number
+          requested: number
+          tier_id: string
+          tier_name: string
+        }[]
+      }
       create_registration_items: {
         Args: {
           p_attendees: Json

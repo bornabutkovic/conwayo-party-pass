@@ -25,6 +25,8 @@ import { hr as hrLocale } from "date-fns/locale";
 import { COUNTRIES, getCountryZone } from '@/lib/countries';
 
 
+const EU_COUNTRIES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
+
 interface AttendeeRow {
   firstName: string;
   lastName: string;
@@ -387,8 +389,19 @@ export default function EventRegister() {
       toast({ title: "Billing email is required for company billing", variant: "destructive" });
       return;
     }
-    if (payerType === "company" && countryCode === "HR" && companyOib && !/^\d{11}$/.test(companyOib)) {
-      toast({ title: "OIB must be exactly 11 digits for Croatia", variant: "destructive" });
+    // OIB obavezan za HR tvrtke
+    if (payerType === "company" && countryCode === "HR" && !companyOib.trim()) {
+      toast({ title: "OIB je obavezan za hrvatska poduzeća.", variant: "destructive" });
+      return;
+    }
+    if (payerType === "company" && countryCode === "HR" && !/^\d{11}$/.test(companyOib.trim())) {
+      toast({ title: "OIB mora imati točno 11 znamenki.", variant: "destructive" });
+      return;
+    }
+
+    // VAT ID obavezan za EU tvrtke (sve europske države osim HR)
+    if (payerType === "company" && EU_COUNTRIES.includes(countryCode) && !companyOib.trim()) {
+      toast({ title: "VAT ID is required for EU companies.", variant: "destructive" });
       return;
     }
     if (payerType === "company" && (!street.trim() || !city.trim() || !postalCode.trim())) {
@@ -1153,7 +1166,7 @@ export default function EventRegister() {
                         </div>
                         <div>
                           <Label htmlFor="payer_oib">
-                            {countryCode === 'HR' ? 'OIB' : 'VAT ID'}{countryCode === 'HR' ? ' *' : ''}
+                            {countryCode === 'HR' ? 'OIB' : 'VAT ID'}{(countryCode === 'HR' || EU_COUNTRIES.includes(countryCode)) ? ' *' : ''}
                           </Label>
                           <Input
                             id="payer_oib"
