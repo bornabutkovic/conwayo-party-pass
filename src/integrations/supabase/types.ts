@@ -124,6 +124,24 @@ export type Database = {
           },
         ]
       }
+      app_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       attendees: {
         Row: {
           badge_printed: boolean | null
@@ -1073,6 +1091,7 @@ export type Database = {
           attendee_id: string | null
           bc_customer_no: string | null
           bc_invoice_id: string | null
+          bc_invoice_number: string | null
           bc_quote_number: string | null
           billing_email: string | null
           card_brand: string | null
@@ -1120,6 +1139,7 @@ export type Database = {
           attendee_id?: string | null
           bc_customer_no?: string | null
           bc_invoice_id?: string | null
+          bc_invoice_number?: string | null
           bc_quote_number?: string | null
           billing_email?: string | null
           card_brand?: string | null
@@ -1167,6 +1187,7 @@ export type Database = {
           attendee_id?: string | null
           bc_customer_no?: string | null
           bc_invoice_id?: string | null
+          bc_invoice_number?: string | null
           bc_quote_number?: string | null
           billing_email?: string | null
           card_brand?: string | null
@@ -1472,6 +1493,54 @@ export type Database = {
         }
         Relationships: []
       }
+      scanner_tokens: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          last_used_at: string | null
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          last_used_at?: string | null
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          last_used_at?: string | null
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scanner_tokens_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scanner_tokens_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "view_events_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_audit_log: {
         Row: {
           actor_email: string | null
@@ -1561,6 +1630,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stripe_processed_events: {
+        Row: {
+          event_id: string
+          event_type: string | null
+          order_id: string | null
+          payload_summary: Json | null
+          processed_at: string
+          stripe_session_id: string | null
+        }
+        Insert: {
+          event_id: string
+          event_type?: string | null
+          order_id?: string | null
+          payload_summary?: Json | null
+          processed_at?: string
+          stripe_session_id?: string | null
+        }
+        Update: {
+          event_id?: string
+          event_type?: string | null
+          order_id?: string | null
+          payload_summary?: Json | null
+          processed_at?: string
+          stripe_session_id?: string | null
+        }
+        Relationships: []
       }
       ticket_tiers: {
         Row: {
@@ -2405,6 +2501,7 @@ export type Database = {
         Returns: Json
       }
       get_event_organizers_info: { Args: { p_event_id: string }; Returns: Json }
+      get_event_revenue_stats: { Args: { p_event_id: string }; Returns: Json }
       get_event_translations: { Args: { p_event_id: string }; Returns: Json }
       get_order_full_data: { Args: { p_order_id: string }; Returns: Json }
       get_session_missing_fields: {
@@ -2479,6 +2576,14 @@ export type Database = {
           p_wa_id: string
         }
         Returns: Json
+      }
+      validate_scanner_token: {
+        Args: { p_token: string }
+        Returns: {
+          event_id: string
+          token_id: string
+          valid: boolean
+        }[]
       }
     }
     Enums: {
