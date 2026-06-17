@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEventFull, type EventService } from "@/hooks/useEvent";
 import { useLanguage, tr } from "@/hooks/useLanguage";
@@ -225,22 +226,16 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
     };
   }, [event, lang, supportsEnglish, slug]);
 
-  const [availability, setAvailability] = useState<Record<string, { remaining: number | null; is_sold_out: boolean }>>({});
-
-  useEffect(() => {
-    if (!event?.id) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.rpc('get_ticket_tier_availability', { p_event_id: event.id });
-      if (cancelled || !data) return;
-      const map: Record<string, { remaining: number | null; is_sold_out: boolean }> = {};
-      (data as any[]).forEach((t) => {
-        map[t.tier_id] = { remaining: t.remaining, is_sold_out: !!t.is_sold_out };
-      });
-      setAvailability(map);
-    })();
-    return () => { cancelled = true; };
-  }, [event?.id]);
+  const { data: availabilityMap } = useQuery({
+    queryKey: ['tier-availability', event?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_ticket_tier_availability', { p_event_id: event!.id });
+      if (error) throw error;
+      return new Map((data || []).map((r: any) => [r.tier_id, r]));
+    },
+    enabled: !!event?.id,
+    refetchInterval: 60000,
+  });
 
   if (!previewEvent && isLoading) return <EventPageSkeleton />;
   if (!event) return <EventNotFound slug={slug} errorMessage={error?.message} />;
@@ -261,11 +256,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   }
 
   const currency = event.currency ?? "EUR";
-  const rawTiers = event.ticket_tiers ?? [];
-  const tiers = rawTiers.map((t: any) => {
-    const a = availability[t.id];
-    return { ...t, remaining: a?.remaining ?? null, is_sold_out: a?.is_sold_out ?? false };
-  });
+  const tiers = event.ticket_tiers ?? [];
   const services = event.event_services ?? [];
   const institution = event.institutions;
   const primaryColor = event.branding_primary_color ?? "#6366f1";
@@ -499,6 +490,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                       d.toLocaleDateString(localeStr, { day: "numeric", month: "short", year: "numeric" });
 
                     const dimmed = status !== "active";
+                    const avail = availabilityMap?.get(tier.id);
 
                     return (
                       <Card key={tier.id} className={`border-border ${dimmed ? "opacity-40 pointer-events-none" : ""}`}>
@@ -543,16 +535,10 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           )}
 
-                          {status === "active" && typeof tier.remaining === 'number' && tier.is_sold_out && (
-                            <p className="mt-2 text-sm font-medium text-destructive">
-                              {displayLang === "hr" ? "Rasprodano" : "Sold out"}
-                            </p>
-                          )}
-
-                          {status === "active" && typeof tier.remaining === 'number' && !tier.is_sold_out && (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              {t("event.spotsLeft")}: {tier.remaining}
-                            </p>
+                          {avail && avail.capacity != null && status === "active" && (
+                            avail.is_sold_out
+                              ? <p className="mt-2 text-sm font-medium text-destructive">{displayLang === 'hr' ? 'Rasprodano' : 'Sold out'}</p>
+                              : <p className="mt-2 text-xs text-muted-foreground">{t("event.spotsLeft")}: {avail.remaining}</p>
                           )}
                         </CardContent>
                       </Card>
