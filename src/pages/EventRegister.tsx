@@ -1166,7 +1166,7 @@ export default function EventRegister() {
                         </div>
                         <div>
                           <Label htmlFor="payer_oib">
-                            {countryCode === 'HR' ? 'OIB' : 'VAT ID'}{countryCode === 'HR' ? ' *' : ''}
+                            {countryCode === 'HR' ? 'OIB' : 'VAT ID'}{(countryCode === 'HR' || EU_COUNTRIES.includes(countryCode)) ? ' *' : ''}
                           </Label>
                           <Input
                             id="payer_oib"
