@@ -407,6 +407,7 @@ export default function EventRegister() {
         body: {
           event_id: event.id,
           payer_type: payerType,
+          lang,
           attendees: attendees.map(a => ({
             first_name: a.firstName,
             last_name: a.lastName,
