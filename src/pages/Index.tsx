@@ -143,6 +143,11 @@ export default function Index() {
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {publicEvents.map((event, index) => {
               const dateRange = formatEventDateRange(event.start_date ?? null, event.end_date ?? null);
+              const enName = (event as any).translations?.en?.name;
+              const displayName =
+                lang === "en" && typeof enName === "string" && enName.trim() !== ""
+                  ? enName
+                  : event.name;
               return (
                 <Link
                   key={event.slug}
@@ -157,7 +162,7 @@ export default function Index() {
                   <div className="mb-4">
                     <StatusTag status={event.status} />
                     <h3 className="mt-3 text-xl font-bold text-foreground group-hover:gradient-brand-text transition-all duration-300">
-                      {event.name}
+                      {displayName}
                     </h3>
                   </div>
 
