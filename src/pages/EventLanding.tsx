@@ -509,9 +509,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                               ? t("event.freeLabel")
                               : `${Number(tier.price).toFixed(2)} ${currency}`}
                           </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {t("event.priceIncludesVat")}
-                          </p>
 
                           {status === "active" && end && (
                             <p className="mt-2 text-xs font-medium text-muted-foreground">
@@ -535,16 +532,31 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           )}
 
-                          {avail && avail.capacity != null && status === "active" && (
-                            avail.is_sold_out
-                              ? <p className="mt-2 text-sm font-medium text-destructive">{displayLang === 'hr' ? 'Rasprodano' : 'Sold out'}</p>
-                              : <p className="mt-2 text-xs text-muted-foreground">{t("event.spotsLeft")}: {avail.remaining}</p>
+                          {avail && avail.capacity != null && status === "active" && avail.is_sold_out && (
+                            <p className="mt-2 text-sm font-medium text-destructive">
+                              {displayLang === 'hr' ? 'Rasprodano' : 'Sold out'}
+                            </p>
                           )}
                         </CardContent>
                       </Card>
                     );
                   })}
                 </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {t("event.priceIncludesVat")}
+                </p>
+                {(() => {
+                  const enNotes = (event as any)?.translations?.en?.ticket_notes;
+                  const notes =
+                    displayLang === 'en' && typeof enNotes === 'string' && enNotes.trim() !== ''
+                      ? enNotes
+                      : (event as any)?.ticket_notes;
+                  return notes ? (
+                    <p className="mt-2 text-xs text-muted-foreground whitespace-pre-line">
+                      {notes}
+                    </p>
+                  ) : null;
+                })()}
               </section>
             )}
 
