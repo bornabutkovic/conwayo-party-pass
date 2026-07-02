@@ -129,6 +129,7 @@ export function useEventFull(slug: string) {
         .select("*")
         .eq("event_id", event.id)
         .eq("status", "active")
+        .order("display_order", { ascending: true })
         .order("price", { ascending: true });
 
       // Fetch active services
