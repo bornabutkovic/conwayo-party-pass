@@ -86,7 +86,7 @@ export function useEventFull(slug: string) {
         .from("events")
         .select(`
           id, name, slug, short_name, description, cancellation_policy,
-          translations, organizers_info, supported_languages,
+          translations, organizers_info, supported_languages, ticket_notes,
           status, start_date, end_date, venue_name, location_address,
           location_city, location_country, location_postal_code,
           website_url, support_phone, event_type, currency, vat_rate,
