@@ -90,7 +90,7 @@ function StatusTag({ status }: { status: string | null }) {
 
 export default function Index() {
   const { data: events, isLoading } = useAvailableEvents();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const publicEvents = events?.filter((e) => e.status !== "draft") ?? [];
 
