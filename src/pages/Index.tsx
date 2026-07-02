@@ -183,7 +183,7 @@ export default function Index() {
 
                   <div className="flex items-center justify-between border-t border-border/50 pt-4">
                     <span className="text-sm font-bold gradient-brand text-white px-4 py-2 rounded-lg group-hover:shadow-brand transition-all duration-300">
-                      View Details
+                      {t("home.viewDetails")}
                     </span>
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-purple/10 text-brand-purple transition-all duration-300 group-hover:translate-x-1 group-hover:bg-brand-purple group-hover:text-white">
                       <ArrowRight className="h-4 w-4" />
