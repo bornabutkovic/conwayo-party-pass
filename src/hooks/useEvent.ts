@@ -86,7 +86,7 @@ export function useEventFull(slug: string) {
         .from("events")
         .select(`
           id, name, slug, short_name, description, cancellation_policy,
-          translations, organizers_info, supported_languages,
+          translations, organizers_info, supported_languages, ticket_notes,
           status, start_date, end_date, venue_name, location_address,
           location_city, location_country, location_postal_code,
           website_url, support_phone, event_type, currency, vat_rate,
@@ -129,6 +129,7 @@ export function useEventFull(slug: string) {
         .select("*")
         .eq("event_id", event.id)
         .eq("status", "active")
+        .order("display_order", { ascending: true })
         .order("price", { ascending: true });
 
       // Fetch active services
@@ -187,7 +188,7 @@ export function useAvailableEvents() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("slug, name, status, start_date, end_date, venue_name")
+        .select("slug, name, status, start_date, end_date, venue_name, translations, supported_languages")
         .eq("status", "active")
         .order("start_date", { ascending: true });
       if (error) throw error;
@@ -208,6 +209,7 @@ export function useTicketTiers(eventId: string | undefined) {
         .eq("status", "active")
         .or(`sales_start.is.null,sales_start.lte.${now}`)
         .or(`sales_end.is.null,sales_end.gte.${now}`)
+        .order("display_order", { ascending: true })
         .order("price", { ascending: true });
       if (error) throw error;
       return data as TicketTier[];

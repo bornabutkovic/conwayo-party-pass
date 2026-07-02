@@ -17,6 +17,7 @@ const translations = {
     hr: "Uskoro će biti dostupni novi događaji.",
     en: "Check back soon for upcoming events.",
   },
+  "home.viewDetails": { hr: "Pogledaj detalje", en: "View Details" },
 
   // Header / Nav
   "nav.allEvents": { hr: "Svi eventi", en: "All Events" },

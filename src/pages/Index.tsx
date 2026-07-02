@@ -90,7 +90,7 @@ function StatusTag({ status }: { status: string | null }) {
 
 export default function Index() {
   const { data: events, isLoading } = useAvailableEvents();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const publicEvents = events?.filter((e) => e.status !== "draft") ?? [];
 
@@ -143,6 +143,11 @@ export default function Index() {
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {publicEvents.map((event, index) => {
               const dateRange = formatEventDateRange(event.start_date ?? null, event.end_date ?? null);
+              const enName = (event as any).translations?.en?.name;
+              const displayName =
+                lang === "en" && typeof enName === "string" && enName.trim() !== ""
+                  ? enName
+                  : event.name;
               return (
                 <Link
                   key={event.slug}
@@ -157,7 +162,7 @@ export default function Index() {
                   <div className="mb-4">
                     <StatusTag status={event.status} />
                     <h3 className="mt-3 text-xl font-bold text-foreground group-hover:gradient-brand-text transition-all duration-300">
-                      {event.name}
+                      {displayName}
                     </h3>
                   </div>
 
@@ -178,7 +183,7 @@ export default function Index() {
 
                   <div className="flex items-center justify-between border-t border-border/50 pt-4">
                     <span className="text-sm font-bold gradient-brand text-white px-4 py-2 rounded-lg group-hover:shadow-brand transition-all duration-300">
-                      View Details
+                      {t("home.viewDetails")}
                     </span>
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-purple/10 text-brand-purple transition-all duration-300 group-hover:translate-x-1 group-hover:bg-brand-purple group-hover:text-white">
                       <ArrowRight className="h-4 w-4" />
