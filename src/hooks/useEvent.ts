@@ -187,7 +187,7 @@ export function useAvailableEvents() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("slug, name, status, start_date, end_date, venue_name")
+        .select("slug, name, status, start_date, end_date, venue_name, translations, supported_languages")
         .eq("status", "active")
         .order("start_date", { ascending: true });
       if (error) throw error;
