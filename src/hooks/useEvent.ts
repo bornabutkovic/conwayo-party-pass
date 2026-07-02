@@ -209,6 +209,7 @@ export function useTicketTiers(eventId: string | undefined) {
         .eq("status", "active")
         .or(`sales_start.is.null,sales_start.lte.${now}`)
         .or(`sales_end.is.null,sales_end.gte.${now}`)
+        .order("display_order", { ascending: true })
         .order("price", { ascending: true });
       if (error) throw error;
       return data as TicketTier[];
