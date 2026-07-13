@@ -17,6 +17,8 @@ import EventDashboard from "./pages/EventDashboard";
 import TicketPage from "./pages/TicketPage";
 import MyTickets from "./pages/MyTickets";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import DataRetention from "./pages/DataRetention";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,8 @@ const App = () => (
                 <Route path="/ticket/:attendeeId" element={<TicketPage />} />
                 <Route path="/my-tickets" element={<MyTickets />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/data-retention" element={<DataRetention />} />
                 <Route path="/auth" element={<EventAuth />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

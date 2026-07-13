@@ -901,6 +901,10 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">
                 Pravila privatnosti / Privacy Policy
               </Link>
+              {" · "}
+              <Link to="/data-retention" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                Pravila o čuvanju osobnih podataka / Data Retention Policy
+              </Link>
             </p>
           </div>
         </footer>
