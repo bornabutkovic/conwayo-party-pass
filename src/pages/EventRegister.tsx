@@ -79,6 +79,18 @@ export default function EventRegister() {
     return () => { cancelled = true; };
   }, [event?.id]);
 
+  // Fetch GDPR contact email via RPC (falls back if event has no override)
+  const [referentEmail, setReferentEmail] = useState<string>("registration@conwayo.ai");
+  useEffect(() => {
+    if (!event?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc('get_event_gdpr_contact_email', { p_event_id: event.id });
+      if (!cancelled && !error && data) setReferentEmail(data as string);
+    })();
+    return () => { cancelled = true; };
+  }, [event?.id]);
+
   // Merge availability onto tiers (preserve price/translations from rawTiers)
   const tiers = useMemo(() => {
     return rawTiers.map(t => {
@@ -320,7 +332,7 @@ export default function EventRegister() {
   }
 
   const currency = event.currency ?? "EUR";
-  const referentEmail = (event as any).bc_referent_email || event.notification_sender_email || "conwayo@conwayo.ai";
+  
 
   const setTierQty = (tierId: string, delta: number) => {
     setTicketQuantities(prev => {
