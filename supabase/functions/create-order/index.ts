@@ -26,6 +26,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const xff = req.headers.get("x-forwarded-for");
+    const callerIp =
+      (xff ? xff.split(",")[0].trim() : null) ||
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      null;
+
     const body = await req.json();
     console.log("[create-order] Full request body:", JSON.stringify(body));
 
@@ -47,6 +54,8 @@ Deno.serve(async (req) => {
       payment_method,
       terms_accepted,
       terms_accepted_at,
+      gdpr_consent_given,
+      gdpr_consent_at,
     } = body;
 
     // ── Validate ──
@@ -201,6 +210,9 @@ Deno.serve(async (req) => {
         is_group_order: attendeesList.length > 1,
         terms_accepted: terms_accepted ?? false,
         terms_accepted_at: terms_accepted_at || null,
+        gdpr_consent_given: gdpr_consent_given ?? false,
+        gdpr_consent_at: gdpr_consent_at || null,
+        terms_ip: callerIp,
       })
       .select("id, order_number")
       .single();

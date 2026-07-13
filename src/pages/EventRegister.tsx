@@ -131,6 +131,8 @@ export default function EventRegister() {
   const countryRef = useRef<HTMLDivElement>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsError, setTermsError] = useState(false);
+  const [gdprConsentAccepted, setGdprConsentAccepted] = useState(false);
+  const [gdprConsentError, setGdprConsentError] = useState(false);
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
@@ -318,6 +320,7 @@ export default function EventRegister() {
   }
 
   const currency = event.currency ?? "EUR";
+  const referentEmail = (event as any).bc_referent_email || event.notification_sender_email || "conwayo@conwayo.ai";
 
   const setTierQty = (tierId: string, delta: number) => {
     setTicketQuantities(prev => {
@@ -413,6 +416,11 @@ export default function EventRegister() {
       toast({ title: "Please accept the Terms of Purchase to continue.", variant: "destructive" });
       return;
     }
+    if (!gdprConsentAccepted) {
+      setGdprConsentError(true);
+      toast({ title: "Please consent to the processing of your personal data to continue.", variant: "destructive" });
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -445,6 +453,8 @@ export default function EventRegister() {
           profile_id: user?.id || null,
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
+          gdpr_consent_given: true,
+          gdpr_consent_at: new Date().toISOString(),
         },
       });
 
@@ -1296,7 +1306,7 @@ export default function EventRegister() {
                     <span className="text-sm text-muted-foreground">
                       {t("register.termsAgree")}{" "}
                       <a
-                        href={event.terms_url || "#"}
+                        href={event.terms_url || "/terms"}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary underline hover:text-primary/80"
@@ -1311,7 +1321,32 @@ export default function EventRegister() {
                   )}
                 </div>
 
-                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0 || !termsAccepted}>
+                {/* GDPR consent */}
+                <div className="space-y-1 mt-3">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={gdprConsentAccepted}
+                      onChange={(e) => {
+                        setGdprConsentAccepted(e.target.checked);
+                        if (e.target.checked) setGdprConsentError(false);
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-input text-primary accent-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {t("register.gdprConsentIntro")}{" "}
+                      {t("register.gdprConsentWithdraw")}{" "}
+                      <a href={`mailto:${referentEmail}`} className="text-primary underline hover:text-primary/80">
+                        {referentEmail}
+                      </a>
+                    </span>
+                  </label>
+                  {gdprConsentError && !gdprConsentAccepted && (
+                    <p className="text-xs text-destructive ml-7">{t("register.gdprConsentError")}</p>
+                  )}
+                </div>
+
+                <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0 || !termsAccepted || !gdprConsentAccepted}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? t("register.processing")
