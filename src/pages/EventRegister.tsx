@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { OrderConfirmation } from "@/components/event/OrderConfirmation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
 import { COUNTRIES, getCountryZone } from '@/lib/countries';
