@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { OrderConfirmation } from "@/components/event/OrderConfirmation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
 import { COUNTRIES, getCountryZone } from '@/lib/countries';
@@ -145,6 +146,7 @@ export default function EventRegister() {
   const [termsError, setTermsError] = useState(false);
   const [gdprConsentAccepted, setGdprConsentAccepted] = useState(false);
   const [gdprConsentError, setGdprConsentError] = useState(false);
+  const [gdprModalOpen, setGdprModalOpen] = useState(false);
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
@@ -1346,17 +1348,39 @@ export default function EventRegister() {
                       className="mt-1 h-4 w-4 rounded border-input text-primary accent-primary"
                     />
                     <span className="text-sm text-muted-foreground">
-                      {t("register.gdprConsentIntro")}{" "}
-                      {t("register.gdprConsentWithdraw")}{" "}
-                      <a href={`mailto:${referentEmail}`} className="text-primary underline hover:text-primary/80">
-                        {referentEmail}
-                      </a>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setGdprModalOpen(true);
+                        }}
+                        className="text-left underline decoration-dotted underline-offset-2 hover:text-foreground"
+                      >
+                        {t("register.gdprConsentShort")}
+                      </button>
                     </span>
                   </label>
                   {gdprConsentError && !gdprConsentAccepted && (
                     <p className="text-xs text-destructive ml-7">{t("register.gdprConsentError")}</p>
                   )}
                 </div>
+
+                <Dialog open={gdprModalOpen} onOpenChange={setGdprModalOpen}>
+                  <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>{t("register.gdprModalTitle")}</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {t("register.gdprConsentIntro")}{" "}
+                      {t("register.gdprConsentWithdraw")}{" "}
+                      <a href={`mailto:${referentEmail}`} className="text-primary underline hover:text-primary/80">
+                        {referentEmail}
+                      </a>
+                    </p>
+                  </DialogContent>
+                </Dialog>
+
 
                 <Button type="submit" size="lg" className="w-full text-lg" disabled={submitting || totalTickets === 0 || !termsAccepted || !gdprConsentAccepted}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
