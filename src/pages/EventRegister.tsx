@@ -146,6 +146,7 @@ export default function EventRegister() {
   const [termsError, setTermsError] = useState(false);
   const [gdprConsentAccepted, setGdprConsentAccepted] = useState(false);
   const [gdprConsentError, setGdprConsentError] = useState(false);
+  const [gdprModalOpen, setGdprModalOpen] = useState(false);
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
