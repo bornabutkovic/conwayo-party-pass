@@ -129,6 +129,14 @@ const translations = {
     hr: "i Uvjetima otkazivanja",
     en: "and Cancellation Terms",
   },
+  "register.gdprConsentShort": {
+    hr: "Slažem se da se moji privatni podaci obrađuju.",
+    en: "I agree that my personal data is processed.",
+  },
+  "register.gdprModalTitle": {
+    hr: "Obrada osobnih podataka",
+    en: "Processing of personal data",
+  },
   "register.gdprConsentIntro": {
     hr: "Osobni podaci sudionika Događaja / Konferencije koristit će se, prikupljati i obrađivati u svrhu ostvarivanja prava i ispunjavanja obveza vezanih uz Događaj / Konferenciju za koju ste se registrirali, u svrhu informiranja sudionika Događaja / Konferencije o određenim sadržajnim i servisnim novostima od strane Organizatora, Tehničkog organizatora (Penta d.o.o.) i sponzora Konferencije, te za statističke potrebe.",
     en: "The personal data of Event / Conference participants will be used, collected and processed for the purpose of exercising rights and fulfilling obligations related to the Event / Conference you have registered for, for the purpose of informing participants about certain content and service updates from the Organiser, the Technical Organiser (Penta d.o.o.) and Conference sponsors, and for statistical purposes.",
