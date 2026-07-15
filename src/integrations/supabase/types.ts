@@ -968,6 +968,69 @@ export type Database = {
         }
         Relationships: []
       }
+      known_companies: {
+        Row: {
+          address: string | null
+          billing_email: string | null
+          city: string | null
+          country_code: string | null
+          country_name: string | null
+          created_at: string
+          id: string
+          institution_uuid: string
+          name: string
+          oib: string
+          postal_code: string | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          billing_email?: string | null
+          city?: string | null
+          country_code?: string | null
+          country_name?: string | null
+          created_at?: string
+          id?: string
+          institution_uuid: string
+          name: string
+          oib: string
+          postal_code?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          billing_email?: string | null
+          city?: string | null
+          country_code?: string | null
+          country_name?: string | null
+          created_at?: string
+          id?: string
+          institution_uuid?: string
+          name?: string
+          oib?: string
+          postal_code?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "known_companies_institution_uuid_fkey"
+            columns: ["institution_uuid"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "known_companies_institution_uuid_fkey"
+            columns: ["institution_uuid"]
+            isOneToOne: false
+            referencedRelation: "institutions_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           attendee_id: string | null
@@ -1454,6 +1517,74 @@ export type Database = {
           },
         ]
       }
+      refunds: {
+        Row: {
+          amount: number
+          attendee_id: string | null
+          created_at: string
+          id: string
+          institution_uuid: string
+          order_id: string
+          order_item_id: string
+          reason: string | null
+          refunded_by: string | null
+          stripe_refund_id: string | null
+        }
+        Insert: {
+          amount: number
+          attendee_id?: string | null
+          created_at?: string
+          id?: string
+          institution_uuid: string
+          order_id: string
+          order_item_id: string
+          reason?: string | null
+          refunded_by?: string | null
+          stripe_refund_id?: string | null
+        }
+        Update: {
+          amount?: number
+          attendee_id?: string | null
+          created_at?: string
+          id?: string
+          institution_uuid?: string
+          order_id?: string
+          order_item_id?: string
+          reason?: string | null
+          refunded_by?: string | null
+          stripe_refund_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "attendee_invoice_summary"
+            referencedColumns: ["attendee_id"]
+          },
+          {
+            foreignKeyName: "refunds_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: true
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       retention_audit_log: {
         Row: {
           attendees_anonymized: number
@@ -1901,6 +2032,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wa_processed_messages: {
+        Row: {
+          event_slug: string | null
+          processed_at: string
+          wa_id: string | null
+          wa_message_id: string
+        }
+        Insert: {
+          event_slug?: string | null
+          processed_at?: string
+          wa_id?: string | null
+          wa_message_id: string
+        }
+        Update: {
+          event_slug?: string | null
+          processed_at?: string
+          wa_id?: string | null
+          wa_message_id?: string
+        }
+        Relationships: []
       }
       whatsapp_consents: {
         Row: {
@@ -2635,6 +2787,16 @@ export type Database = {
       jwt_is_admin: { Args: never; Returns: boolean }
       jwt_role: { Args: never; Returns: string }
       normalize_phone_to_waid: { Args: { phone: string }; Returns: string }
+      process_order_refund: {
+        Args: {
+          p_order_id: string
+          p_order_item_ids?: string[]
+          p_reason?: string
+          p_refunded_by?: string
+          p_stripe_refund_id?: string
+        }
+        Returns: Json
+      }
       record_whatsapp_consent: {
         Args: {
           p_consent_message: string
@@ -2685,6 +2847,7 @@ export type Database = {
         | "overdue"
         | "refunded"
         | "cancelled"
+        | "deferred"
       registration_status: "pending" | "approved" | "cancelled"
     }
     CompositeTypes: {
@@ -2821,6 +2984,7 @@ export const Constants = {
         "overdue",
         "refunded",
         "cancelled",
+        "deferred",
       ],
       registration_status: ["pending", "approved", "cancelled"],
     },
