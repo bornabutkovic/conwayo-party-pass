@@ -542,9 +542,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     );
                   })}
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {t("event.priceIncludesVat")}
-                </p>
                 {(() => {
                   const enNotes = (event as any)?.translations?.en?.ticket_notes;
                   const notes =
@@ -680,9 +677,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             {service.price === 0
                               ? t("event.freeLabel")
                               : `${Number(service.price).toFixed(2)} ${currency}`}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {t("event.priceIncludesVat")}
                           </p>
                         </CardContent>
                       </Card>
