@@ -66,27 +66,10 @@ export default function EventVoice() {
       client.on('agent_start_talking', () => setAgentTalking(true));
       client.on('agent_stop_talking', () => setAgentTalking(false));
 
-      client.on('call_ended', async () => {
+      client.on('call_ended', () => {
         setCallStatus('ended');
         setAgentTalking(false);
         if (timerRef.current) clearInterval(timerRef.current);
-
-        await new Promise((r) => setTimeout(r, 2000));
-
-        if (data.session_id) {
-          const { data: sessionData } = await supabase
-            .from('voice_session')
-            .select('payment_url, status')
-            .eq('id', data.session_id)
-            .single();
-
-          if (sessionData?.payment_url) {
-            setPaymentUrl(sessionData.payment_url);
-            setPaymentMethod('stripe');
-          } else {
-            setPaymentMethod('invoice');
-          }
-        }
       });
 
       client.on('error', () => {
