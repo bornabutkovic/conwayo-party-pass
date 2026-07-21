@@ -17,8 +17,6 @@ export default function EventVoice() {
   const [callStatus, setCallStatus] = useState<CallStatus>('connecting');
   const [agentTalking, setAgentTalking] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'invoice' | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [, setSessionId] = useState<string | null>(null);
 
@@ -68,27 +66,10 @@ export default function EventVoice() {
       client.on('agent_start_talking', () => setAgentTalking(true));
       client.on('agent_stop_talking', () => setAgentTalking(false));
 
-      client.on('call_ended', async () => {
+      client.on('call_ended', () => {
         setCallStatus('ended');
         setAgentTalking(false);
         if (timerRef.current) clearInterval(timerRef.current);
-
-        await new Promise((r) => setTimeout(r, 2000));
-
-        if (data.session_id) {
-          const { data: sessionData } = await supabase
-            .from('voice_session')
-            .select('payment_url, status')
-            .eq('id', data.session_id)
-            .single();
-
-          if (sessionData?.payment_url) {
-            setPaymentUrl(sessionData.payment_url);
-            setPaymentMethod('stripe');
-          } else {
-            setPaymentMethod('invoice');
-          }
-        }
       });
 
       client.on('error', () => {
@@ -320,48 +301,15 @@ export default function EventVoice() {
             </div>
           )}
 
-          {/* Ended: result */}
-          {callStatus === 'ended' && paymentMethod && (
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {paymentMethod === 'stripe' && paymentUrl ? (
-                <>
-                  <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
-                    {lang === 'en' ? 'Registration complete. A payment link has been sent to your email.' : 'Registracija završena. Link za plaćanje poslan je i na email.'}
-                  </p>
-                  <a
-                    href={paymentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '100%',
-                      padding: '14px 24px',
-                      background: '#6366f1',
-                      color: 'white',
-                      borderRadius: 12,
-                      fontSize: 15,
-                      fontWeight: 600,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    {lang === 'en' ? 'Pay by card' : 'Plati karticom'}
-                  </a>
-                </>
-              ) : (
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', margin: 0 }}>
-                  {lang === 'en' ? 'Registration complete. An invoice with payment instructions will be sent to your email.' : 'Registracija završena. Ponuda s uputama za plaćanje stiže na email.'}
-                </p>
-              )}
-              <Button
-                onClick={() => navigate(`/event/${slug}`)}
-                variant="ghost"
-                style={{ color: 'rgba(255,255,255,0.4)', width: '100%', marginTop: 8 }}
-              >
-                {lang === 'en' ? 'Back to event' : 'Natrag na event'}
-              </Button>
-            </div>
+          {/* Ended */}
+          {callStatus === 'ended' && (
+            <Button
+              onClick={() => navigate(`/event/${slug}`)}
+              variant="ghost"
+              style={{ color: 'rgba(255,255,255,0.4)', width: '100%', marginTop: 8 }}
+            >
+              {lang === 'en' ? 'Back to event' : 'Natrag na event'}
+            </Button>
           )}
         </div>
       )}
