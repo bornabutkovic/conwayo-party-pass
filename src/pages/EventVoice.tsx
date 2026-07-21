@@ -17,8 +17,6 @@ export default function EventVoice() {
   const [callStatus, setCallStatus] = useState<CallStatus>('connecting');
   const [agentTalking, setAgentTalking] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'invoice' | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [, setSessionId] = useState<string | null>(null);
 
