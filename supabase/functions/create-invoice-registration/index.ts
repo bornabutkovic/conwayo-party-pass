@@ -6,6 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const N8N_WEBHOOK_URL = "https://penta.app.n8n.cloud/webhook/8d505d51-2b9e-4b2c-865f-3d2287ed08c2/lovable-invoice-registration-v1";
+const N8N_WEBHOOK_SECRET = Deno.env.get("CONWAYO_N8N_WEBHOOK_SECRET") ?? "";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -47,7 +50,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Fetch event details for enrichment
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select("id, name, vat_rate, currency, institution_uuid, bc_position, bc_reference")
@@ -61,7 +63,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch institution for BC mapping
     let institution = null;
     if (event.institution_uuid) {
       const { data: inst } = await supabase
@@ -72,7 +73,6 @@ Deno.serve(async (req) => {
       institution = inst;
     }
 
-    // Enrich ticket data with erp_code
     const ticketTierIds = (tickets || []).map((t: { ticket_tier_id: string }) => t.ticket_tier_id);
     let enrichedTickets: Array<Record<string, unknown>> = [];
     if (ticketTierIds.length > 0) {
@@ -94,7 +94,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Enrich service data with erp_code
     const serviceIds = (services || []).map((s: { service_id: string }) => s.service_id);
     let enrichedServices: Array<Record<string, unknown>> = [];
     if (serviceIds.length > 0) {
@@ -116,7 +115,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch order details if order_id provided
     let orderData = null;
     if (order_id) {
       const { data: ord } = await supabase
@@ -127,7 +125,6 @@ Deno.serve(async (req) => {
       orderData = ord;
     }
 
-    // Forward enriched payload to n8n for BC processing
     const n8nPayload = {
       order_id: order_id || null,
       order_number: orderData?.order_number || null,
@@ -160,15 +157,38 @@ Deno.serve(async (req) => {
 
     console.log("Forwarding to n8n:", JSON.stringify(n8nPayload));
 
+    let n8nOk = false;
+    let n8nStatus = 0;
+    let n8nErrorText = "";
     try {
-      const n8nRes = await fetch("https://penta.app.n8n.cloud/webhook/lovable-invoice-registration", {
+      const n8nRes = await fetch(N8N_WEBHOOK_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(N8N_WEBHOOK_SECRET ? { "x-conwayo-secret": N8N_WEBHOOK_SECRET } : {}),
+        },
         body: JSON.stringify(n8nPayload),
       });
-      console.log("n8n response status:", n8nRes.status);
+      n8nStatus = n8nRes.status;
+      n8nOk = n8nRes.ok;
+      if (!n8nOk) {
+        n8nErrorText = await n8nRes.text().catch(() => "");
+        console.error("n8n webhook returned non-OK status:", n8nStatus, n8nErrorText);
+      }
     } catch (webhookErr) {
       console.error("n8n webhook call failed:", webhookErr);
+      n8nErrorText = String(webhookErr);
+    }
+
+    if (!n8nOk) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          order_id: order_id || null,
+          error: `n8n webhook failed (status ${n8nStatus}): ${n8nErrorText || "unknown error"}`,
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     return new Response(
@@ -176,7 +196,7 @@ Deno.serve(async (req) => {
         success: true,
         order_id: order_id || null,
         quote_number: orderData ? `INV-${orderData.order_number}` : null,
-        message: "Invoice registration processed",
+        message: "Invoice registration forwarded to BC",
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
