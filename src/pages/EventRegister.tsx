@@ -567,12 +567,24 @@ export default function EventRegister() {
           terms_accepted_at: new Date().toISOString(),
           gdpr_consent_given: true,
           gdpr_consent_at: new Date().toISOString(),
+          discount_code: (discountCheckStatus === "valid" && effectivePaymentMethod !== "invoice")
+            ? discountCodeInput.trim()
+            : undefined,
         },
       });
 
       if (error || !data?.success) {
         throw new Error(data?.error || error?.message || "Registration failed");
       }
+
+      if (data.discount_skip_reason) {
+        toast({
+          title: lang === "hr" ? "Kod za popust nije primijenjen" : "Discount code not applied",
+          description: mapDiscountReason(data.discount_skip_reason, lang),
+          variant: "destructive",
+        });
+      }
+
 
       if (
         (payerType === "company" && companyPaymentMethod === "invoice") ||
