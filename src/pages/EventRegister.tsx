@@ -1298,9 +1298,74 @@ export default function EventRegister() {
                         <span className="font-medium text-foreground">{servicesTotal.toFixed(2)} {currency}</span>
                       </div>
                     )}
+
+                    {/* ── Discount code ── */}
+                    <div className="border-t border-border pt-3">
+                      {effectivePaymentMethod === "invoice" ? (
+                        <p className="text-xs text-muted-foreground">
+                          {lang === "hr"
+                            ? "Kodovi za popust trenutno su dostupni samo za plaćanje karticom."
+                            : "Discount codes are currently only available for card payment."}
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={discountCodeInput}
+                              onChange={(e) => {
+                                setDiscountCodeInput(e.target.value);
+                                if (discountCheckStatus !== "idle") {
+                                  setDiscountCheckStatus("idle");
+                                  setDiscountPreview(null);
+                                  setDiscountReason(null);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  applyDiscountCode();
+                                }
+                              }}
+                              placeholder={lang === "hr" ? "Kod za popust" : "Discount code"}
+                              className="h-9 text-sm"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              disabled={!discountCodeInput.trim() || discountCheckStatus === "checking"}
+                              onClick={applyDiscountCode}
+                            >
+                              {discountCheckStatus === "checking" ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                lang === "hr" ? "Primijeni" : "Apply"
+                              )}
+                            </Button>
+                          </div>
+                          {discountCheckStatus === "valid" && (
+                            <p className="flex items-center gap-1 text-xs text-green-600">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              {lang === "hr" ? "Kod primijenjen" : "Code applied"}
+                            </p>
+                          )}
+                          {discountCheckStatus === "invalid" && (
+                            <p className="text-xs text-destructive">{mapDiscountReason(discountReason, lang)}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {estimatedDiscount > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-green-600">{lang === "hr" ? "Popust" : "Discount"}</span>
+                        <span className="font-medium text-green-600">-{estimatedDiscount.toFixed(2)} {currency}</span>
+                      </div>
+                    )}
+
                     <div className="border-t border-border pt-2 flex items-center justify-between">
                       <span className="font-semibold text-foreground">{t("register.total")}</span>
-                      <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
+                      <span className="text-2xl font-bold text-primary">{(grandTotal - estimatedDiscount).toFixed(2)} {currency}</span>
                     </div>
                   </div>
                 )}
