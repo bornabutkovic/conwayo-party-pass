@@ -713,43 +713,51 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
 
               return (
                 <section>
-                  <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
-                    <Building2 className="h-6 w-6" />
-                    {t("event.organizerTitle")}
-                  </h2>
-                  <div className={`grid gap-4 ${gridCols}`}>
-                    {/* Main organizer */}
-                    {institution ? (
-                      <OrganizerCard institution={institution} />
-                    ) : (
-                      <Card className="border-border">
-                        <CardContent className="p-5 space-y-3 text-sm">
-                          {event.notification_sender_name && (
-                            <div className="flex items-start gap-2">
-                              <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                              <span className="font-medium">{event.notification_sender_name}</span>
-                            </div>
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="organizers" className="border-border">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                          <Building2 className="h-6 w-6" />
+                          {t("event.organizerTitle")}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className={`grid gap-4 ${gridCols}`}>
+                          {/* Main organizer */}
+                          {institution ? (
+                            <OrganizerCard institution={institution} />
+                          ) : (
+                            <Card className="border-border">
+                              <CardContent className="p-5 space-y-3 text-sm">
+                                {event.notification_sender_name && (
+                                  <div className="flex items-start gap-2">
+                                    <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="font-medium">{event.notification_sender_name}</span>
+                                  </div>
+                                )}
+                                {event.notification_sender_email && (
+                                  <div className="flex items-start gap-2">
+                                    <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                                    <a
+                                      href={`mailto:${event.notification_sender_email}`}
+                                      className="text-primary underline underline-offset-2"
+                                    >
+                                      {event.notification_sender_email}
+                                    </a>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
                           )}
-                          {event.notification_sender_email && (
-                            <div className="flex items-start gap-2">
-                              <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                              <a
-                                href={`mailto:${event.notification_sender_email}`}
-                                className="text-primary underline underline-offset-2"
-                              >
-                                {event.notification_sender_email}
-                              </a>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
 
-                    {/* Co-organizers (from organizers_info JSONB only) */}
-                    {coInfoList.map((org, idx) => (
-                      <OrganizerCard key={`coorg-${idx}`} institution={org} />
-                    ))}
-                  </div>
+                          {/* Co-organizers (from organizers_info JSONB only) */}
+                          {coInfoList.map((org, idx) => (
+                            <OrganizerCard key={`coorg-${idx}`} institution={org} />
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
               );
             })()}
