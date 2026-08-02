@@ -84,6 +84,7 @@ function formatTimeHr(dateStr: string | null) {
   if (!dateStr) return null;
   const d = new Date(dateStr);
   if (d.getHours() === 0 && d.getMinutes() === 0) return null;
+  if (d.getHours() === 23 && d.getMinutes() === 59) return null;
   return format(d, "HH:mm", { locale: hrLocale });
 }
 
