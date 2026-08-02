@@ -794,68 +794,76 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               if (!hasSupportContact || !supportContact) return null;
               return (
                 <section>
-                  <h2 className="flex items-center gap-2 text-2xl font-bold text-foreground mb-4">
-                    <Headphones className="h-6 w-6 text-primary" />
-                    {t("event.supportTitle")}
-                  </h2>
-                  <Card>
-                    <CardContent className="p-6 space-y-3">
-                      {supportContact.name && supportContact.name.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm font-medium text-foreground">{supportContact.name}</p>
-                        </div>
-                      )}
-                      {supportContact.email && supportContact.email.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <a
-                            href={`mailto:${supportContact.email}`}
-                            className="text-sm text-primary underline underline-offset-2 hover:opacity-80"
-                          >
-                            {supportContact.email}
-                          </a>
-                        </div>
-                      )}
-                      {supportContact.phone_mobile && supportContact.phone_mobile.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Smartphone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm text-foreground">
-                            <span className="text-muted-foreground mr-1">Mob:</span>
-                            {supportContact.phone_mobile}
-                          </p>
-                        </div>
-                      )}
-                      {supportContact.phone_landline && supportContact.phone_landline.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm text-foreground">
-                            <span className="text-muted-foreground mr-1">Tel:</span>
-                            {supportContact.phone_landline}
-                          </p>
-                        </div>
-                      )}
-                      {supportContact.working_hours && supportContact.working_hours.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm text-foreground">{localiseWorkingHours(supportContact.working_hours, displayLang)}</p>
-                        </div>
-                      )}
-                      {supportContact.website && supportContact.website.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Globe className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <a
-                            href={supportContact.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-primary underline underline-offset-2 hover:opacity-80"
-                          >
-                            {supportContact.website}
-                          </a>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="support-contact" className="border-border">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                          <Headphones className="h-6 w-6 text-primary" />
+                          {t("event.supportTitle")}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <Card>
+                          <CardContent className="p-6 space-y-3">
+                            {supportContact.name && supportContact.name.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <p className="text-sm font-medium text-foreground">{supportContact.name}</p>
+                              </div>
+                            )}
+                            {supportContact.email && supportContact.email.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <a
+                                  href={`mailto:${supportContact.email}`}
+                                  className="text-sm text-primary underline underline-offset-2 hover:opacity-80"
+                                >
+                                  {supportContact.email}
+                                </a>
+                              </div>
+                            )}
+                            {supportContact.phone_mobile && supportContact.phone_mobile.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Smartphone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <p className="text-sm text-foreground">
+                                  <span className="text-muted-foreground mr-1">Mob:</span>
+                                  {supportContact.phone_mobile}
+                                </p>
+                              </div>
+                            )}
+                            {supportContact.phone_landline && supportContact.phone_landline.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <p className="text-sm text-foreground">
+                                  <span className="text-muted-foreground mr-1">Tel:</span>
+                                  {supportContact.phone_landline}
+                                </p>
+                              </div>
+                            )}
+                            {supportContact.working_hours && supportContact.working_hours.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <p className="text-sm text-foreground">{localiseWorkingHours(supportContact.working_hours, displayLang)}</p>
+                              </div>
+                            )}
+                            {supportContact.website && supportContact.website.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Globe className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <a
+                                  href={supportContact.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-primary underline underline-offset-2 hover:opacity-80"
+                                >
+                                  {supportContact.website}
+                                </a>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
               );
             })()}
