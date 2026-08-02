@@ -25,6 +25,27 @@ import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
 import { COUNTRIES, getCountryZone } from '@/lib/countries';
 
+function mapDiscountReason(reason: string | null | undefined, lang: string): string {
+  const hr: Record<string, string> = {
+    not_found: "Neispravan kod",
+    inactive: "Ovaj kod više nije aktivan",
+    not_started: "Ovaj kod još nije aktivan",
+    expired: "Ovaj kod je istekao",
+    max_uses_reached: "Ovaj kod je dosegnuo ograničenje upotrebe",
+    invoice_not_supported: "Kodovi za popust još nisu dostupni za plaćanje bankovnim prijenosom.",
+  };
+  const en: Record<string, string> = {
+    not_found: "Invalid code",
+    inactive: "This code is no longer active",
+    not_started: "This code isn't active yet",
+    expired: "This code has expired",
+    max_uses_reached: "This code has reached its usage limit",
+    invoice_not_supported: "Discount codes aren't available for bank transfer payments yet.",
+  };
+  const dict = lang === "hr" ? hr : en;
+  return dict[reason ?? ""] ?? (lang === "hr" ? "Neispravan kod" : "Invalid code");
+}
+
 
 const EU_COUNTRIES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
 
@@ -132,6 +153,19 @@ export default function EventRegister() {
   const [companyPaymentMethod, setCompanyPaymentMethod] = useState<"stripe" | "invoice">("stripe");
   const [individualPaymentMethod, setIndividualPaymentMethod] = useState<"stripe" | "invoice">("stripe");
   const [individualBillingEmail, setIndividualBillingEmail] = useState("");
+
+  // Discount code
+  const [discountCodeInput, setDiscountCodeInput] = useState("");
+  const [discountCheckStatus, setDiscountCheckStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [discountReason, setDiscountReason] = useState<string | null>(null);
+  const [discountPreview, setDiscountPreview] = useState<{
+    discount_type: string;
+    discount_value: number;
+    applies_to_all_tickets: boolean;
+    applies_to_all_services: boolean;
+    target_ticket_tier_ids: string[];
+    target_event_service_ids: string[];
+  } | null>(null);
 
   // Address
   const [street, setStreet] = useState('');
@@ -316,6 +350,70 @@ export default function EventRegister() {
     [ticketQuantities]
   );
 
+  const effectivePaymentMethod = payerType === "company" ? companyPaymentMethod : individualPaymentMethod;
+
+  useEffect(() => {
+    if (effectivePaymentMethod === "invoice") {
+      setDiscountCheckStatus("idle");
+      setDiscountPreview(null);
+      setDiscountReason(null);
+    }
+  }, [effectivePaymentMethod]);
+
+  const applyDiscountCode = async () => {
+    if (!event?.id || !discountCodeInput.trim()) return;
+    setDiscountCheckStatus("checking");
+    const { data, error } = await supabase.rpc("validate_discount_code", {
+      p_event_id: event.id,
+      p_code: discountCodeInput.trim(),
+    });
+    const result: any = Array.isArray(data) ? data[0] : data;
+    if (error || !result?.valid) {
+      setDiscountCheckStatus("invalid");
+      setDiscountReason(result?.reason ?? null);
+      setDiscountPreview(null);
+    } else {
+      setDiscountCheckStatus("valid");
+      setDiscountReason(null);
+      setDiscountPreview({
+        discount_type: result.discount_type,
+        discount_value: Number(result.discount_value),
+        applies_to_all_tickets: result.applies_to_all_tickets,
+        applies_to_all_services: result.applies_to_all_services,
+        target_ticket_tier_ids: result.target_ticket_tier_ids ?? [],
+        target_event_service_ids: result.target_event_service_ids ?? [],
+      });
+    }
+  };
+
+  // Estimated (display-only, non-authoritative) discount
+  const estimatedDiscount = useMemo(() => {
+    if (!discountPreview || discountCheckStatus !== "valid") return 0;
+    let total = 0;
+    const computeLine = (baseAmount: number, matches: boolean) => {
+      if (!matches || baseAmount <= 0) return 0;
+      const raw = discountPreview.discount_type === "percentage"
+        ? (baseAmount * discountPreview.discount_value) / 100
+        : discountPreview.discount_value;
+      return Math.min(Math.max(raw, 0), baseAmount);
+    };
+    tiers.forEach(tier => {
+      const qty = ticketQuantities[tier.id] ?? 0;
+      if (qty === 0) return;
+      const matches = discountPreview.applies_to_all_tickets || discountPreview.target_ticket_tier_ids.includes(tier.id);
+      total += computeLine((tier.price ?? 0) * qty, matches);
+    });
+    attendees.forEach(att => {
+      services.filter(s => att.selectedServiceIds.has(s.id)).forEach(svc => {
+        const matches = discountPreview.applies_to_all_services || discountPreview.target_event_service_ids.includes(svc.id);
+        total += computeLine(Number(svc.price), matches);
+      });
+    });
+    return total;
+  }, [discountPreview, discountCheckStatus, tiers, ticketQuantities, attendees, services]);
+
+
+
   if (eventLoading) return <EventPageSkeleton />;
   if (eventError || !event) return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
 
@@ -469,12 +567,24 @@ export default function EventRegister() {
           terms_accepted_at: new Date().toISOString(),
           gdpr_consent_given: true,
           gdpr_consent_at: new Date().toISOString(),
+          discount_code: (discountCheckStatus === "valid" && effectivePaymentMethod !== "invoice")
+            ? discountCodeInput.trim()
+            : undefined,
         },
       });
 
       if (error || !data?.success) {
         throw new Error(data?.error || error?.message || "Registration failed");
       }
+
+      if (data.discount_skip_reason) {
+        toast({
+          title: lang === "hr" ? "Kod za popust nije primijenjen" : "Discount code not applied",
+          description: mapDiscountReason(data.discount_skip_reason, lang),
+          variant: "destructive",
+        });
+      }
+
 
       if (
         (payerType === "company" && companyPaymentMethod === "invoice") ||
@@ -1298,9 +1408,74 @@ export default function EventRegister() {
                         <span className="font-medium text-foreground">{servicesTotal.toFixed(2)} {currency}</span>
                       </div>
                     )}
+
+                    {/* ── Discount code ── */}
+                    <div className="border-t border-border pt-3">
+                      {effectivePaymentMethod === "invoice" ? (
+                        <p className="text-xs text-muted-foreground">
+                          {lang === "hr"
+                            ? "Kodovi za popust trenutno su dostupni samo za plaćanje karticom."
+                            : "Discount codes are currently only available for card payment."}
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={discountCodeInput}
+                              onChange={(e) => {
+                                setDiscountCodeInput(e.target.value);
+                                if (discountCheckStatus !== "idle") {
+                                  setDiscountCheckStatus("idle");
+                                  setDiscountPreview(null);
+                                  setDiscountReason(null);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  applyDiscountCode();
+                                }
+                              }}
+                              placeholder={lang === "hr" ? "Kod za popust" : "Discount code"}
+                              className="h-9 text-sm"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              disabled={!discountCodeInput.trim() || discountCheckStatus === "checking"}
+                              onClick={applyDiscountCode}
+                            >
+                              {discountCheckStatus === "checking" ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                lang === "hr" ? "Primijeni" : "Apply"
+                              )}
+                            </Button>
+                          </div>
+                          {discountCheckStatus === "valid" && (
+                            <p className="flex items-center gap-1 text-xs text-green-600">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              {lang === "hr" ? "Kod primijenjen" : "Code applied"}
+                            </p>
+                          )}
+                          {discountCheckStatus === "invalid" && (
+                            <p className="text-xs text-destructive">{mapDiscountReason(discountReason, lang)}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {estimatedDiscount > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-green-600">{lang === "hr" ? "Popust" : "Discount"}</span>
+                        <span className="font-medium text-green-600">-{estimatedDiscount.toFixed(2)} {currency}</span>
+                      </div>
+                    )}
+
                     <div className="border-t border-border pt-2 flex items-center justify-between">
                       <span className="font-semibold text-foreground">{t("register.total")}</span>
-                      <span className="text-2xl font-bold text-primary">{grandTotal.toFixed(2)} {currency}</span>
+                      <span className="text-2xl font-bold text-primary">{(grandTotal - estimatedDiscount).toFixed(2)} {currency}</span>
                     </div>
                   </div>
                 )}
