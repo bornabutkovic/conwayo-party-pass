@@ -84,6 +84,7 @@ function formatTimeHr(dateStr: string | null) {
   if (!dateStr) return null;
   const d = new Date(dateStr);
   if (d.getHours() === 0 && d.getMinutes() === 0) return null;
+  if (d.getHours() === 23 && d.getMinutes() === 59) return null;
   return format(d, "HH:mm", { locale: hrLocale });
 }
 
@@ -349,7 +350,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
             <img
               src={bannerUrl}
               alt={`${eventName} banner`}
-              className="block w-full object-contain"
+              className="block w-full object-cover"
               style={{
                 maxHeight: event.branding_banner_height
                   ? `${event.branding_banner_height}px`
@@ -713,43 +714,51 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
 
               return (
                 <section>
-                  <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
-                    <Building2 className="h-6 w-6" />
-                    {t("event.organizerTitle")}
-                  </h2>
-                  <div className={`grid gap-4 ${gridCols}`}>
-                    {/* Main organizer */}
-                    {institution ? (
-                      <OrganizerCard institution={institution} />
-                    ) : (
-                      <Card className="border-border">
-                        <CardContent className="p-5 space-y-3 text-sm">
-                          {event.notification_sender_name && (
-                            <div className="flex items-start gap-2">
-                              <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                              <span className="font-medium">{event.notification_sender_name}</span>
-                            </div>
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="organizers" className="border-border">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                          <Building2 className="h-6 w-6" />
+                          {t("event.organizerTitle")}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className={`grid gap-4 ${gridCols}`}>
+                          {/* Main organizer */}
+                          {institution ? (
+                            <OrganizerCard institution={institution} />
+                          ) : (
+                            <Card className="border-border">
+                              <CardContent className="p-5 space-y-3 text-sm">
+                                {event.notification_sender_name && (
+                                  <div className="flex items-start gap-2">
+                                    <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="font-medium">{event.notification_sender_name}</span>
+                                  </div>
+                                )}
+                                {event.notification_sender_email && (
+                                  <div className="flex items-start gap-2">
+                                    <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                                    <a
+                                      href={`mailto:${event.notification_sender_email}`}
+                                      className="text-primary underline underline-offset-2"
+                                    >
+                                      {event.notification_sender_email}
+                                    </a>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
                           )}
-                          {event.notification_sender_email && (
-                            <div className="flex items-start gap-2">
-                              <Mail className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
-                              <a
-                                href={`mailto:${event.notification_sender_email}`}
-                                className="text-primary underline underline-offset-2"
-                              >
-                                {event.notification_sender_email}
-                              </a>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
 
-                    {/* Co-organizers (from organizers_info JSONB only) */}
-                    {coInfoList.map((org, idx) => (
-                      <OrganizerCard key={`coorg-${idx}`} institution={org} />
-                    ))}
-                  </div>
+                          {/* Co-organizers (from organizers_info JSONB only) */}
+                          {coInfoList.map((org, idx) => (
+                            <OrganizerCard key={`coorg-${idx}`} institution={org} />
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
               );
             })()}
@@ -777,11 +786,19 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               };
               return (
                 <section>
-                  <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
-                    <Building2 className="h-6 w-6" />
-                    {t("event.technicalOrganizerTitle")}
-                  </h2>
-                  <OrganizerCard institution={techInstitution} />
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="technical-organizer" className="border-border">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                          <Building2 className="h-6 w-6" />
+                          {t("event.technicalOrganizerTitle")}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <OrganizerCard institution={techInstitution} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
               );
             })()}
@@ -794,68 +811,76 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               if (!hasSupportContact || !supportContact) return null;
               return (
                 <section>
-                  <h2 className="flex items-center gap-2 text-2xl font-bold text-foreground mb-4">
-                    <Headphones className="h-6 w-6 text-primary" />
-                    {t("event.supportTitle")}
-                  </h2>
-                  <Card>
-                    <CardContent className="p-6 space-y-3">
-                      {supportContact.name && supportContact.name.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm font-medium text-foreground">{supportContact.name}</p>
-                        </div>
-                      )}
-                      {supportContact.email && supportContact.email.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <a
-                            href={`mailto:${supportContact.email}`}
-                            className="text-sm text-primary underline underline-offset-2 hover:opacity-80"
-                          >
-                            {supportContact.email}
-                          </a>
-                        </div>
-                      )}
-                      {supportContact.phone_mobile && supportContact.phone_mobile.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Smartphone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm text-foreground">
-                            <span className="text-muted-foreground mr-1">Mob:</span>
-                            {supportContact.phone_mobile}
-                          </p>
-                        </div>
-                      )}
-                      {supportContact.phone_landline && supportContact.phone_landline.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm text-foreground">
-                            <span className="text-muted-foreground mr-1">Tel:</span>
-                            {supportContact.phone_landline}
-                          </p>
-                        </div>
-                      )}
-                      {supportContact.working_hours && supportContact.working_hours.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <p className="text-sm text-foreground">{localiseWorkingHours(supportContact.working_hours, displayLang)}</p>
-                        </div>
-                      )}
-                      {supportContact.website && supportContact.website.trim().length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Globe className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <a
-                            href={supportContact.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-primary underline underline-offset-2 hover:opacity-80"
-                          >
-                            {supportContact.website}
-                          </a>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="support-contact" className="border-border">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                          <Headphones className="h-6 w-6 text-primary" />
+                          {t("event.supportTitle")}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <Card>
+                          <CardContent className="p-6 space-y-3">
+                            {supportContact.name && supportContact.name.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <p className="text-sm font-medium text-foreground">{supportContact.name}</p>
+                              </div>
+                            )}
+                            {supportContact.email && supportContact.email.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <a
+                                  href={`mailto:${supportContact.email}`}
+                                  className="text-sm text-primary underline underline-offset-2 hover:opacity-80"
+                                >
+                                  {supportContact.email}
+                                </a>
+                              </div>
+                            )}
+                            {supportContact.phone_mobile && supportContact.phone_mobile.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Smartphone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <p className="text-sm text-foreground">
+                                  <span className="text-muted-foreground mr-1">Mob:</span>
+                                  {supportContact.phone_mobile}
+                                </p>
+                              </div>
+                            )}
+                            {supportContact.phone_landline && supportContact.phone_landline.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <p className="text-sm text-foreground">
+                                  <span className="text-muted-foreground mr-1">Tel:</span>
+                                  {supportContact.phone_landline}
+                                </p>
+                              </div>
+                            )}
+                            {supportContact.working_hours && supportContact.working_hours.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <p className="text-sm text-foreground">{localiseWorkingHours(supportContact.working_hours, displayLang)}</p>
+                              </div>
+                            )}
+                            {supportContact.website && supportContact.website.trim().length > 0 && (
+                              <div className="flex items-start gap-3">
+                                <Globe className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <a
+                                  href={supportContact.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-primary underline underline-offset-2 hover:opacity-80"
+                                >
+                                  {supportContact.website}
+                                </a>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
               );
             })()}
