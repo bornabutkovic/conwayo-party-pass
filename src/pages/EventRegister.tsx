@@ -25,6 +25,27 @@ import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
 import { COUNTRIES, getCountryZone } from '@/lib/countries';
 
+function mapDiscountReason(reason: string | null | undefined, lang: string): string {
+  const hr: Record<string, string> = {
+    not_found: "Neispravan kod",
+    inactive: "Ovaj kod više nije aktivan",
+    not_started: "Ovaj kod još nije aktivan",
+    expired: "Ovaj kod je istekao",
+    max_uses_reached: "Ovaj kod je dosegnuo ograničenje upotrebe",
+    invoice_not_supported: "Kodovi za popust još nisu dostupni za plaćanje bankovnim prijenosom.",
+  };
+  const en: Record<string, string> = {
+    not_found: "Invalid code",
+    inactive: "This code is no longer active",
+    not_started: "This code isn't active yet",
+    expired: "This code has expired",
+    max_uses_reached: "This code has reached its usage limit",
+    invoice_not_supported: "Discount codes aren't available for bank transfer payments yet.",
+  };
+  const dict = lang === "hr" ? hr : en;
+  return dict[reason ?? ""] ?? (lang === "hr" ? "Neispravan kod" : "Invalid code");
+}
+
 
 const EU_COUNTRIES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
 
