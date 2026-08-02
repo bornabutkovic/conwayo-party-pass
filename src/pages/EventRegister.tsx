@@ -1563,8 +1563,8 @@ export default function EventRegister() {
                     ? t("register.processing")
                     : ((payerType === "company" && companyPaymentMethod === "invoice") ||
                        (payerType === "individual" && individualPaymentMethod === "invoice"))
-                      ? `${t("register.requestInvoice")} — ${grandTotal.toFixed(2)} ${currency}`
-                      : `${t("register.registerAndPay")} — ${grandTotal.toFixed(2)} ${currency}`}
+                      ? `${t("register.requestInvoice")} — ${(grandTotal - estimatedDiscount).toFixed(2)} ${currency}`
+                      : `${t("register.registerAndPay")} — ${(grandTotal - estimatedDiscount).toFixed(2)} ${currency}`}
                 </Button>
               </form>
             </>
