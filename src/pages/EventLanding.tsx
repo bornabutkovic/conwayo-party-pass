@@ -349,7 +349,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
             <img
               src={bannerUrl}
               alt={`${eventName} banner`}
-              className="block w-full object-contain"
+              className="block w-full object-cover"
               style={{
                 maxHeight: event.branding_banner_height
                   ? `${event.branding_banner_height}px`
