@@ -145,6 +145,8 @@ export type Database = {
       attendees: {
         Row: {
           badge_printed: boolean | null
+          cancellation_email_claimed_at: string | null
+          cancellation_email_sent_at: string | null
           checked_in: boolean | null
           created_at: string | null
           email: string | null
@@ -173,6 +175,8 @@ export type Database = {
         }
         Insert: {
           badge_printed?: boolean | null
+          cancellation_email_claimed_at?: string | null
+          cancellation_email_sent_at?: string | null
           checked_in?: boolean | null
           created_at?: string | null
           email?: string | null
@@ -201,6 +205,8 @@ export type Database = {
         }
         Update: {
           badge_printed?: boolean | null
+          cancellation_email_claimed_at?: string | null
+          cancellation_email_sent_at?: string | null
           checked_in?: boolean | null
           created_at?: string | null
           email?: string | null
@@ -456,6 +462,118 @@ export type Database = {
           },
         ]
       }
+      discount_code_targets: {
+        Row: {
+          created_at: string
+          discount_code_id: string
+          event_service_id: string | null
+          id: string
+          ticket_tier_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          discount_code_id: string
+          event_service_id?: string | null
+          id?: string
+          ticket_tier_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          discount_code_id?: string
+          event_service_id?: string | null
+          id?: string
+          ticket_tier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_code_targets_discount_code_id_fkey"
+            columns: ["discount_code_id"]
+            isOneToOne: false
+            referencedRelation: "discount_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_code_targets_event_service_id_fkey"
+            columns: ["event_service_id"]
+            isOneToOne: false
+            referencedRelation: "event_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_code_targets_ticket_tier_id_fkey"
+            columns: ["ticket_tier_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discount_codes: {
+        Row: {
+          applies_to_all_services: boolean
+          applies_to_all_tickets: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          discount_type: string
+          discount_value: number
+          event_id: string
+          id: string
+          max_uses: number | null
+          sales_end: string | null
+          sales_start: string | null
+          status: string
+          times_used: number
+        }
+        Insert: {
+          applies_to_all_services?: boolean
+          applies_to_all_tickets?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          discount_type: string
+          discount_value: number
+          event_id: string
+          id?: string
+          max_uses?: number | null
+          sales_end?: string | null
+          sales_start?: string | null
+          status?: string
+          times_used?: number
+        }
+        Update: {
+          applies_to_all_services?: boolean
+          applies_to_all_tickets?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          discount_type?: string
+          discount_value?: number
+          event_id?: string
+          id?: string
+          max_uses?: number | null
+          sales_end?: string | null
+          sales_start?: string | null
+          status?: string
+          times_used?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_codes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_codes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "view_events_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_memberships: {
         Row: {
           created_at: string | null
@@ -577,6 +695,7 @@ export type Database = {
           created_at: string | null
           currency: string | null
           description: string | null
+          display_order: number
           erp_code: string | null
           event_code: string | null
           event_id: string | null
@@ -584,6 +703,8 @@ export type Database = {
           name: string
           price: number
           rejection_reason: string | null
+          sales_end: string | null
+          sales_start: string | null
           status: string | null
           translations: Json | null
         }
@@ -595,6 +716,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           description?: string | null
+          display_order?: number
           erp_code?: string | null
           event_code?: string | null
           event_id?: string | null
@@ -602,6 +724,8 @@ export type Database = {
           name: string
           price?: number
           rejection_reason?: string | null
+          sales_end?: string | null
+          sales_start?: string | null
           status?: string | null
           translations?: Json | null
         }
@@ -613,6 +737,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           description?: string | null
+          display_order?: number
           erp_code?: string | null
           event_code?: string | null
           event_id?: string | null
@@ -620,6 +745,8 @@ export type Database = {
           name?: string
           price?: number
           rejection_reason?: string | null
+          sales_end?: string | null
+          sales_start?: string | null
           status?: string | null
           translations?: Json | null
         }
@@ -1081,6 +1208,8 @@ export type Database = {
         Row: {
           attendee_id: string | null
           description: string
+          discount_amount: number
+          discount_code_id: string | null
           erp_code: string | null
           id: string
           item_type: string | null
@@ -1096,6 +1225,8 @@ export type Database = {
         Insert: {
           attendee_id?: string | null
           description: string
+          discount_amount?: number
+          discount_code_id?: string | null
           erp_code?: string | null
           id?: string
           item_type?: string | null
@@ -1111,6 +1242,8 @@ export type Database = {
         Update: {
           attendee_id?: string | null
           description?: string
+          discount_amount?: number
+          discount_code_id?: string | null
           erp_code?: string | null
           id?: string
           item_type?: string | null
@@ -1143,6 +1276,13 @@ export type Database = {
             columns: ["attendee_id"]
             isOneToOne: false
             referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_discount_code_id_fkey"
+            columns: ["discount_code_id"]
+            isOneToOne: false
+            referencedRelation: "discount_codes"
             referencedColumns: ["id"]
           },
           {
@@ -2601,13 +2741,6 @@ export type Database = {
           },
           {
             foreignKeyName: "events_institution_uuid_fkey"
-            columns: ["institution_uuid"]
-            isOneToOne: false
-            referencedRelation: "institutions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_institution_uuid_fkey"
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions"
@@ -2616,13 +2749,20 @@ export type Database = {
           {
             foreignKeyName: "events_institution_uuid_fkey"
             columns: ["institution_uuid"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_institution_uuid_fkey"
+            columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions_public"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "events_institution_uuid_fkey"
-            columns: ["institution_id"]
+            columns: ["institution_uuid"]
             isOneToOne: false
             referencedRelation: "institutions_public"
             referencedColumns: ["id"]
@@ -2783,6 +2923,10 @@ export type Database = {
         }[]
       }
       get_webhook_secret: { Args: { p_secret_name: string }; Returns: string }
+      increment_discount_code_usage: {
+        Args: { p_discount_code_id: string }
+        Returns: undefined
+      }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       jwt_institution_uuid: { Args: never; Returns: string }
       jwt_is_admin: { Args: never; Returns: boolean }
@@ -2829,6 +2973,20 @@ export type Database = {
           p_wa_id: string
         }
         Returns: Json
+      }
+      validate_discount_code: {
+        Args: { p_code: string; p_event_id: string }
+        Returns: {
+          applies_to_all_services: boolean
+          applies_to_all_tickets: boolean
+          discount_code_id: string
+          discount_type: string
+          discount_value: number
+          reason: string
+          target_event_service_ids: string[]
+          target_ticket_tier_ids: string[]
+          valid: boolean
+        }[]
       }
       validate_scanner_token: {
         Args: { p_token: string }
