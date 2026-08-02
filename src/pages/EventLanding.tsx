@@ -777,11 +777,19 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               };
               return (
                 <section>
-                  <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
-                    <Building2 className="h-6 w-6" />
-                    {t("event.technicalOrganizerTitle")}
-                  </h2>
-                  <OrganizerCard institution={techInstitution} />
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="technical-organizer" className="border-border">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                          <Building2 className="h-6 w-6" />
+                          {t("event.technicalOrganizerTitle")}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <OrganizerCard institution={techInstitution} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
               );
             })()}
