@@ -935,7 +935,7 @@ export default function EventRegister() {
           <img
             src={bannerUrl}
             alt={`${eventName} banner`}
-            className="block w-full object-contain"
+            className="block w-full object-cover"
             style={{
               maxHeight: (event as any).branding_banner_height
                 ? `${(event as any).branding_banner_height}px`
