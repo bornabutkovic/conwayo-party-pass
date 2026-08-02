@@ -329,6 +329,70 @@ export default function EventRegister() {
     [ticketQuantities]
   );
 
+  const effectivePaymentMethod = payerType === "company" ? companyPaymentMethod : individualPaymentMethod;
+
+  useEffect(() => {
+    if (effectivePaymentMethod === "invoice") {
+      setDiscountCheckStatus("idle");
+      setDiscountPreview(null);
+      setDiscountReason(null);
+    }
+  }, [effectivePaymentMethod]);
+
+  const applyDiscountCode = async () => {
+    if (!event?.id || !discountCodeInput.trim()) return;
+    setDiscountCheckStatus("checking");
+    const { data, error } = await supabase.rpc("validate_discount_code", {
+      p_event_id: event.id,
+      p_code: discountCodeInput.trim(),
+    });
+    const result: any = Array.isArray(data) ? data[0] : data;
+    if (error || !result?.valid) {
+      setDiscountCheckStatus("invalid");
+      setDiscountReason(result?.reason ?? null);
+      setDiscountPreview(null);
+    } else {
+      setDiscountCheckStatus("valid");
+      setDiscountReason(null);
+      setDiscountPreview({
+        discount_type: result.discount_type,
+        discount_value: Number(result.discount_value),
+        applies_to_all_tickets: result.applies_to_all_tickets,
+        applies_to_all_services: result.applies_to_all_services,
+        target_ticket_tier_ids: result.target_ticket_tier_ids ?? [],
+        target_event_service_ids: result.target_event_service_ids ?? [],
+      });
+    }
+  };
+
+  // Estimated (display-only, non-authoritative) discount
+  const estimatedDiscount = useMemo(() => {
+    if (!discountPreview || discountCheckStatus !== "valid") return 0;
+    let total = 0;
+    const computeLine = (baseAmount: number, matches: boolean) => {
+      if (!matches || baseAmount <= 0) return 0;
+      const raw = discountPreview.discount_type === "percentage"
+        ? (baseAmount * discountPreview.discount_value) / 100
+        : discountPreview.discount_value;
+      return Math.min(Math.max(raw, 0), baseAmount);
+    };
+    tiers.forEach(tier => {
+      const qty = ticketQuantities[tier.id] ?? 0;
+      if (qty === 0) return;
+      const matches = discountPreview.applies_to_all_tickets || discountPreview.target_ticket_tier_ids.includes(tier.id);
+      total += computeLine((tier.price ?? 0) * qty, matches);
+    });
+    attendees.forEach(att => {
+      services.filter(s => att.selectedServiceIds.has(s.id)).forEach(svc => {
+        const matches = discountPreview.applies_to_all_services || discountPreview.target_event_service_ids.includes(svc.id);
+        total += computeLine(Number(svc.price), matches);
+      });
+    });
+    return total;
+  }, [discountPreview, discountCheckStatus, tiers, ticketQuantities, attendees, services]);
+
+
+
   if (eventLoading) return <EventPageSkeleton />;
   if (eventError || !event) return <EventNotFound slug={slug} errorMessage={eventError?.message} />;
 
