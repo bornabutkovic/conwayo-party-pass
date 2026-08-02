@@ -133,6 +133,19 @@ export default function EventRegister() {
   const [individualPaymentMethod, setIndividualPaymentMethod] = useState<"stripe" | "invoice">("stripe");
   const [individualBillingEmail, setIndividualBillingEmail] = useState("");
 
+  // Discount code
+  const [discountCodeInput, setDiscountCodeInput] = useState("");
+  const [discountCheckStatus, setDiscountCheckStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [discountReason, setDiscountReason] = useState<string | null>(null);
+  const [discountPreview, setDiscountPreview] = useState<{
+    discount_type: string;
+    discount_value: number;
+    applies_to_all_tickets: boolean;
+    applies_to_all_services: boolean;
+    target_ticket_tier_ids: string[];
+    target_event_service_ids: string[];
+  } | null>(null);
+
   // Address
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('');
