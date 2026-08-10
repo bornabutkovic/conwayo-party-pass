@@ -132,6 +132,7 @@ Deno.serve(async (req) => {
       order_number: orderData?.order_number || null,
       event_id,
       event_name: event.name,
+      payer_type: payer_type || "individual",
       bc_position: event.bc_position,
       bc_reference: event.bc_reference,
       institution_name: institution?.name,
@@ -157,13 +158,15 @@ Deno.serve(async (req) => {
       services: enrichedServices,
     };
 
-    console.log("Forwarding to n8n:", JSON.stringify(n8nPayload));
+    const n8nWebhookUrl = payer_type === "company" ? N8N_WEBHOOK_URL_COMPANY : N8N_WEBHOOK_URL_INDIVIDUAL;
+
+    console.log("Forwarding to n8n:", n8nWebhookUrl, JSON.stringify(n8nPayload));
 
     let n8nOk = false;
     let n8nStatus = 0;
     let n8nErrorText = "";
     try {
-      const n8nRes = await fetch(N8N_WEBHOOK_URL, {
+      const n8nRes = await fetch(n8nWebhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
