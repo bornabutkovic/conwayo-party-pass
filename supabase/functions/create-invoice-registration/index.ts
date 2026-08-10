@@ -6,7 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const N8N_WEBHOOK_URL = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration-v1";
+const N8N_WEBHOOK_URL_COMPANY = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration-v1";
+const N8N_WEBHOOK_URL_INDIVIDUAL = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration-individual";
 const N8N_WEBHOOK_SECRET = Deno.env.get("CONWAYO_N8N_WEBHOOK_SECRET") ?? "";
 
 Deno.serve(async (req) => {
@@ -19,6 +20,7 @@ Deno.serve(async (req) => {
     const {
       order_id,
       event_id,
+      payer_type,
       first_name,
       last_name,
       email,
@@ -130,6 +132,7 @@ Deno.serve(async (req) => {
       order_number: orderData?.order_number || null,
       event_id,
       event_name: event.name,
+      payer_type: payer_type || "individual",
       bc_position: event.bc_position,
       bc_reference: event.bc_reference,
       institution_name: institution?.name,
@@ -155,13 +158,15 @@ Deno.serve(async (req) => {
       services: enrichedServices,
     };
 
-    console.log("Forwarding to n8n:", JSON.stringify(n8nPayload));
+    const n8nWebhookUrl = payer_type === "company" ? N8N_WEBHOOK_URL_COMPANY : N8N_WEBHOOK_URL_INDIVIDUAL;
+
+    console.log("Forwarding to n8n:", n8nWebhookUrl, JSON.stringify(n8nPayload));
 
     let n8nOk = false;
     let n8nStatus = 0;
     let n8nErrorText = "";
     try {
-      const n8nRes = await fetch(N8N_WEBHOOK_URL, {
+      const n8nRes = await fetch(n8nWebhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
