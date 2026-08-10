@@ -6,7 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const N8N_WEBHOOK_URL = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration-v1";
+const N8N_WEBHOOK_URL_COMPANY = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration-v1";
+const N8N_WEBHOOK_URL_INDIVIDUAL = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration-individual";
 const N8N_WEBHOOK_SECRET = Deno.env.get("CONWAYO_N8N_WEBHOOK_SECRET") ?? "";
 
 Deno.serve(async (req) => {
@@ -19,6 +20,7 @@ Deno.serve(async (req) => {
     const {
       order_id,
       event_id,
+      payer_type,
       first_name,
       last_name,
       email,
