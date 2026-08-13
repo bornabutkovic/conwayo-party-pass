@@ -101,6 +101,9 @@ Deno.serve(async (req) => {
             attendee_id: body.attendeeId,
             event_id: eventId,
           },
+          payment_intent_data: {
+            description: `${event.name} — ${attendee.first_name} ${attendee.last_name}`.substring(0, 500),
+          },
           success_url: `${origin}/ticket/${body.attendeeId}?payment=success`,
           cancel_url: `${origin}/ticket/${body.attendeeId}?payment=cancelled`,
         });
@@ -119,7 +122,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await adminClient
       .from("orders")
-      .select("id, total_amount, attendee_id, payer_name")
+      .select("id, total_amount, attendee_id, payer_name, order_number")
       .eq("id", orderId)
       .single();
 
@@ -213,6 +216,14 @@ Deno.serve(async (req) => {
       ? billingEmailInput
       : customerEmail;
 
+    // Human-readable description shown in Stripe Dashboard "Description" column
+    const payerLabel = (payerType === "company" ? (companyName || payerName) : (order.payer_name || payerName)) || "";
+    const orderDescription = [
+      order.order_number ? `#${order.order_number}` : null,
+      event.name,
+      payerLabel || null,
+    ].filter(Boolean).join(" — ").substring(0, 500);
+
     try {
       const session = await stripe.checkout.sessions.create({
         ui_mode: "hosted",
@@ -224,6 +235,9 @@ Deno.serve(async (req) => {
         } : {}),
         client_reference_id: orderId,
         line_items: validLineItems,
+        payment_intent_data: {
+          description: orderDescription,
+        },
         metadata: {
           order_id: orderId,
           event_id: eventId,
@@ -237,6 +251,7 @@ Deno.serve(async (req) => {
           amount_total_minor: String(amountTotalMinor),
           ticket_count_total: String(ticketCountTotal),
           ticket_summary: ticketSummary.substring(0, 500),
+          order_number: order.order_number != null ? String(order.order_number) : "",
           // Company-specific metadata
           ...(payerType === "company" ? {
             company_name: (companyName || "").substring(0, 500),
