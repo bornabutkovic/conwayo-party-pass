@@ -216,6 +216,14 @@ Deno.serve(async (req) => {
       ? billingEmailInput
       : customerEmail;
 
+    // Human-readable description shown in Stripe Dashboard "Description" column
+    const payerLabel = (payerType === "company" ? (companyName || payerName) : (order.payer_name || payerName)) || "";
+    const orderDescription = [
+      order.order_number ? `#${order.order_number}` : null,
+      event.name,
+      payerLabel || null,
+    ].filter(Boolean).join(" — ").substring(0, 500);
+
     try {
       const session = await stripe.checkout.sessions.create({
         ui_mode: "hosted",
@@ -227,6 +235,9 @@ Deno.serve(async (req) => {
         } : {}),
         client_reference_id: orderId,
         line_items: validLineItems,
+        payment_intent_data: {
+          description: orderDescription,
+        },
         metadata: {
           order_id: orderId,
           event_id: eventId,
@@ -240,6 +251,7 @@ Deno.serve(async (req) => {
           amount_total_minor: String(amountTotalMinor),
           ticket_count_total: String(ticketCountTotal),
           ticket_summary: ticketSummary.substring(0, 500),
+          order_number: order.order_number != null ? String(order.order_number) : "",
           // Company-specific metadata
           ...(payerType === "company" ? {
             company_name: (companyName || "").substring(0, 500),
