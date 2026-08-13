@@ -101,6 +101,9 @@ Deno.serve(async (req) => {
             attendee_id: body.attendeeId,
             event_id: eventId,
           },
+          payment_intent_data: {
+            description: `${event.name} — ${attendee.first_name} ${attendee.last_name}`.substring(0, 500),
+          },
           success_url: `${origin}/ticket/${body.attendeeId}?payment=success`,
           cancel_url: `${origin}/ticket/${body.attendeeId}?payment=cancelled`,
         });
@@ -119,7 +122,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await adminClient
       .from("orders")
-      .select("id, total_amount, attendee_id, payer_name")
+      .select("id, total_amount, attendee_id, payer_name, order_number")
       .eq("id", orderId)
       .single();
 
