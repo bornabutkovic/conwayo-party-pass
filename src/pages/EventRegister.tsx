@@ -148,6 +148,7 @@ export default function EventRegister() {
   const [payerName, setPayerName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyOib, setCompanyOib] = useState("");
+  const [companyOibError, setCompanyOibError] = useState(false);
   const [billingEmail, setBillingEmail] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [companyPaymentMethod, setCompanyPaymentMethod] = useState<"stripe" | "invoice">("stripe");
@@ -507,6 +508,11 @@ export default function EventRegister() {
     // OIB obavezan za HR tvrtke
     if (payerType === "company" && countryCode === "HR" && !companyOib.trim()) {
       toast({ title: "OIB je obavezan za hrvatska poduzeća.", variant: "destructive" });
+      return;
+    }
+    if (payerType === "company" && companyOib.trim().length > 20) {
+      setCompanyOibError(true);
+      toast({ title: t("register.oibTooLong"), variant: "destructive" });
       return;
     }
     if (payerType === "company" && countryCode === "HR" && !/^\d{11}$/.test(companyOib.trim())) {
@@ -1305,9 +1311,21 @@ export default function EventRegister() {
                           <Input
                             id="payer_oib"
                             value={companyOib}
-                            onChange={(e) => setCompanyOib(e.target.value)}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw.length > 20) {
+                                setCompanyOib(raw.slice(0, 20));
+                                setCompanyOibError(true);
+                              } else {
+                                setCompanyOib(raw);
+                                if (companyOibError) setCompanyOibError(false);
+                              }
+                            }}
                             placeholder={countryCode === 'HR' ? "e.g. 12345678901" : "e.g. DE123456789"}
                           />
+                          {companyOibError && (
+                            <p className="mt-1 text-xs text-destructive">{t("register.oibTooLong")}</p>
+                          )}
                         </div>
 
                         {addressFieldsBlock}
