@@ -165,6 +165,10 @@ const translations = {
   "register.loggedInAs": { hr: "Prijavljeni kao", en: "Logged in as" },
   "register.searchCountry": { hr: "Pretraži državu...", en: "Search country..." },
   "register.optional": { hr: "Opcionalno", en: "Optional" },
+  "register.oibTooLong": {
+    hr: "OIB / VAT ID ne smije imati više od 20 znakova.",
+    en: "Tax ID / VAT ID cannot be longer than 20 characters.",
+  },
 
   // Footer
   "footer.poweredBy": {
