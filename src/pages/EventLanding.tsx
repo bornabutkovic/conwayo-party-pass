@@ -374,6 +374,13 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         <section className="bg-card border-b border-border">
           <div className="container mx-auto px-4 py-8 md:py-10">
             <div className="mx-auto max-w-4xl">
+              {event.branding_logo_url && (
+                <img
+                  src={event.branding_logo_url}
+                  alt={`${eventName} logo`}
+                  className="h-16 w-16 object-contain rounded-lg border border-border bg-white p-1 mb-4"
+                />
+              )}
               <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-5xl">
                 {eventName}
               </h1>
