@@ -347,16 +347,17 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
 
         {/* SECTION 1 — HERO (clean, no text) */}
         {bannerUrl ? (
-          <section className="relative w-full overflow-hidden">
+          <section
+            className="relative w-full overflow-hidden"
+            style={{
+              height: event.branding_banner_height ?? 400,
+              backgroundColor: event.branding_primary_color ?? "#6366f1",
+            }}
+          >
             <img
               src={bannerUrl}
               alt={`${eventName} banner`}
-              className="block w-full object-cover"
-              style={{
-                maxHeight: event.branding_banner_height
-                  ? `${event.branding_banner_height}px`
-                  : undefined,
-              }}
+              className="h-full w-full object-contain"
             />
           </section>
         ) : (
