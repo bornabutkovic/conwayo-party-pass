@@ -102,8 +102,9 @@ interface EventLandingProps {
 }
 
 function stripUnsafeHtml(html: string): string {
+  const cleanedHtml = html.replace(/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '');
   const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','ul','ol','li','h1','h2','h3','h4','a','span','div'];
-  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const doc = new DOMParser().parseFromString(cleanedHtml, 'text/html');
   function clean(node: Node): Node | null {
     if (node.nodeType === Node.TEXT_NODE) return node.cloneNode();
     if (node.nodeType !== Node.ELEMENT_NODE) return null;
