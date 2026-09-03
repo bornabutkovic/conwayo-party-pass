@@ -93,6 +93,7 @@ export function useEventFull(slug: string) {
           payment_due_days, branding_primary_color, branding_secondary_color,
           branding_text_color, branding_logo_url, branding_banner_url, branding_banner_height,
           branding_favicon_url, notification_sender_name, notification_sender_email,
+          required_attendee_fields, custom_consent_text,
           institutions!events_institution_uuid_fkey(
             name, address, city, oib, invoice_email,
             website, phone, facebook_url, linkedin_url, instagram_url
