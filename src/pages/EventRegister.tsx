@@ -433,6 +433,16 @@ export default function EventRegister() {
     );
   }
 
+  const isSimpleFreeRegistration =
+    tiers.length === 1 &&
+    Number(tiers[0].price) === 0 &&
+    Array.isArray((event as any).required_attendee_fields) &&
+    (event as any).required_attendee_fields.length > 0;
+
+  if (isSimpleFreeRegistration) {
+    return <SimpleFreeRegistrationForm event={event} tier={tiers[0]} />;
+  }
+
   const currency = event.currency ?? "EUR";
   
 
