@@ -5,6 +5,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TicketTierCard } from "./TicketTierCard";
@@ -87,6 +88,7 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
   const [selectedTierId, setSelectedTierId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   const fields = useMemo<AttendeeFieldKey[]>(() => {
     const configured = (event.required_attendee_fields ?? []).filter(
@@ -146,6 +148,10 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
   const onSubmit = async (values: FormValues) => {
     if (!selectedTierId) {
       toast({ title: L("Odaberite vrstu ulaznice", "Please select a ticket tier"), variant: "destructive" });
+      return;
+    }
+    if (event.custom_consent_text && !consentChecked) {
+      toast({ title: L("Morate prihvatiti uvjete prije prijave", "You must accept the terms before registering"), variant: "destructive" });
       return;
     }
 
@@ -362,7 +368,7 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
             type="submit"
             size="lg"
             className="relative w-full text-lg"
-            disabled={submitting || !selectedTierId}
+            disabled={submitting || !selectedTierId || (!!event.custom_consent_text && !consentChecked)}
           >
             {submitting && (
               <span className="absolute inset-0 flex items-center justify-center">
@@ -375,9 +381,17 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
           </Button>
 
           {event.custom_consent_text && (
-            <p className="whitespace-pre-line text-xs text-muted-foreground mt-4">
-              {renderWithLinks(event.custom_consent_text)}
-            </p>
+            <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/30 p-4">
+              <Checkbox
+                id="consent"
+                checked={consentChecked}
+                onCheckedChange={(v) => setConsentChecked(v === true)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="consent" className="whitespace-pre-line text-xs font-normal text-muted-foreground leading-relaxed cursor-pointer">
+                {renderWithLinks(event.custom_consent_text)}
+              </Label>
+            </div>
           )}
         </form>
       </div>
