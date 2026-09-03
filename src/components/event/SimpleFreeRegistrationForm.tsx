@@ -74,53 +74,37 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
     try {
       const firstName = values.first_name ?? "";
       const lastName = values.last_name ?? "";
+      const fullName = `${firstName} ${lastName}`.trim() || (values.email ?? "Attendee");
 
-      const { data: attendee, error: attError } = await supabase
-        .from("attendees")
-        .insert({
+      const { data, error } = await supabase.functions.invoke("create-order", {
+        body: {
           event_id: event.id,
-          ticket_tier_id: tier.id,
-          first_name: firstName,
-          last_name: lastName,
-          email: values.email || null,
-          phone: values.phone || null,
-          oib: values.oib || null,
-          institution: values.institution || null,
-          specialty: values.specialty || null,
-          payment_status: "paid",
-          status: "approved",
-          price_paid: 0,
-        })
-        .select("id")
-        .single();
-      if (attError) throw attError;
-
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          event_id: event.id,
-          attendee_id: attendee.id,
-          payer_name: `${firstName} ${lastName}`.trim() || (values.email ?? "Attendee"),
           payer_type: "individual",
-          status: "paid",
-          total_amount: 0,
-        })
-        .select("id")
-        .single();
-      if (orderError) throw orderError;
-
-      const { error: itemError } = await supabase.from("order_items").insert({
-        order_id: order.id,
-        attendee_id: attendee.id,
-        ticket_type_id: tier.id,
-        description: tier.name,
-        quantity: 1,
-        unit_price: 0,
-        total_price: 0,
-        vat_amount: 0,
-        price_at_purchase: 0,
+          payer_name: fullName,
+          lang: displayLang,
+          terms_accepted: true,
+          terms_accepted_at: new Date().toISOString(),
+          gdpr_consent_given: true,
+          gdpr_consent_at: new Date().toISOString(),
+          attendees: [
+            {
+              first_name: firstName,
+              last_name: lastName,
+              email: values.email || "",
+              phone: values.phone || null,
+              ticket_tier_id: tier.id,
+              oib: values.oib || null,
+              institution: values.institution || null,
+              specialty: values.specialty || null,
+              services: [],
+            },
+          ],
+        },
       });
-      if (itemError) throw itemError;
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || "Registration failed");
+      }
 
       setSuccess(true);
     } catch (err: any) {

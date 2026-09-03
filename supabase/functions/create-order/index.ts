@@ -13,6 +13,9 @@ interface AttendeeInput {
   phone?: string | null;
   ticket_tier_id: string;
   services?: Array<{ service_id: string; quantity: number }>;
+  oib?: string | null;
+  institution?: string | null;
+  specialty?: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -169,9 +172,11 @@ Deno.serve(async (req) => {
           email: att.email,
           phone: att.phone || primaryPhone,
           profile_id: attendeeIds.length === 0 ? (profile_id || null) : null,
-          institution: isCompany ? (company_name || null) : null,
-          status: isCompany && payment_method !== "stripe" ? "pending" : "approved",
-          payment_status: "pending",
+          oib: att.oib || null,
+          institution: isCompany ? (company_name || null) : (att.institution || null),
+          specialty: att.specialty || null,
+          status: totalAmount === 0 ? "approved" : (isCompany && payment_method !== "stripe" ? "pending" : "approved"),
+          payment_status: totalAmount === 0 ? "paid" : "pending",
           price_paid: tier?.price ?? 0,
         })
         .select("id")
@@ -207,7 +212,7 @@ Deno.serve(async (req) => {
         po_number: po_number || null,
         payment_method: payment_method || (isCompany ? "invoice" : "stripe"),
         lang: lang === "en" ? "en" : "hr",
-        status: "draft",
+        status: totalAmount === 0 ? "paid" : "draft",
         total_amount: totalAmount,
         is_group_order: attendeesList.length > 1,
         terms_accepted: terms_accepted ?? false,
