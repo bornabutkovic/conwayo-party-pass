@@ -19,6 +19,7 @@ import { Loader2, Building2, UserIcon, CreditCard, Plus, Minus, CheckCircle2, Lo
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { OrderConfirmation } from "@/components/event/OrderConfirmation";
+import { SimpleFreeRegistrationForm } from "@/components/event/SimpleFreeRegistrationForm";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -430,6 +431,16 @@ export default function EventRegister() {
         </div>
       </div>
     );
+  }
+
+  const isSimpleFreeRegistration =
+    tiers.length === 1 &&
+    Number(tiers[0].price) === 0 &&
+    Array.isArray((event as any).required_attendee_fields) &&
+    (event as any).required_attendee_fields.length > 0;
+
+  if (isSimpleFreeRegistration) {
+    return <SimpleFreeRegistrationForm event={event} tier={tiers[0]} />;
   }
 
   const currency = event.currency ?? "EUR";
