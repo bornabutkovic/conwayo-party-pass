@@ -810,6 +810,7 @@ export type Database = {
           id: string
           institution_id: string | null
           institution_uuid: string | null
+          is_unlisted: boolean
           location_address: string | null
           location_city: string | null
           location_country: string | null
@@ -867,6 +868,7 @@ export type Database = {
           id?: string
           institution_id?: string | null
           institution_uuid?: string | null
+          is_unlisted?: boolean
           location_address?: string | null
           location_city?: string | null
           location_country?: string | null
@@ -924,6 +926,7 @@ export type Database = {
           id?: string
           institution_id?: string | null
           institution_uuid?: string | null
+          is_unlisted?: boolean
           location_address?: string | null
           location_city?: string | null
           location_country?: string | null

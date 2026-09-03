@@ -60,7 +60,7 @@ export function useEvent(slug: string) {
       const { data, error } = await supabase
         .from("events")
         .select("*")
-        .eq("slug", slug)
+        .ilike("slug", slug)
         .maybeSingle();
       if (error) {
         console.error("Supabase event query error:", error);
@@ -98,7 +98,7 @@ export function useEventFull(slug: string) {
             website, phone, facebook_url, linkedin_url, instagram_url
           )
         `)
-        .eq("slug", slug)
+        .ilike("slug", slug)
         .maybeSingle();
 
       if (error) {
@@ -190,6 +190,7 @@ export function useAvailableEvents() {
         .from("events")
         .select("slug, name, status, start_date, end_date, venue_name, translations, supported_languages")
         .eq("status", "active")
+        .eq("is_unlisted", false)
         .order("start_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
