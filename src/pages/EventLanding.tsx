@@ -469,7 +469,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                   {t("event.aboutTitle")}
                 </h2>
                 <div
-                  className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
+                  className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-p:my-1 prose-p:leading-snug prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
                   dangerouslySetInnerHTML={{ __html: stripUnsafeHtml(eventDescription || '') }}
                 />
               </section>
