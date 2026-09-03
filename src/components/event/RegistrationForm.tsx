@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,23 +10,60 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TicketTierCard } from "./TicketTierCard";
 import { RegistrationSuccess } from "./RegistrationSuccess";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import type { Event, TicketTier } from "@/hooks/useEvent";
 import type { Enums } from "@/integrations/supabase/types";
 
-const registrationSchema = z.object({
-  first_name: z.string().trim().min(1, "First name is required").max(100),
-  last_name: z.string().trim().min(1, "Last name is required").max(100),
-  email: z.string().trim().email("Invalid email").max(255),
-  phone: z.string().trim().max(30).optional().or(z.literal("")),
-  oib: z.string().trim().max(20).optional().or(z.literal("")),
-  institution: z.string().trim().max(200).optional().or(z.literal("")),
-  payer_name: z.string().trim().min(1, "Payer name is required").max(200),
-  payer_type: z.enum(["individual", "company"] as const),
-  payer_oib: z.string().trim().max(20).optional().or(z.literal("")),
-  payer_address: z.string().trim().max(300).optional().or(z.literal("")),
-});
+type AttendeeFieldKey =
+  | "first_name"
+  | "last_name"
+  | "email"
+  | "phone"
+  | "oib"
+  | "institution"
+  | "specialty";
 
-type FormValues = z.infer<typeof registrationSchema>;
+const FIELD_DEFS: Record<
+  AttendeeFieldKey,
+  { hr: string; en: string; type: string; max: number }
+> = {
+  first_name: { hr: "Ime", en: "First Name", type: "text", max: 100 },
+  last_name: { hr: "Prezime", en: "Last Name", type: "text", max: 100 },
+  email: { hr: "E-mail", en: "Email", type: "email", max: 255 },
+  phone: { hr: "Telefon", en: "Phone", type: "tel", max: 30 },
+  oib: { hr: "OIB", en: "Tax ID (OIB)", type: "text", max: 20 },
+  institution: { hr: "Ustanova", en: "Institution", type: "text", max: 200 },
+  specialty: { hr: "Specijalnost", en: "Specialty", type: "text", max: 200 },
+};
+
+const DEFAULT_FIELDS: AttendeeFieldKey[] = [
+  "first_name",
+  "last_name",
+  "email",
+  "phone",
+  "oib",
+  "institution",
+];
+
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+function renderWithLinks(text: string) {
+  return text.split(URL_REGEX).map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline underline-offset-2"
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
 
 interface RegistrationFormProps {
   event: Event;
@@ -42,9 +79,49 @@ interface SuccessData {
 }
 
 export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
+  const { lang } = useLanguage();
+  const supportsEnglish = (event.supported_languages ?? ["hr"]).includes("en");
+  const displayLang: "hr" | "en" = !supportsEnglish ? "hr" : lang === "en" ? "en" : "hr";
+  const L = (hr: string, en: string) => (displayLang === "hr" ? hr : en);
+
   const [selectedTierId, setSelectedTierId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
+
+  const fields = useMemo<AttendeeFieldKey[]>(() => {
+    const configured = (event.required_attendee_fields ?? []).filter(
+      (f): f is AttendeeFieldKey => f in FIELD_DEFS
+    );
+    return configured.length > 0 ? configured : DEFAULT_FIELDS;
+  }, [event.required_attendee_fields]);
+
+  const selectedTier = tiers.find((t) => t.id === selectedTierId);
+  const needsBilling = !!selectedTier && Number(selectedTier.price) > 0;
+
+  const schema = useMemo(() => {
+    const shape: Record<string, z.ZodTypeAny> = {};
+    for (const key of fields) {
+      const def = FIELD_DEFS[key];
+      let base = z.string().trim().min(1, L("Obavezno polje", "Required")).max(def.max);
+      if (key === "email") {
+        base = z
+          .string()
+          .trim()
+          .min(1, L("Obavezno polje", "Required"))
+          .email(L("Neispravan e-mail", "Invalid email"))
+          .max(def.max);
+      }
+      shape[key] = base;
+    }
+    shape.payer_name = z.string().trim().max(200).optional().or(z.literal(""));
+    shape.payer_type = z.enum(["individual", "company"] as const);
+    shape.payer_oib = z.string().trim().max(20).optional().or(z.literal(""));
+    shape.payer_address = z.string().trim().max(300).optional().or(z.literal(""));
+    return z.object(shape);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fields, displayLang]);
+
+  type FormValues = Record<string, any>;
 
   const {
     register,
@@ -53,20 +130,33 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
     watch,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(registrationSchema),
-    defaultValues: {
-      payer_type: "individual",
-    },
+    resolver: zodResolver(schema as any),
+    defaultValues: { payer_type: "individual" },
   });
 
   const payerType = watch("payer_type");
   const currency = event.currency ?? "EUR";
 
-  const selectedTier = tiers.find((t) => t.id === selectedTierId);
+  useEffect(() => {
+    if (tiers.length === 1 && !selectedTierId) {
+      setSelectedTierId(tiers[0].id);
+    }
+  }, [tiers, selectedTierId]);
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedTierId) {
-      toast({ title: "Please select a ticket tier", variant: "destructive" });
+      toast({ title: L("Odaberite vrstu ulaznice", "Please select a ticket tier"), variant: "destructive" });
+      return;
+    }
+
+    const firstName = values.first_name ?? "";
+    const lastName = values.last_name ?? "";
+
+    if (needsBilling && !String(values.payer_name ?? "").trim()) {
+      toast({
+        title: L("Ime platitelja je obavezno", "Payer name is required"),
+        variant: "destructive",
+      });
       return;
     }
 
@@ -78,12 +168,13 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
         .insert({
           event_id: event.id,
           ticket_tier_id: selectedTierId,
-          first_name: values.first_name,
-          last_name: values.last_name,
-          email: values.email,
+          first_name: firstName,
+          last_name: lastName,
+          email: values.email || null,
           phone: values.phone || null,
           oib: values.oib || null,
           institution: values.institution || null,
+          specialty: values.specialty || null,
           payment_status: "paid",
           status: "approved",
         })
@@ -96,16 +187,21 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
       const vatRate = event.vat_rate ?? 25;
       const vatAmount = Number(((pricePaid * vatRate) / (100 + vatRate)).toFixed(2));
 
+      const payerName = needsBilling
+        ? String(values.payer_name).trim()
+        : `${firstName} ${lastName}`.trim() || (values.email ?? "Attendee");
+      const payerTypeValue = needsBilling ? values.payer_type : "individual";
+
       // 2. Create order
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
           event_id: event.id,
           attendee_id: attendee.id,
-          payer_name: values.payer_name,
-          payer_type: values.payer_type as Enums<"payer_type">,
-          payer_oib: values.payer_oib || null,
-          payer_address: values.payer_address || null,
+          payer_name: payerName,
+          payer_type: payerTypeValue as Enums<"payer_type">,
+          payer_oib: needsBilling ? values.payer_oib || null : null,
+          payer_address: needsBilling ? values.payer_address || null : null,
           status: "paid",
           total_amount: pricePaid,
         })
@@ -130,7 +226,7 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
       if (itemError) throw itemError;
 
       setSuccess({
-        attendeeName: `${values.first_name} ${values.last_name}`,
+        attendeeName: `${firstName} ${lastName}`.trim(),
         eventName: event.name,
         tierName: selectedTier?.name ?? "Ticket",
         price: pricePaid,
@@ -138,8 +234,8 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
       });
     } catch (err: any) {
       toast({
-        title: "Registration failed",
-        description: err.message ?? "Something went wrong",
+        title: L("Prijava nije uspjela", "Registration failed"),
+        description: err.message ?? L("Nešto je pošlo po zlu", "Something went wrong"),
         variant: "destructive",
       });
     } finally {
@@ -154,96 +250,96 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
   return (
     <section className="container mx-auto px-4 py-12 md:py-16">
       <div className="mx-auto max-w-2xl">
-        <h2 className="mb-8 text-3xl font-bold text-foreground">Register Now</h2>
+        <h2 className="mb-8 text-3xl font-bold text-foreground">
+          {L("Prijavite se", "Register Now")}
+        </h2>
 
         {/* Ticket Tiers */}
-        <div className="mb-10">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">Select Your Ticket</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {tiers.map((tier) => (
-              <TicketTierCard
-                key={tier.id}
-                tier={tier}
-                selected={selectedTierId === tier.id}
-                currency={currency}
-                onSelect={() => setSelectedTierId(tier.id)}
-              />
-            ))}
+        {tiers.length > 1 && (
+          <div className="mb-10">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
+              {L("Odaberite ulaznicu", "Select Your Ticket")}
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {tiers.map((tier) => (
+                <TicketTierCard
+                  key={tier.id}
+                  tier={tier}
+                  selected={selectedTierId === tier.id}
+                  currency={currency}
+                  onSelect={() => setSelectedTierId(tier.id)}
+                />
+              ))}
+            </div>
           </div>
-          {tiers.length === 0 && (
-            <p className="text-muted-foreground">No tickets available at this time.</p>
-          )}
-        </div>
+        )}
+        {tiers.length === 0 && (
+          <p className="mb-10 text-muted-foreground">
+            {L("Trenutno nema dostupnih ulaznica.", "No tickets available at this time.")}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Attendee Info */}
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Your Information</h3>
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
+              {L("Vaši podaci", "Your Information")}
+            </h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="first_name">First Name *</Label>
-                <Input id="first_name" {...register("first_name")} />
-                {errors.first_name && <p className="mt-1 text-sm text-destructive">{errors.first_name.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="last_name">Last Name *</Label>
-                <Input id="last_name" {...register("last_name")} />
-                {errors.last_name && <p className="mt-1 text-sm text-destructive">{errors.last_name.message}</p>}
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input id="email" type="email" {...register("email")} />
-                {errors.email && <p className="mt-1 text-sm text-destructive">{errors.email.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" {...register("phone")} />
-              </div>
-              <div>
-                <Label htmlFor="oib">OIB</Label>
-                <Input id="oib" {...register("oib")} />
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="institution">Institution</Label>
-                <Input id="institution" {...register("institution")} />
-              </div>
+              {fields.map((key) => {
+                const def = FIELD_DEFS[key];
+                const wide = key === "email" || key === "institution" || key === "specialty";
+                const err = errors[key]?.message as string | undefined;
+                return (
+                  <div key={key} className={wide ? "sm:col-span-2" : undefined}>
+                    <Label htmlFor={key}>{`${L(def.hr, def.en)} *`}</Label>
+                    <Input id={key} type={def.type} {...register(key)} />
+                    {err && <p className="mt-1 text-sm text-destructive">{err}</p>}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Billing Info */}
-          <div>
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Billing Information</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Label htmlFor="payer_name">Payer Name *</Label>
-                <Input id="payer_name" {...register("payer_name")} />
-                {errors.payer_name && <p className="mt-1 text-sm text-destructive">{errors.payer_name.message}</p>}
-              </div>
-              <div>
-                <Label>Payer Type *</Label>
-                <Select
-                  value={payerType}
-                  onValueChange={(v) => setValue("payer_type", v as "individual" | "company")}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="individual">Individual</SelectItem>
-                    <SelectItem value="company">Company</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="payer_oib">Payer OIB</Label>
-                <Input id="payer_oib" {...register("payer_oib")} />
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="payer_address">Payer Address</Label>
-                <Input id="payer_address" {...register("payer_address")} />
+          {needsBilling && (
+            <div>
+              <h3 className="mb-4 text-lg font-semibold text-foreground">
+                {L("Podaci za naplatu", "Billing Information")}
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Label htmlFor="payer_name">{L("Platitelj", "Payer Name")} *</Label>
+                  <Input id="payer_name" {...register("payer_name")} />
+                </div>
+                <div>
+                  <Label>{L("Vrsta platitelja", "Payer Type")} *</Label>
+                  <Select
+                    value={payerType}
+                    onValueChange={(v) => setValue("payer_type", v as "individual" | "company")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="individual">
+                        {L("Fizička osoba", "Individual")}
+                      </SelectItem>
+                      <SelectItem value="company">{L("Pravna osoba", "Company")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="payer_oib">{L("OIB platitelja", "Payer Tax ID")}</Label>
+                  <Input id="payer_oib" {...register("payer_oib")} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="payer_address">{L("Adresa platitelja", "Payer Address")}</Label>
+                  <Input id="payer_address" {...register("payer_address")} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Summary */}
           {selectedTier && (
@@ -254,7 +350,9 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
                   <p className="text-sm text-muted-foreground">{event.name}</p>
                 </div>
                 <p className="text-2xl font-bold text-primary">
-                  {selectedTier.price > 0 ? `${selectedTier.price} ${currency}` : "Free"}
+                  {Number(selectedTier.price) > 0
+                    ? `${selectedTier.price} ${currency}`
+                    : L("Besplatno", "Free")}
                 </p>
               </div>
             </div>
@@ -272,9 +370,15 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
               </span>
             )}
             <span className={submitting ? "invisible" : ""}>
-              Complete Registration
+              {L("Završi prijavu", "Complete Registration")}
             </span>
           </Button>
+
+          {event.custom_consent_text && (
+            <p className="whitespace-pre-line text-xs text-muted-foreground mt-4">
+              {renderWithLinks(event.custom_consent_text)}
+            </p>
+          )}
         </form>
       </div>
     </section>

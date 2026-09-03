@@ -102,8 +102,9 @@ interface EventLandingProps {
 }
 
 function stripUnsafeHtml(html: string): string {
+  const cleanedHtml = html.replace(/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '');
   const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','ul','ol','li','h1','h2','h3','h4','a','span','div'];
-  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const doc = new DOMParser().parseFromString(cleanedHtml, 'text/html');
   function clean(node: Node): Node | null {
     if (node.nodeType === Node.TEXT_NODE) return node.cloneNode();
     if (node.nodeType !== Node.ELEMENT_NODE) return null;
@@ -346,16 +347,17 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
 
         {/* SECTION 1 — HERO (clean, no text) */}
         {bannerUrl ? (
-          <section className="relative w-full overflow-hidden">
+          <section
+            className="relative w-full overflow-hidden"
+            style={{
+              height: event.branding_banner_height ?? 400,
+              backgroundColor: event.branding_primary_color ?? "#6366f1",
+            }}
+          >
             <img
               src={bannerUrl}
               alt={`${eventName} banner`}
-              className="block w-full object-cover"
-              style={{
-                maxHeight: event.branding_banner_height
-                  ? `${event.branding_banner_height}px`
-                  : undefined,
-              }}
+              className="h-full w-full object-contain"
             />
           </section>
         ) : (
@@ -372,6 +374,13 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         <section className="bg-card border-b border-border">
           <div className="container mx-auto px-4 py-8 md:py-10">
             <div className="mx-auto max-w-4xl">
+              {event.branding_logo_url && (
+                <img
+                  src={event.branding_logo_url}
+                  alt={`${eventName} logo`}
+                  className="h-16 w-16 object-contain rounded-lg border border-border bg-white p-1 mb-4"
+                />
+              )}
               <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-5xl">
                 {eventName}
               </h1>
