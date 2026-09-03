@@ -364,6 +364,20 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
             </div>
           )}
 
+          {event.custom_consent_text && (
+            <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/30 p-4">
+              <Checkbox
+                id="consent"
+                checked={consentChecked}
+                onCheckedChange={(v) => setConsentChecked(v === true)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="consent" className="whitespace-pre-line text-xs font-normal text-muted-foreground leading-relaxed cursor-pointer">
+                {renderWithLinks(event.custom_consent_text)}
+              </Label>
+            </div>
+          )}
+
           <Button
             type="submit"
             size="lg"
@@ -379,20 +393,6 @@ export function RegistrationForm({ event, tiers }: RegistrationFormProps) {
               {L("Završi prijavu", "Complete Registration")}
             </span>
           </Button>
-
-          {event.custom_consent_text && (
-            <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/30 p-4">
-              <Checkbox
-                id="consent"
-                checked={consentChecked}
-                onCheckedChange={(v) => setConsentChecked(v === true)}
-                className="mt-0.5"
-              />
-              <Label htmlFor="consent" className="whitespace-pre-line text-xs font-normal text-muted-foreground leading-relaxed cursor-pointer">
-                {renderWithLinks(event.custom_consent_text)}
-              </Label>
-            </div>
-          )}
         </form>
       </div>
     </section>
