@@ -98,7 +98,7 @@ export function useEventFull(slug: string) {
             website, phone, facebook_url, linkedin_url, instagram_url
           )
         `)
-        .eq("slug", slug)
+        .ilike("slug", slug)
         .maybeSingle();
 
       if (error) {
