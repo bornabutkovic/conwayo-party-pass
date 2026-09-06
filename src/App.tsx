@@ -13,6 +13,7 @@ import EventPreview from "./pages/EventPreview";
 import EventAuth from "./pages/EventAuth";
 import EventRegister from "./pages/EventRegister";
 import EventVoice from "./pages/EventVoice";
+import EventVoiceFree from "./pages/EventVoiceFree";
 import EventDashboard from "./pages/EventDashboard";
 import TicketPage from "./pages/TicketPage";
 import MyTickets from "./pages/MyTickets";
