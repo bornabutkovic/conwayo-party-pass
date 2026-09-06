@@ -6,9 +6,13 @@ import { ConvwayoHeader } from '@/components/ConvwayoHeader';
 import { Button } from '@/components/ui/button';
 import { Headphones } from 'lucide-react';
 
+// AZ mNSCLC MasterClass - besplatan event, BEZ logina. IZOLIRANA stranica -
+// NAMJERNO ne dijeli logiku s EventVoice.tsx (koji je za placene evente i zahtijeva login).
+// Poziva voice-init-session-az (edge funkcija hardkodirana na AZ event, ne treba event_slug param).
+
 type CallStatus = 'connecting' | 'active' | 'ended' | 'error';
 
-const EVENT_SLUG = 'az-ususret-novoj-eri-testiranja-biomarkera-u-mnsclc';
+const AZ_SLUG = 'az-ususret-novoj-eri-testiranja-biomarkera-u-mnsclc';
 
 export default function EventVoiceFree() {
   const navigate = useNavigate();
@@ -128,6 +132,24 @@ export default function EventVoiceFree() {
     <div style={{ minHeight: '100vh', background: '#0f0f1a', color: 'white', display: 'flex', flexDirection: 'column' }}>
       <ConvwayoHeader />
 
+      <div style={{ padding: '16px 24px' }}>
+        <button
+          onClick={() => navigate(`/event/${AZ_SLUG}`)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            color: 'rgba(255,255,255,0.5)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 14,
+          }}
+        >
+          ← Natrag na event
+        </button>
+      </div>
+
       <div
         style={{
           flex: 1,
@@ -165,10 +187,7 @@ export default function EventVoiceFree() {
         </div>
 
         {(callStatus === 'active' || callStatus === 'connecting') && (
-          <Button
-            onClick={endCall}
-            style={{ width: '100%', background: 'rgba(239,68,68,0.9)', color: 'white' }}
-          >
+          <Button onClick={endCall} style={{ width: '100%', background: 'rgba(239,68,68,0.9)', color: 'white' }}>
             Završi poziv
           </Button>
         )}
@@ -179,7 +198,7 @@ export default function EventVoiceFree() {
               Pokušaj ponovo
             </Button>
             <Button
-              onClick={() => navigate(`/event/${EVENT_SLUG}`)}
+              onClick={() => navigate(`/event/${AZ_SLUG}`)}
               variant="ghost"
               style={{ color: 'rgba(255,255,255,0.4)', width: '100%' }}
             >
@@ -189,18 +208,13 @@ export default function EventVoiceFree() {
         )}
 
         {callStatus === 'ended' && (
-          <div style={{ textAlign: 'center', marginTop: 8 }}>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
-              Hvala! Ako je prijava zaprimljena, potvrda stiže na email.
-            </p>
-            <Button
-              onClick={() => navigate(`/event/${EVENT_SLUG}`)}
-              variant="ghost"
-              style={{ color: 'rgba(255,255,255,0.4)', width: '100%' }}
-            >
-              Natrag na event
-            </Button>
-          </div>
+          <Button
+            onClick={() => navigate(`/event/${AZ_SLUG}`)}
+            variant="ghost"
+            style={{ color: 'rgba(255,255,255,0.4)', width: '100%', marginTop: 8 }}
+          >
+            Natrag na event
+          </Button>
         )}
       </div>
     </div>
