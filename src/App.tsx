@@ -13,6 +13,7 @@ import EventPreview from "./pages/EventPreview";
 import EventAuth from "./pages/EventAuth";
 import EventRegister from "./pages/EventRegister";
 import EventVoice from "./pages/EventVoice";
+import EventVoiceFree from "./pages/EventVoiceFree";
 import EventDashboard from "./pages/EventDashboard";
 import TicketPage from "./pages/TicketPage";
 import MyTickets from "./pages/MyTickets";
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/event/:slug/auth" element={<EventAuth />} />
                 <Route path="/event/:slug/register" element={<EventRegister />} />
                 <Route path="/event/:slug/voice" element={<EventVoice />} />
+                <Route path="/event/:slug/voice-free" element={<EventVoiceFree />} />
                 <Route path="/event/:slug/dashboard" element={<EventDashboard />} />
                 <Route path="/ticket/:attendeeId" element={<TicketPage />} />
                 <Route path="/my-tickets" element={<MyTickets />} />
