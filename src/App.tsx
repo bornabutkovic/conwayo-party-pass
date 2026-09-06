@@ -48,6 +48,7 @@ const App = () => (
                 <Route path="/preview/:eventId" element={<EventPreview />} />
                 <Route path="/event/:slug/auth" element={<EventAuth />} />
                 <Route path="/event/:slug/register" element={<EventRegister />} />
+                <Route path="/event/az-ususret-novoj-eri-testiranja-biomarkera-u-mnsclc/voice-free" element={<EventVoiceFree />} />
                 <Route path="/event/:slug/voice" element={<EventVoice />} />
                 <Route path="/event/:slug/voice-free" element={<EventVoiceFree />} />
                 <Route path="/event/:slug/dashboard" element={<EventDashboard />} />
