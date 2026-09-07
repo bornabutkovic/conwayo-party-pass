@@ -49,6 +49,7 @@ interface SupportContact {
 import { format } from "date-fns";
 import { hr as hrLocale } from "date-fns/locale";
 import { QRCodeSVG } from "qrcode.react";
+import pentaLogo from "@/assets/penta-logo.png";
 
 const VOICE_AGENT_ENABLED = true;
 
@@ -919,6 +920,14 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         {/* SECTION 7 — PLATFORM FOOTER */}
         <footer className="border-t border-border bg-muted/50 py-6">
           <div className="container mx-auto px-4 text-center text-xs text-muted-foreground leading-relaxed space-y-1">
+            <a
+              href="https://penta-zagreb.hr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mb-3"
+            >
+              <img src={pentaLogo} alt="Penta" className="h-6 w-auto mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+            </a>
             <p>{t("footer.poweredBy")}</p>
             <p>{t("footer.owner")}</p>
             <p>
