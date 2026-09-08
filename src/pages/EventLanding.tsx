@@ -414,25 +414,41 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         <section className="border-b border-border bg-card">
           <div className="container mx-auto px-4 py-6">
             <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {event.start_date && (
-                <DetailItem
-                  icon={<CalendarDays className="h-5 w-5 text-primary" />}
-                  label={t("event.dateLabel")}
-                  value={
-                    <>
-                      {formatDate(event.start_date)}
-                      {formatTimeHr(event.start_date) && ` | ${formatTimeHr(event.start_date)}`}
-                      {event.end_date && (
+              {event.start_date && (() => {
+                const sameDay = event.end_date
+                  ? new Date(event.start_date).toDateString() === new Date(event.end_date).toDateString()
+                  : true;
+                const startTime = formatTimeHr(event.start_date);
+                const endTime = event.end_date ? formatTimeHr(event.end_date) : null;
+
+                return (
+                  <DetailItem
+                    icon={<CalendarDays className="h-5 w-5 text-primary" />}
+                    label={t("event.dateLabel")}
+                    value={
+                      sameDay ? (
                         <>
-                          {" – "}
-                          {formatDate(event.end_date)}
-                          {formatTimeHr(event.end_date) && ` | ${formatTimeHr(event.end_date)}`}
+                          {formatDate(event.start_date)}
+                          {startTime && ` | ${startTime}`}
+                          {endTime && endTime !== startTime && (startTime ? ` – ${endTime}` : ` | ${endTime}`)}
                         </>
-                      )}
-                    </>
-                  }
-                />
-              )}
+                      ) : (
+                        <>
+                          {formatDate(event.start_date)}
+                          {startTime && ` | ${startTime}`}
+                          {event.end_date && (
+                            <>
+                              {" – "}
+                              {formatDate(event.end_date)}
+                              {endTime && ` | ${endTime}`}
+                            </>
+                          )}
+                        </>
+                      )
+                    }
+                  />
+                );
+              })()}
 
               {!isVirtual && locationParts.length > 0 && (
                 <DetailItem

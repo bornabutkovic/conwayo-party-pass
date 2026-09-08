@@ -1075,7 +1075,7 @@ export type Database = {
           facebook_url: string | null
           id: string | null
           instagram_url: string | null
-          invoice_email: string
+          invoice_email: string | null
           linkedin_url: string | null
           name: string
           oib: string
@@ -1096,7 +1096,7 @@ export type Database = {
           facebook_url?: string | null
           id?: string | null
           instagram_url?: string | null
-          invoice_email: string
+          invoice_email?: string | null
           linkedin_url?: string | null
           name: string
           oib: string
@@ -1117,7 +1117,7 @@ export type Database = {
           facebook_url?: string | null
           id?: string | null
           instagram_url?: string | null
-          invoice_email?: string
+          invoice_email?: string | null
           linkedin_url?: string | null
           name?: string
           oib?: string
