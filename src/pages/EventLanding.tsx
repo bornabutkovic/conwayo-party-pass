@@ -273,6 +273,12 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
 
   const currency = event.currency ?? "EUR";
   const tiers = event.ticket_tiers ?? [];
+  // Only show the "Tickets" picker when there is an actual choice to make —
+  // more than one tier, or at least one paid tier. A single free tier (e.g.
+  // sponsored/free events) has nothing to pick between, so the card is
+  // redundant noise; the free/no-cost nature is already obvious from the
+  // registration flow itself (no payment step).
+  const hasMeaningfulTierChoice = tiers.length > 1 || tiers.some((tier) => Number(tier.price) > 0);
   const services = event.event_services ?? [];
   const institution = event.institutions;
   const primaryColor = event.branding_primary_color ?? "#6366f1";
@@ -492,7 +498,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
             )}
 
             {/* SECTION 4 — TICKETS */}
-            {tiers.length > 0 && (
+            {hasMeaningfulTierChoice && (
               <section>
                 <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
                   <Ticket className="h-6 w-6" />
