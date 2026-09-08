@@ -103,7 +103,7 @@ interface EventLandingProps {
 }
 
 function stripUnsafeHtml(html: string): string {
-  const cleanedHtml = html.replace(/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '');
+  const cleanedHtml = html.replace(/(?:<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>){2,}/gi, '<p></p>');
   const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','ul','ol','li','h1','h2','h3','h4','a','span','div'];
   const doc = new DOMParser().parseFromString(cleanedHtml, 'text/html');
   function clean(node: Node): Node | null {
@@ -472,7 +472,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                   {t("event.aboutTitle")}
                 </h2>
                 <div
-                  className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-p:my-1 prose-p:leading-snug prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
+                  className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-p:my-3 prose-p:leading-relaxed prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
                   dangerouslySetInnerHTML={{ __html: stripUnsafeHtml(eventDescription || '') }}
                 />
               </section>
