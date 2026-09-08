@@ -289,6 +289,17 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
   const isVirtual = event.event_type === "virtual";
 
+  const hasLocationDetail = isVirtual || locationParts.length > 0;
+  const hasWebOrPhoneDetail = !!(event.website_url || event.support_phone);
+  const detailItemCount = [
+    !!event.start_date,
+    hasLocationDetail,
+    hasWebOrPhoneDetail,
+    true, // Event Type se prikazuje uvijek
+  ].filter(Boolean).length;
+  const detailGridColsClass =
+    detailItemCount >= 4 ? "lg:grid-cols-4" : detailItemCount === 3 ? "lg:grid-cols-3" : "lg:grid-cols-2";
+
   const whatsappMessage = displayLang === "en"
     ? `Sign up for: ${slug}`
     : `Prijava za: ${slug}`;
@@ -411,7 +422,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         {/* SECTION 2 — EVENT DETAILS */}
         <section className="border-b border-border bg-card">
           <div className="container mx-auto px-4 py-6">
-            <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={`mx-auto grid max-w-6xl gap-4 sm:grid-cols-2 ${detailGridColsClass}`}>
               {event.start_date && (() => {
                 const sameDay = event.end_date
                   ? new Date(event.start_date).toDateString() === new Date(event.end_date).toDateString()
