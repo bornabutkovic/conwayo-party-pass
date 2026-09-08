@@ -103,7 +103,14 @@ interface EventLandingProps {
 }
 
 function stripUnsafeHtml(html: string): string {
-  const cleanedHtml = html.replace(/(?:<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>){2,}/gi, '<p></p>');
+  // Any run of 1+ raw-empty paragraphs (from the RichTextEditor's blank-line
+  // breaks) collapses into a single placeholder paragraph. We give it a <br>
+  // so it keeps real line-height in the browser — an empty <p></p> has zero
+  // height and its margins fully collapse with the neighbouring paragraphs,
+  // which silently erases the blank line the editor showed. Tiptap itself
+  // renders empty paragraph nodes with a trailing <br>, so this matches the
+  // Admin Portal's RichTextEditor rendering exactly.
+  const cleanedHtml = html.replace(/(?:<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>)+/gi, '<p><br></p>');
   const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','ul','ol','li','h1','h2','h3','h4','a','span','div'];
   const doc = new DOMParser().parseFromString(cleanedHtml, 'text/html');
   function clean(node: Node): Node | null {
@@ -123,6 +130,12 @@ function stripUnsafeHtml(html: string): string {
       const cleaned = clean(child);
       if (cleaned) safe.appendChild(cleaned);
     });
+    // Safety net: any <p> that ends up with zero children after cleaning
+    // (e.g. stray whitespace-only paragraph) still needs real height to
+    // render as a visible blank line instead of collapsing away.
+    if (tag === 'p' && safe.childNodes.length === 0) {
+      safe.appendChild(document.createElement('br'));
+    }
     return safe;
   }
   const out = document.createElement('div');
@@ -472,7 +485,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                   {t("event.aboutTitle")}
                 </h2>
                 <div
-                  className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-p:my-3 prose-p:leading-relaxed prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
+                  className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
                   dangerouslySetInnerHTML={{ __html: stripUnsafeHtml(eventDescription || '') }}
                 />
               </section>
