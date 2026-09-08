@@ -369,16 +369,14 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         {bannerUrl ? (
           <section className="w-full overflow-hidden bg-background">
             <div
-              className="relative mx-auto w-full max-w-[1400px] overflow-hidden"
-              style={{
-                height: event.branding_banner_height ?? 400,
-                backgroundColor: event.branding_primary_color ?? "#6366f1",
-              }}
+              className="relative w-full overflow-hidden"
+              style={{ backgroundColor: event.branding_primary_color ?? "#6366f1" }}
             >
               <img
                 src={bannerUrl}
                 alt={`${eventName} banner`}
-                className="h-full w-full object-contain"
+                className="block w-full h-auto max-h-[500px] object-contain mx-auto"
+                style={{ backgroundColor: event.branding_primary_color ?? "#6366f1" }}
               />
             </div>
           </section>
