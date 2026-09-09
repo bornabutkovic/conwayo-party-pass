@@ -1353,10 +1353,13 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string | null
+          credit_note_issued_at: string | null
+          credit_note_number: string | null
           customer_posting_group: string | null
           due_date: string | null
           event_id: string | null
           fiscal_invoice_number: string | null
+          fiscal_invoice_number_history: Json
           gdpr_consent_at: string | null
           gdpr_consent_given: boolean | null
           gen_bus_posting_group: string | null
@@ -1404,10 +1407,13 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          credit_note_issued_at?: string | null
+          credit_note_number?: string | null
           customer_posting_group?: string | null
           due_date?: string | null
           event_id?: string | null
           fiscal_invoice_number?: string | null
+          fiscal_invoice_number_history?: Json
           gdpr_consent_at?: string | null
           gdpr_consent_given?: boolean | null
           gen_bus_posting_group?: string | null
@@ -1455,10 +1461,13 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          credit_note_issued_at?: string | null
+          credit_note_number?: string | null
           customer_posting_group?: string | null
           due_date?: string | null
           event_id?: string | null
           fiscal_invoice_number?: string | null
+          fiscal_invoice_number_history?: Json
           gdpr_consent_at?: string | null
           gdpr_consent_given?: boolean | null
           gen_bus_posting_group?: string | null
@@ -3009,6 +3018,10 @@ export type Database = {
       }
       record_bc_quote_history: {
         Args: { p_old_quote_number: string; p_order_id: string }
+        Returns: undefined
+      }
+      record_fiscal_invoice_history: {
+        Args: { p_old_invoice_number: string; p_order_id: string }
         Returns: undefined
       }
       record_whatsapp_consent: {

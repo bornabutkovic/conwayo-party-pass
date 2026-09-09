@@ -183,6 +183,7 @@ export default function EventRegister() {
   const [gdprConsentAccepted, setGdprConsentAccepted] = useState(false);
   const [gdprConsentError, setGdprConsentError] = useState(false);
   const [gdprModalOpen, setGdprModalOpen] = useState(false);
+  const [bannerAspectRatio, setBannerAspectRatio] = useState<number | null>(null);
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
@@ -948,17 +949,26 @@ export default function EventRegister() {
 
       {/* HERO — clean banner only */}
       {bannerUrl ? (
-        <section className="relative w-full overflow-hidden">
-          <img
-            src={bannerUrl}
-            alt={`${eventName} banner`}
-            className="block w-full object-cover"
+        <section className="w-full overflow-hidden" style={{ backgroundColor: primaryColor }}>
+          <div
+            className="mx-auto flex w-full items-center justify-center overflow-hidden"
             style={{
-              maxHeight: (event as any).branding_banner_height
-                ? `${(event as any).branding_banner_height}px`
-                : undefined,
+              aspectRatio: bannerAspectRatio ?? undefined,
+              maxHeight: event.branding_banner_height ? `${event.branding_banner_height}px` : undefined,
             }}
-          />
+          >
+            <img
+              src={bannerUrl}
+              alt={`${eventName} banner`}
+              className="h-full w-full object-contain"
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth && img.naturalHeight) {
+                  setBannerAspectRatio(img.naturalWidth / img.naturalHeight);
+                }
+              }}
+            />
+          </div>
         </section>
       ) : (
         <section
