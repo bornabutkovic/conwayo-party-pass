@@ -153,7 +153,7 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
             className="h-20 w-auto max-w-[240px] object-contain rounded-lg border border-border bg-white p-2 mb-4"
           />
         )}
-        <h1 className="text-2xl font-bold mb-1">{eventName}</h1>
+        <h1 className={`text-2xl font-bold mb-1 ${bannerUrl ? 'sr-only' : ''}`}>{eventName}</h1>
         <p className="text-muted-foreground mb-8">{L("Besplatna prijava", "Free registration")}</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
