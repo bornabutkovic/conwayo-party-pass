@@ -147,7 +147,11 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
 
       <section className="container mx-auto px-4 py-10 max-w-2xl">
         {(event as any).branding_logo_url && (
-          <img src={(event as any).branding_logo_url} alt={`${eventName} logo`} className="h-16 w-16 object-contain rounded-lg border border-border bg-white p-1 mb-4" />
+          <img
+            src={(event as any).branding_logo_url}
+            alt={`${eventName} logo`}
+            className="h-20 w-auto max-w-[240px] object-contain rounded-lg border border-border bg-white p-2 mb-4"
+          />
         )}
         <h1 className="text-2xl font-bold mb-1">{eventName}</h1>
         <p className="text-muted-foreground mb-8">{L("Besplatna prijava", "Free registration")}</p>
