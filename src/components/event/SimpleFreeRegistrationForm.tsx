@@ -136,11 +136,12 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
       <ConvwayoHeader showBackToEvents />
 
       {bannerUrl && (
-        <section
-          className="relative w-full overflow-hidden"
-          style={{ height: (event as any).branding_banner_height ?? 400, backgroundColor: (event as any).branding_primary_color ?? "#6366f1" }}
-        >
-          <img src={bannerUrl} alt={`${eventName} banner`} className="h-full w-full object-contain" />
+        <section className="w-full overflow-hidden">
+          <img
+            src={bannerUrl}
+            alt={`${eventName} banner`}
+            className="block w-full h-auto"
+          />
         </section>
       )}
 
