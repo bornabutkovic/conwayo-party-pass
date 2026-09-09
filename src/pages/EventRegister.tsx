@@ -949,26 +949,12 @@ export default function EventRegister() {
 
       {/* HERO — clean banner only */}
       {bannerUrl ? (
-        <section className="w-full overflow-hidden" style={{ backgroundColor: primaryColor }}>
-          <div
-            className="mx-auto flex w-full items-center justify-center overflow-hidden"
-            style={{
-              aspectRatio: bannerAspectRatio ?? undefined,
-              maxHeight: event.branding_banner_height ? `${event.branding_banner_height}px` : undefined,
-            }}
-          >
-            <img
-              src={bannerUrl}
-              alt={`${eventName} banner`}
-              className="h-full w-full object-contain"
-              onLoad={(e) => {
-                const img = e.currentTarget;
-                if (img.naturalWidth && img.naturalHeight) {
-                  setBannerAspectRatio(img.naturalWidth / img.naturalHeight);
-                }
-              }}
-            />
-          </div>
+        <section className="w-full overflow-hidden">
+          <img
+            src={bannerUrl}
+            alt={`${eventName} banner`}
+            className="block w-full h-auto"
+          />
         </section>
       ) : (
         <section
