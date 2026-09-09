@@ -127,9 +127,31 @@ Deno.serve(async (req) => {
     // Fetch tier prices
     const { data: tierData } = await supabase
       .from("ticket_tiers")
-      .select("id, name, price, erp_code")
+      .select("id, name, price, erp_code, sales_start, sales_end")
       .in("id", allTierIds);
     const tierMap = new Map((tierData ?? []).map(t => [t.id, t]));
+
+    // ── Reject tiers outside their sales window ──
+    const now = new Date();
+    for (const tierId of allTierIds) {
+      const tier = tierMap.get(tierId);
+      if (!tier) {
+        console.error("[create-order] Unknown ticket_tier_id:", tierId);
+        return new Response(
+          JSON.stringify({ success: false, error: "Invalid ticket tier" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const start = tier.sales_start ? new Date(tier.sales_start) : null;
+      const end = tier.sales_end ? new Date(tier.sales_end) : null;
+      if ((start && now < start) || (end && now > end)) {
+        console.error("[create-order] Tier outside sales window:", tierId, tier.sales_start, tier.sales_end);
+        return new Response(
+          JSON.stringify({ success: false, error: `Ticket tier "${tier.name}" is no longer available for purchase` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     // Fetch service prices
     let serviceMap = new Map<string, { id: string; name: string; price: number; erp_code: string | null }>();
