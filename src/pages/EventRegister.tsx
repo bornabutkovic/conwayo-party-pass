@@ -183,6 +183,7 @@ export default function EventRegister() {
   const [gdprConsentAccepted, setGdprConsentAccepted] = useState(false);
   const [gdprConsentError, setGdprConsentError] = useState(false);
   const [gdprModalOpen, setGdprModalOpen] = useState(false);
+  const [bannerAspectRatio, setBannerAspectRatio] = useState<number | null>(null);
 
   // Profile email for fallback
   const [profileEmail, setProfileEmail] = useState("");
