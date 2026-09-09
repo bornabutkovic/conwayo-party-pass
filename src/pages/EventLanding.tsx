@@ -410,7 +410,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         {/* SECTION 2 — EVENT DETAILS */}
         <section className="border-b border-border bg-card">
           <div className="container mx-auto px-4 py-6">
-            <div className={`mx-auto grid max-w-6xl gap-4 sm:grid-cols-2 ${detailGridColsClass}`}>
+            <div className="mx-auto flex max-w-6xl flex-wrap gap-x-10 gap-y-5">
               {event.start_date && (() => {
                 const sameDay = event.end_date
                   ? new Date(event.start_date).toDateString() === new Date(event.end_date).toDateString()
