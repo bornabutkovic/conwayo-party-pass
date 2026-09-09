@@ -430,7 +430,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                           {endTime && endTime !== startTime && (startTime ? ` – ${endTime}` : ` | ${endTime}`)}
                         </span>
                       ) : (
-                        <span className="whitespace-nowrap">
+                        <span>
                           {formatDate(event.start_date)}
                           {startTime && ` | ${startTime}`}
                           {event.end_date && (
