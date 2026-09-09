@@ -293,16 +293,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
   const isVirtual = event.event_type === "virtual";
 
-  const hasLocationDetail = isVirtual || locationParts.length > 0;
-  const hasWebOrPhoneDetail = !!(event.website_url || event.support_phone);
-  const detailItemCount = [
-    !!event.start_date,
-    hasLocationDetail,
-    hasWebOrPhoneDetail,
-    true, // Event Type se prikazuje uvijek
-  ].filter(Boolean).length;
-  const detailGridColsClass =
-    detailItemCount >= 4 ? "lg:grid-cols-4" : detailItemCount === 3 ? "lg:grid-cols-3" : "lg:grid-cols-2";
 
   const whatsappMessage = displayLang === "en"
     ? `Sign up for: ${slug}`
