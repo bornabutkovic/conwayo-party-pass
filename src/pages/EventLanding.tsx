@@ -154,6 +154,9 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const { data: fetchedEvent, isLoading, error } = useEventFull(previewEvent ? "" : (slug ?? ""));
   const event = previewEvent ?? fetchedEvent;
   const { lang, setLang, t } = useLanguage();
+  const [bannerAspectRatio, setBannerAspectRatio] = useState<number | null>(null);
+  
+
   
 
   const supportsEnglish = useMemo(() => {
@@ -283,7 +286,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const institution = event.institutions;
   const primaryColor = event.branding_primary_color ?? "#6366f1";
   const bannerUrl = event.branding_banner_url;
-  const [bannerAspectRatio, setBannerAspectRatio] = useState<number | null>(null);
   const eventTypeEntry = EVENT_TYPE_LABELS[event.event_type ?? "face2face"] ?? EVENT_TYPE_LABELS.face2face;
   const EventTypeIcon = eventTypeEntry.icon;
 
