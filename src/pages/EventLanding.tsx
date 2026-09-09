@@ -134,6 +134,7 @@ function stripUnsafeHtml(html: string): string {
     // (e.g. stray whitespace-only paragraph) still needs real height to
     // render as a visible blank line instead of collapsing away.
     if (tag === 'p' && safe.childNodes.length === 0) {
+      safe.setAttribute('class', 'blank-line');
       safe.appendChild(document.createElement('br'));
     }
     return safe;
@@ -513,7 +514,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                   {t("event.aboutTitle")}
                 </h2>
                 <div
-                  className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
+                  className="event-description-content prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
                   dangerouslySetInnerHTML={{ __html: stripUnsafeHtml(eventDescription || '') }}
                 />
               </section>
