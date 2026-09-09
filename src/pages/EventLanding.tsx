@@ -424,7 +424,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     label={t("event.dateLabel")}
                     value={
                       sameDay ? (
-                        <span className="whitespace-nowrap">
+                        <span>
                           {formatDate(event.start_date)}
                           {startTime && ` | ${startTime}`}
                           {endTime && endTime !== startTime && (startTime ? ` – ${endTime}` : ` | ${endTime}`)}
