@@ -984,6 +984,13 @@ export default function EventRegister() {
       <section className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-6 md:py-8">
           <div className="mx-auto max-w-4xl space-y-4">
+            {event.branding_logo_url && (
+              <img
+                src={event.branding_logo_url}
+                alt={`${eventName} logo`}
+                className="h-20 w-auto max-w-[240px] object-contain rounded-lg border border-border bg-white p-2 mb-3"
+              />
+            )}
             <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-4xl">
               {eventName}
             </h1>
