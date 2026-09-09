@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import mnsclcBanner from "@/assets/mnsclc-banner.png";
 
 export type Event = Tables<"events">;
 export type TicketTier = Tables<"ticket_tiers">;
@@ -71,7 +72,13 @@ export function useEvent(slug: string) {
         throw new Error("Event not found");
       }
       console.log("Event loaded:", data.name, data.id);
-      return data as Event;
+      return {
+        ...data,
+        branding_banner_url:
+          data.slug.toLowerCase() === "az-ususret-novoj-eri-testiranja-biomarkera-u-mnsclc"
+            ? mnsclcBanner
+            : data.branding_banner_url,
+      } as Event;
     },
     enabled: !!slug,
   });
@@ -168,6 +175,10 @@ export function useEventFull(slug: string) {
 
       return {
         ...event,
+        branding_banner_url:
+          event.slug.toLowerCase() === "az-ususret-novoj-eri-testiranja-biomarkera-u-mnsclc"
+            ? mnsclcBanner
+            : event.branding_banner_url,
         translations: rawTranslations as Record<string, any> | null,
         supported_languages,
         organizers_info: rawOrganizersInfo,
