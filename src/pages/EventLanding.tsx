@@ -276,7 +276,10 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   }
 
   const currency = event.currency ?? "EUR";
-  const tiers = event.ticket_tiers ?? [];
+  const tiers = (event.ticket_tiers ?? []).filter((tier) => {
+    const end = tier.sales_end ? new Date(tier.sales_end) : null;
+    return !(end && new Date() > end);
+  });
   // Only show the "Tickets" picker when there is an actual choice to make —
   // more than one tier, or at least one paid tier. A single free tier (e.g.
   // sponsored/free events) has nothing to pick between, so the card is
