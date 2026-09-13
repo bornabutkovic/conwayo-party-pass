@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import mnsclcBanner from "@/assets/mnsclc-banner.png";
+
 
 export type Event = Tables<"events">;
 export type TicketTier = Tables<"ticket_tiers">;
@@ -74,10 +74,6 @@ export function useEvent(slug: string) {
       console.log("Event loaded:", data.name, data.id);
       return {
         ...data,
-        branding_banner_url:
-          data.slug.toLowerCase() === "az-ususret-novoj-eri-testiranja-biomarkera-u-mnsclc"
-            ? mnsclcBanner
-            : data.branding_banner_url,
       } as Event;
     },
     enabled: !!slug,
@@ -98,9 +94,9 @@ export function useEventFull(slug: string) {
           location_city, location_country, location_postal_code,
           website_url, support_phone, event_type, currency, vat_rate,
           payment_due_days, branding_primary_color, branding_secondary_color,
-          branding_text_color, branding_logo_url, branding_banner_url, branding_banner_height,
+          branding_text_color, branding_logo_url, branding_banner_url, branding_banner_mobile_url, branding_banner_height,
           branding_favicon_url, notification_sender_name, notification_sender_email,
-          required_attendee_fields, custom_consent_text,
+          required_attendee_fields, custom_consent_text, hide_institution_organizer,
           institutions!events_institution_uuid_fkey(
             name, address, city, oib, invoice_email,
             website, phone, facebook_url, linkedin_url, instagram_url
@@ -175,10 +171,6 @@ export function useEventFull(slug: string) {
 
       return {
         ...event,
-        branding_banner_url:
-          event.slug.toLowerCase() === "az-ususret-novoj-eri-testiranja-biomarkera-u-mnsclc"
-            ? mnsclcBanner
-            : event.branding_banner_url,
         translations: rawTranslations as Record<string, any> | null,
         supported_languages,
         organizers_info: rawOrganizersInfo,
