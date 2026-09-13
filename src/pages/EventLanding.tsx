@@ -290,6 +290,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const institution = event.institutions;
   const primaryColor = event.branding_primary_color ?? "#6366f1";
   const bannerUrl = event.branding_banner_url;
+  const mobileBannerUrl = (event as any).branding_banner_mobile_url;
   const eventTypeEntry = EVENT_TYPE_LABELS[event.event_type ?? "face2face"] ?? EVENT_TYPE_LABELS.face2face;
   const EventTypeIcon = eventTypeEntry.icon;
 
@@ -376,11 +377,14 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         {/* SECTION 1 — HERO (clean, no text) */}
         {bannerUrl ? (
           <section className="w-full overflow-hidden">
-            <img
-              src={bannerUrl}
-              alt={`${eventName} banner`}
-              className="block w-full h-auto"
-            />
+            <picture>
+              {mobileBannerUrl && <source media="(max-width: 767px)" srcSet={mobileBannerUrl} />}
+              <img
+                src={bannerUrl}
+                alt={`${eventName} banner`}
+                className="block w-full h-auto"
+              />
+            </picture>
           </section>
         ) : (
           <section
