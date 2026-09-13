@@ -199,3 +199,9 @@
 .event-description-content p.blank-line {
   margin-bottom: 1.1em;
 }
+.event-description-content h4 {
+  font-size: 1.15rem;
+  line-height: 1.4;
+  margin-top: 0.75em;
+  margin-bottom: 0.25em;
+}
