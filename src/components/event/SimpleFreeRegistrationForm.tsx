@@ -117,6 +117,7 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
 
   const eventName = event.name;
   const bannerUrl = (event as any).branding_banner_url;
+  const mobileBannerUrl = (event as any).branding_banner_mobile_url;
 
   if (success) {
     return (
@@ -138,11 +139,14 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
 
       {bannerUrl && (
         <section className="w-full overflow-hidden">
-          <img
-            src={bannerUrl}
-            alt={`${eventName} banner`}
-            className="block w-full h-auto"
-          />
+          <picture>
+            {mobileBannerUrl && <source media="(max-width: 767px)" srcSet={mobileBannerUrl} />}
+            <img
+              src={bannerUrl}
+              alt={`${eventName} banner`}
+              className="block w-full h-auto"
+            />
+          </picture>
         </section>
       )}
 
