@@ -60,6 +60,7 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     for (const key of fields) {
+      if (key === "oib") continue;
       if (!values[key]?.trim()) {
         toast({ title: L("Molimo popunite sva obavezna polja", "Please fill in all required fields"), variant: "destructive" });
         return;
@@ -150,7 +151,7 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
           <img
             src={(event as any).branding_logo_url}
             alt={`${eventName} logo`}
-            className="h-20 w-auto max-w-[240px] object-contain rounded-lg border border-border bg-white p-2 mb-4"
+            className="h-14 w-auto max-w-[180px] object-contain rounded-lg border border-border bg-white p-2 mb-4 sm:h-20 sm:max-w-[240px]"
           />
         )}
         <h1 className={`text-2xl font-bold mb-1 ${bannerUrl ? 'sr-only' : ''}`}>{eventName}</h1>
@@ -161,10 +162,16 @@ export function SimpleFreeRegistrationForm({ event, tier }: Props) {
             {fields.map((key) => {
               const def = FIELD_DEFS[key];
               const wide = key === "email" || key === "institution" || key === "specialty";
+              const isOib = key === "oib";
               return (
                 <div key={key} className={wide ? "sm:col-span-2" : undefined}>
-                  <Label htmlFor={key}>{`${L(def.hr, def.en)} *`}</Label>
+                  <Label htmlFor={key}>{isOib ? L(def.hr, def.en) : `${L(def.hr, def.en)} *`}</Label>
                   <Input id={key} type={def.type} value={values[key] ?? ""} onChange={(e) => setField(key, e.target.value)} />
+                  {isOib && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {L("Unos OIB-a je opcionalan i prikuplja se radi dodjele HLK bodova.", "Providing your Tax ID (OIB) is optional and is collected solely for awarding CME credit points.")}
+                    </p>
+                  )}
                 </div>
               );
             })}
