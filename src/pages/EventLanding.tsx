@@ -404,7 +404,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                 <img
                   src={event.branding_logo_url}
                   alt={`${eventName} logo`}
-                  className="h-24 w-auto max-w-[280px] object-contain rounded-lg border border-border bg-white p-2 mb-4"
+                  style={{ height: (event as any).branding_logo_height ? `${(event as any).branding_logo_height}px` : '6rem' }}
+                  className="w-auto max-w-[280px] object-contain rounded-lg border border-border bg-white p-2 mb-4"
                 />
               )}
               <h1 className={`text-3xl font-bold tracking-tight text-foreground md:text-5xl ${bannerUrl ? 'sr-only' : ''}`}>
