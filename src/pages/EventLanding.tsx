@@ -111,7 +111,7 @@ function stripUnsafeHtml(html: string): string {
   // renders empty paragraph nodes with a trailing <br>, so this matches the
   // Admin Portal's RichTextEditor rendering exactly.
   const cleanedHtml = html.replace(/(?:<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>)+/gi, '<p><br></p>');
-  const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','ul','ol','li','h1','h2','h3','h4','a','span','div'];
+  const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','ul','ol','li','h1','h2','h3','h4','a','span','div','small'];
   const doc = new DOMParser().parseFromString(cleanedHtml, 'text/html');
   function clean(node: Node): Node | null {
     if (node.nodeType === Node.TEXT_NODE) return node.cloneNode();
@@ -753,6 +753,9 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               }));
 
               const hasCoOrganizers = coInfoList.length > 0;
+              const showMainOrganizerSection = (institution && !(event as any).hide_institution_organizer) || hasCoOrganizers;
+              if (!showMainOrganizerSection) return null;
+
               const gridCols = hasCoOrganizers
                 ? coInfoList.length >= 2
                   ? "sm:grid-cols-2 lg:grid-cols-3"
@@ -772,9 +775,9 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                       <AccordionContent>
                         <div className={`grid gap-4 ${gridCols}`}>
                           {/* Main organizer */}
-                          {institution ? (
+                          {institution && !(event as any).hide_institution_organizer ? (
                             <OrganizerCard institution={institution} />
-                          ) : (
+                          ) : !institution && !(event as any).hide_institution_organizer ? (
                             <Card className="border-border">
                               <CardContent className="p-5 space-y-3 text-sm">
                                 {event.notification_sender_name && (
@@ -796,7 +799,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                                 )}
                               </CardContent>
                             </Card>
-                          )}
+                          ) : null}
 
                           {/* Co-organizers (from organizers_info JSONB only) */}
                           {coInfoList.map((org, idx) => (
