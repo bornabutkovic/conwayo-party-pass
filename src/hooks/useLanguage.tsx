@@ -60,8 +60,8 @@ const translations = {
   },
   "event.onlineTitle": { hr: "Online registracija", en: "Online Registration" },
   "event.onlineDesc": {
-    hr: "Registriraj se putem web obrasca. Plati karticom ili odaberi plaćanje po računu.",
-    en: "Register via web form. Pay by card or choose invoice payment.",
+    hr: "Registriraj se putem standardnog web obrasca.",
+    en: "Register via a standard web form.",
   },
   "event.whatsappTitle": { hr: "AI Registracija", en: "AI Registration" },
   "event.whatsappDesc": {
