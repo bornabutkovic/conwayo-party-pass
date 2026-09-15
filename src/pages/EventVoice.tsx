@@ -78,7 +78,12 @@ export default function EventVoice() {
         if (timerRef.current) clearInterval(timerRef.current);
       });
 
-      await client.startCall({ accessToken: data.access_token });
+      await client.startCall({
+        accessToken: data.access_token,
+        callId: data.call_id,
+        transport: data.transport,
+        iceServers: data.ice_servers,
+      });
     } catch {
       setErrorMsg(lang === 'en' ? 'Connection error. Please try again.' : 'Greška pri spajanju. Pokušajte ponovo.');
       setCallStatus('error');
