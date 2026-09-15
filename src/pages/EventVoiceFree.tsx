@@ -71,7 +71,12 @@ export default function EventVoiceFree() {
         if (timerRef.current) clearInterval(timerRef.current);
       });
 
-      await client.startCall({ accessToken: data.access_token });
+      await client.startCall({
+        accessToken: data.access_token,
+        callId: data.call_id,
+        transport: data.transport,
+        iceServers: data.ice_servers,
+      });
     } catch {
       setErrorMsg('Greška pri spajanju. Pokušajte ponovo.');
       setCallStatus('error');
