@@ -703,44 +703,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
               </div>
             </section>
 
-            {/* SECTION 4b — ADDITIONAL SERVICES */}
-            {services.length > 0 && (
-              <section>
-                <h2 className="mb-5 flex items-center gap-2 text-2xl font-bold text-foreground">
-                  <ShieldCheck className="h-6 w-6" />
-                  {t("event.servicesTitle")}
-                </h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {services.map((service) => {
-                    const svcTrans = ((service.translations as Record<string, any>)?.['en'] as Record<string, any>) ?? {};
-                    const svcName = displayLang === 'en' && svcTrans['name'] ? String(svcTrans['name']) : service.name;
-                    const svcDesc = displayLang === 'en' && svcTrans['description'] ? String(svcTrans['description']) : (service.description ?? '');
-                    return (
-                      <Card key={service.id} className="border-border">
-                        <CardContent className="p-5">
-                          <h3 className="text-lg font-semibold text-card-foreground">
-                            {svcName}
-                          </h3>
-                          {svcDesc && (
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {svcDesc}
-                            </p>
-                          )}
-                          <p className="mt-3 text-2xl font-bold text-primary">
-                            {service.price === 0
-                              ? t("event.freeLabel")
-                              : `${Number(service.price).toFixed(2)} ${currency}`}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                <p className="mt-4 text-sm text-muted-foreground text-center">
-                  {t("event.servicesNote")}
-                </p>
-              </section>
-            )}
 
             {/* SECTION 5 — ORGANIZERS (main + co-organizers from organizers_info JSONB) */}
             {(() => {
