@@ -281,7 +281,14 @@ Deno.serve(async (req) => {
     });
 
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-    if (itemsError) throw itemsError;
+    if (itemsError) {
+      // Roll back: no orphan order/attendees when the DB rejects the items (e.g. TIER_DEPENDENCY)
+      await supabase.from("orders").delete().eq("id", order.id);
+      await supabase.from("attendees").delete().in("id", attendeeIds);
+      const msg = itemsError.message || JSON.stringify(itemsError);
+      console.error("[create-order] Items rejected, rolled back:", msg);
+      return json({ success: false, error: msg }, 400);
+    }
 
     if (discount) {
       const { error: incErr } = await supabase.rpc("increment_discount_code_usage", { p_discount_code_id: discount.id });
