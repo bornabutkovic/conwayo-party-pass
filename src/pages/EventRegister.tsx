@@ -1309,7 +1309,100 @@ export default function EventRegister() {
                 </div>
               </div>
 
+              {/* ── Additional Services ── */}
+              {services.length > 0 && (
+                <div className="mb-10">
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">{t("register.additionalServices")}</h3>
+                  {totalTickets === 0 ? (
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <div className="space-y-2">
+                        {services.map(svc => (
+                          <div key={svc.id} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm opacity-60">
+                            <span className="flex-1 text-muted-foreground">{tr(svc.translations as Record<string, any> | null, lang, "name", svc.name)}</span>
+                            <span className="font-medium text-muted-foreground">€{Number(svc.price).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        {lang === "hr" ? "Najprije odaberite kotizaciju." : "Select a ticket first."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {attendees.map((att, idx) => (
+                        <div key={idx} className="rounded-lg border border-border bg-card p-4">
+                          <p className="mb-2 text-sm font-medium text-primary">
+                            {t("register.ticket")} #{idx + 1} — {tr((tiers.find(t2 => t2.id === att.tierId)?.translations ?? null) as Record<string, any> | null, lang, "name", att.tierName)}
+                          </p>
+                          <div className="space-y-2">
+                            {services.map(svc => {
+                              const checked = att.selectedServiceIds.has(svc.id);
+                              return (
+                                <label
+                                  key={svc.id}
+                                  className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
+                                    checked ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleAttendeeService(idx, svc.id)}
+                                    className="h-4 w-4 rounded border-input text-primary accent-primary"
+                                  />
+                                  <span className="flex-1 text-foreground">{tr(svc.translations as Record<string, any> | null, lang, "name", svc.name)}</span>
+                                  <span className="font-medium text-primary">€{Number(svc.price).toFixed(2)}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-8">
+                {/* ── Registration Type ── */}
+                <div>
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">{t("register.whoPaying")}</h3>
+                  <RadioGroup
+                    value={payerType}
+                    onValueChange={(v) => setPayerType(v as "individual" | "company")}
+                    className="grid grid-cols-2 gap-4"
+                  >
+                    <label
+                      htmlFor="type-individual"
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                        payerType === "individual"
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <RadioGroupItem value="individual" id="type-individual" />
+                      <div className="flex items-center gap-2">
+                        <UserIcon className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-foreground">{t("register.individual")}</span>
+                      </div>
+                    </label>
+                    <label
+                      htmlFor="type-company"
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                        payerType === "company"
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <RadioGroupItem value="company" id="type-company" />
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-foreground">{t("register.company")}</span>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </div>
+
                 {/* ── Per-Ticket Attendee Details ── */}
                 {totalTickets > 0 && (
                   <div>
@@ -1385,35 +1478,6 @@ export default function EventRegister() {
                               />
                             </div>
                           </div>
-
-                          {/* Per-attendee services */}
-                          {services.length > 0 && (
-                            <div className="mt-4 border-t border-border pt-3">
-                              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("register.additionalOptions")}</p>
-                              <div className="space-y-2">
-                                {services.map(svc => {
-                                  const checked = att.selectedServiceIds.has(svc.id);
-                                  return (
-                                    <label
-                                      key={svc.id}
-                                      className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
-                                        checked ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
-                                      }`}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={checked}
-                                        onChange={() => toggleAttendeeService(idx, svc.id)}
-                                        className="h-4 w-4 rounded border-input text-primary accent-primary"
-                                      />
-                                      <span className="flex-1 text-foreground">{tr(svc.translations as Record<string, any> | null, lang, "name", svc.name)}</span>
-                                      <span className="font-medium text-primary">€{Number(svc.price).toFixed(2)}</span>
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -1433,44 +1497,6 @@ export default function EventRegister() {
                 {/* ── Billing Information ── */}
                 <div>
                   <h3 className="mb-4 text-lg font-semibold text-foreground">{t("register.billingInfo")}</h3>
-
-                  <div className="mb-6">
-                    <Label className="mb-3 block">{t("register.whoPaying")} *</Label>
-                    <RadioGroup
-                      value={payerType}
-                      onValueChange={(v) => setPayerType(v as "individual" | "company")}
-                      className="grid grid-cols-2 gap-4"
-                    >
-                      <label
-                        htmlFor="type-individual"
-                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                          payerType === "individual"
-                            ? "border-primary bg-primary/5"
-                            : "border-border bg-card hover:border-muted-foreground/30"
-                        }`}
-                      >
-                        <RadioGroupItem value="individual" id="type-individual" />
-                        <div className="flex items-center gap-2">
-                          <UserIcon className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">{t("register.individual")}</span>
-                        </div>
-                      </label>
-                      <label
-                        htmlFor="type-company"
-                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                          payerType === "company"
-                            ? "border-primary bg-primary/5"
-                            : "border-border bg-card hover:border-muted-foreground/30"
-                        }`}
-                      >
-                        <RadioGroupItem value="company" id="type-company" />
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">{t("register.company")}</span>
-                        </div>
-                      </label>
-                    </RadioGroup>
-                  </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
