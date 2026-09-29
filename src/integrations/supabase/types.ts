@@ -152,6 +152,8 @@ export type Database = {
           cancellation_email_claimed_at: string | null
           cancellation_email_sent_at: string | null
           checked_in: boolean | null
+          checked_in_by_token: string | null
+          checkin_override: boolean
           created_at: string | null
           email: string | null
           erp_sku: string | null
@@ -187,6 +189,8 @@ export type Database = {
           cancellation_email_claimed_at?: string | null
           cancellation_email_sent_at?: string | null
           checked_in?: boolean | null
+          checked_in_by_token?: string | null
+          checkin_override?: boolean
           created_at?: string | null
           email?: string | null
           erp_sku?: string | null
@@ -222,6 +226,8 @@ export type Database = {
           cancellation_email_claimed_at?: string | null
           cancellation_email_sent_at?: string | null
           checked_in?: boolean | null
+          checked_in_by_token?: string | null
+          checkin_override?: boolean
           created_at?: string | null
           email?: string | null
           erp_sku?: string | null
@@ -249,6 +255,13 @@ export type Database = {
           whatsapp_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "attendees_checked_in_by_token_fkey"
+            columns: ["checked_in_by_token"]
+            isOneToOne: false
+            referencedRelation: "scanner_tokens"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attendees_event_id_fkey"
             columns: ["event_id"]
@@ -1846,6 +1859,7 @@ export type Database = {
         Row: {
           created_at: string
           event_id: string | null
+          expires_at: string | null
           id: string
           is_active: boolean
           label: string | null
@@ -1856,6 +1870,7 @@ export type Database = {
         Insert: {
           created_at?: string
           event_id?: string | null
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           label?: string | null
@@ -1866,6 +1881,7 @@ export type Database = {
         Update: {
           created_at?: string
           event_id?: string | null
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           label?: string | null
@@ -2019,12 +2035,15 @@ export type Database = {
           erp_code: string | null
           event_id: string | null
           id: string
+          is_featured: boolean
           name: string
           price: number
           rejection_reason: string | null
+          requires_tier_id: string | null
           sales_end: string | null
           sales_start: string | null
           short_name: string | null
+          show_sales_end: boolean
           status: string | null
           translations: Json | null
         }
@@ -2039,12 +2058,15 @@ export type Database = {
           erp_code?: string | null
           event_id?: string | null
           id?: string
+          is_featured?: boolean
           name: string
           price?: number
           rejection_reason?: string | null
+          requires_tier_id?: string | null
           sales_end?: string | null
           sales_start?: string | null
           short_name?: string | null
+          show_sales_end?: boolean
           status?: string | null
           translations?: Json | null
         }
@@ -2059,12 +2081,15 @@ export type Database = {
           erp_code?: string | null
           event_id?: string | null
           id?: string
+          is_featured?: boolean
           name?: string
           price?: number
           rejection_reason?: string | null
+          requires_tier_id?: string | null
           sales_end?: string | null
           sales_start?: string | null
           short_name?: string | null
+          show_sales_end?: boolean
           status?: string | null
           translations?: Json | null
         }
@@ -2088,6 +2113,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "view_events_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_tiers_requires_tier_id_fkey"
+            columns: ["requires_tier_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_tiers"
             referencedColumns: ["id"]
           },
         ]
@@ -2822,13 +2854,6 @@ export type Database = {
           },
           {
             foreignKeyName: "events_institution_uuid_fkey"
-            columns: ["institution_uuid"]
-            isOneToOne: false
-            referencedRelation: "institutions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_institution_uuid_fkey"
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions"
@@ -2837,13 +2862,20 @@ export type Database = {
           {
             foreignKeyName: "events_institution_uuid_fkey"
             columns: ["institution_uuid"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_institution_uuid_fkey"
+            columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions_public"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "events_institution_uuid_fkey"
-            columns: ["institution_id"]
+            columns: ["institution_uuid"]
             isOneToOne: false
             referencedRelation: "institutions_public"
             referencedColumns: ["id"]
@@ -3046,6 +3078,15 @@ export type Database = {
         Returns: undefined
       }
       run_data_retention_cleanup: { Args: { dry_run?: boolean }; Returns: Json }
+      scanner_checkin: {
+        Args: {
+          p_attendee_id: string
+          p_event_id: string
+          p_override?: boolean
+          p_token_id: string
+        }
+        Returns: Json
+      }
       set_refund_credit_note: {
         Args: {
           p_credit_note_issued_at?: string
