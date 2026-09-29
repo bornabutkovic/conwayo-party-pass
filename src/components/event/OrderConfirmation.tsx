@@ -35,6 +35,9 @@ interface OrderConfirmationProps {
   // Stripe-specific
   redirectingToStripe?: boolean;
   onPayNow?: () => void;
+  discountAmount?: number;
+  isPaid?: boolean;
+  freeMessage?: string;
 }
 
 export function OrderConfirmation({
@@ -54,6 +57,9 @@ export function OrderConfirmation({
   companyName,
   redirectingToStripe,
   onPayNow,
+  discountAmount,
+  isPaid,
+  freeMessage,
 }: OrderConfirmationProps) {
   const navigate = useNavigate();
 

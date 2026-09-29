@@ -80,6 +80,8 @@ interface SuccessData {
   payerType: "individual" | "company";
   allAttendees: SuccessAttendeeInfo[];
   totalAmount: number;
+  discountAmount?: number;
+  isFree?: boolean;
 }
 
 export default function EventRegister() {
@@ -162,6 +164,7 @@ export default function EventRegister() {
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [discountCheckStatus, setDiscountCheckStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
   const [discountReason, setDiscountReason] = useState<string | null>(null);
+  const [discountServerError, setDiscountServerError] = useState<string | null>(null);
   const [discountPreview, setDiscountPreview] = useState<{
     discount_type: string;
     discount_value: number;
@@ -416,6 +419,7 @@ export default function EventRegister() {
     });
     return total;
   }, [discountPreview, discountCheckStatus, tiers, ticketQuantities, attendees, services]);
+  const isFreeAfterDiscount = discountCheckStatus === "valid" && estimatedDiscount > 0 && grandTotal - estimatedDiscount <= 0;
 
 
 
@@ -646,17 +650,23 @@ export default function EventRegister() {
           terms_accepted_at: new Date().toISOString(),
           gdpr_consent_given: true,
           gdpr_consent_at: new Date().toISOString(),
-          discount_code: (discountCheckStatus === "valid" && effectivePaymentMethod !== "invoice")
-            ? discountCodeInput.trim()
-            : undefined,
+          discount_code: discountCheckStatus === "valid" ? discountCodeInput.trim() : undefined,
         },
       });
 
       if (error || !data?.success) {
         let message = data?.error || error?.message || "Registration failed";
+        let response: any = data;
         if (!data?.error && error && "context" in error && error.context instanceof Response) {
-          const response = await error.context.clone().json().catch(() => null);
+          response = await error.context.clone().json().catch(() => null);
           message = response?.error || message;
+        }
+        if (response?.reason) {
+          setDiscountCheckStatus("invalid");
+          setDiscountReason(response.reason);
+          setDiscountServerError(response.error || null);
+          toast({ title: response.error || mapDiscountReason(response.reason, lang), variant: "destructive" });
+          return;
         }
         throw new Error(message);
       }
@@ -669,6 +679,38 @@ export default function EventRegister() {
         });
       }
 
+      const serverTotal = Number(data.total_amount ?? grandTotal);
+      const discountAmount = typeof data.discount_applied === "number"
+        ? data.discount_applied
+        : Number(data.discount_applied?.amount ?? data.discount_applied?.discount_amount ?? Math.max(0, grandTotal - serverTotal));
+
+      if (data.free === true) {
+        const freeAtts: SuccessAttendeeInfo[] = attendees.map((a, idx) => ({
+          id: data.attendee_ids?.[idx],
+          firstName: a.firstName,
+          lastName: a.lastName,
+          email: a.email,
+          tierName: a.tierName,
+          tierPrice: tiers.find(t => t.id === a.tierId)?.price ?? 0,
+          services: services.filter(s => a.selectedServiceIds.has(s.id)).map(s => ({ name: s.name, price: Number(s.price) })),
+        }));
+        setCurrentOrderId(data.order_id);
+        setSuccess({
+          attendeeId: data.primary_attendee_id,
+          attendeeName: `${attendees[0]?.firstName} ${attendees[0]?.lastName}`,
+          eventName: event.name,
+          tierName: attendees[0]?.tierName ?? "Ticket",
+          price: 0,
+          currency,
+          payerType,
+          allAttendees: freeAtts,
+          totalAmount: 0,
+          discountAmount,
+          isFree: true,
+        });
+        if (slug) sessionStorage.removeItem(`checkout_state_${slug}`);
+        return;
+      }
 
       if (
         (payerType === "company" && companyPaymentMethod === "invoice") ||
@@ -882,7 +924,7 @@ export default function EventRegister() {
     );
   }
 
-  // ── Success view (Stripe flow) ──
+  // ── Success view (Stripe flow / free) ──
   if (success) {
     return (
       <OrderConfirmation
@@ -896,8 +938,11 @@ export default function EventRegister() {
         totalAmount={success.totalAmount}
         payerType="individual"
         slug={slug!}
+        discountAmount={success.discountAmount}
+        isPaid={success.isFree}
+        freeMessage={success.isFree ? (lang === "hr" ? "Kotizacija je besplatna — ulaznica je poslana na email" : "Registration is free — your ticket has been sent to your email") : undefined}
         redirectingToStripe={redirectingToStripe}
-        onPayNow={() => triggerStripeCheckout()}
+        onPayNow={success.isFree ? undefined : () => triggerStripeCheckout()}
       />
     );
   }
@@ -1364,7 +1409,7 @@ export default function EventRegister() {
                       <Input id="payer_name" value={payerName} onChange={(e) => setPayerName(e.target.value)} />
                     </div>
 
-                    {payerType === "individual" && (
+                    {payerType === "individual" && !isFreeAfterDiscount && (
                       <div className="sm:col-span-2 mt-2">
                         <Label className="mb-3 block">{t("register.paymentMethod")} *</Label>
                         <RadioGroup
@@ -1483,6 +1528,7 @@ export default function EventRegister() {
                         </div>
 
                         {/* Company Payment Method */}
+                        {!isFreeAfterDiscount && (
                         <div className="sm:col-span-2 mt-2">
                           <Label className="mb-3 block">{t("register.paymentMethod")} *</Label>
                           <RadioGroup
@@ -1526,6 +1572,7 @@ export default function EventRegister() {
                             </label>
                           </RadioGroup>
                         </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -1561,13 +1608,6 @@ export default function EventRegister() {
 
                     {/* ── Discount code ── */}
                     <div className="border-t border-border pt-3">
-                      {effectivePaymentMethod === "invoice" ? (
-                        <p className="text-xs text-muted-foreground">
-                          {lang === "hr"
-                            ? "Kodovi za popust trenutno su dostupni samo za plaćanje karticom."
-                            : "Discount codes are currently only available for card payment."}
-                        </p>
-                      ) : (
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <Input
@@ -1610,10 +1650,9 @@ export default function EventRegister() {
                             </p>
                           )}
                           {discountCheckStatus === "invalid" && (
-                            <p className="text-xs text-destructive">{mapDiscountReason(discountReason, lang)}</p>
+                            <p className="text-xs text-destructive">{discountServerError || mapDiscountReason(discountReason, lang)}</p>
                           )}
                         </div>
-                      )}
                     </div>
 
                     {estimatedDiscount > 0 && (
@@ -1711,6 +1750,8 @@ export default function EventRegister() {
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submitting
                     ? t("register.processing")
+                    : isFreeAfterDiscount
+                    ? (lang === "hr" ? "Registriraj se" : "Register")
                     : ((payerType === "company" && companyPaymentMethod === "invoice") ||
                        (payerType === "individual" && individualPaymentMethod === "invoice"))
                       ? `${t("register.requestInvoice")} — ${(grandTotal - estimatedDiscount).toFixed(2)} ${currency}`
