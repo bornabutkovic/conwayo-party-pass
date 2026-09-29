@@ -57,6 +57,7 @@ interface AttendeeRow {
   tierId: string;
   tierName: string;
   selectedServiceIds: Set<string>;
+  requiredAttendeeIndex?: number;
 }
 
 interface SuccessAttendeeInfo {
@@ -140,6 +141,7 @@ export default function EventRegister() {
 
   // Per-ticket attendee rows
   const [attendees, setAttendees] = useState<AttendeeRow[]>([]);
+  const [requiredAttendeeSelections, setRequiredAttendeeSelections] = useState<Record<string, number>>({});
 
   // Contact phone (shared)
   const [contactPhone, setContactPhone] = useState("");
@@ -321,19 +323,17 @@ export default function EventRegister() {
     init();
   }, [authLoading, eventLoading, user, event, slug, navigate]);
 
-  // Rebuild attendee rows when ticket quantities change
+  // Rebuild rows by tier and position so changing one tier never shifts another attendee's details.
   useEffect(() => {
     const newRows: AttendeeRow[] = [];
     for (const tier of tiers) {
       const qty = ticketQuantities[tier.id] ?? 0;
       for (let i = 0; i < qty; i++) {
-        // Try to preserve existing data
-        const existingIdx = newRows.length;
-        const existing = attendees[existingIdx];
-        if (existing && existing.tierId === tier.id) {
+        const existing = attendees.filter(row => row.tierId === tier.id)[i];
+        if (existing) {
           newRows.push(existing);
         } else {
-          newRows.push({ firstName: "", lastName: "", email: "", tierId: tier.id, tierName: tier.name, selectedServiceIds: new Set() });
+          newRows.push({ firstName: "", lastName: "", email: "", tierId: tier.id, tierName: tier.name, selectedServiceIds: new Set(), requiredAttendeeIndex: tier.requires_tier_id ? requiredAttendeeSelections[tier.id] : undefined });
         }
       }
     }
@@ -448,13 +448,45 @@ export default function EventRegister() {
   
 
   const setTierQty = (tierId: string, delta: number) => {
-    setTicketQuantities(prev => {
-      const current = prev[tierId] ?? 0;
-      const tier = tiers.find(t => t.id === tierId);
-      const max = tier && tier.remaining !== null && tier.remaining !== undefined ? tier.remaining : Infinity;
-      const next = Math.max(0, Math.min(max, current + delta));
-      return { ...prev, [tierId]: next };
-    });
+    const tier = tiers.find(t => t.id === tierId);
+    if (!tier) return;
+    const current = ticketQuantities[tierId] ?? 0;
+    const max = tier.remaining !== null && tier.remaining !== undefined ? tier.remaining : Infinity;
+    const next = Math.max(0, Math.min(max, current + delta));
+    if (next === current) return;
+    if (delta > 0 && tier.requires_tier_id &&
+        ((ticketQuantities[tier.requires_tier_id] ?? 0) <= (requiredAttendeeSelections[tierId] ?? -1))) return;
+
+    const quantities = { ...ticketQuantities, [tierId]: next };
+    let rows = attendees.filter(row => row.tierId !== tierId);
+    const ownRows = attendees.filter(row => row.tierId === tierId).slice(0, next);
+    if (next > current) {
+      ownRows.push({ firstName: "", lastName: "", email: "", tierId, tierName: tier.name, selectedServiceIds: new Set(), requiredAttendeeIndex: tier.requires_tier_id ? requiredAttendeeSelections[tierId] : undefined });
+    }
+    rows = [...rows, ...ownRows];
+    // Prune dependent tickets transitively whenever their selected prerequisite disappears.
+    const removedPrerequisites = new Set<string>();
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const dependent of tiers.filter(t => t.requires_tier_id)) {
+        const valid = rows.filter(row => row.tierId === dependent.id &&
+          row.requiredAttendeeIndex !== undefined &&
+          row.requiredAttendeeIndex < (quantities[dependent.requires_tier_id ?? ""] ?? 0));
+        if (valid.length < (quantities[dependent.id] ?? 0)) {
+          const required = tiers.find(t => t.id === dependent.requires_tier_id);
+          if (required) removedPrerequisites.add(required.name.trim());
+          quantities[dependent.id] = valid.length;
+          rows = rows.filter(row => row.tierId !== dependent.id).concat(valid);
+          changed = true;
+        }
+      }
+    }
+    setAttendees(rows);
+    setTicketQuantities(quantities);
+    for (const name of removedPrerequisites) {
+      toast({ title: lang === "hr" ? `Uklonjene su radionice koje zahtijevaju ${name}` : `Workshops requiring ${name} were removed` });
+    }
   };
 
   const updateAttendee = (index: number, field: keyof Pick<AttendeeRow, 'firstName' | 'lastName' | 'email'>, value: string) => {
@@ -502,6 +534,17 @@ export default function EventRegister() {
     const incomplete = attendees.some(a => !a.firstName.trim() || !a.lastName.trim() || !a.email.trim());
     if (incomplete) {
       toast({ title: "Please fill in details for all attendees", description: "Every ticket requires a first name, last name, and email.", variant: "destructive" });
+      return;
+    }
+
+    const invalidDependency = attendees.find(att => {
+      const requiredId = tiers.find(tier => tier.id === att.tierId)?.requires_tier_id;
+      if (!requiredId) return false;
+      const requiredAttendee = attendees.filter(row => row.tierId === requiredId)[att.requiredAttendeeIndex ?? -1];
+      return !requiredAttendee || requiredAttendee.email.trim().toLowerCase() !== att.email.trim().toLowerCase();
+    });
+    if (invalidDependency) {
+      toast({ title: lang === "hr" ? "Radionica mora imati istu e-mail adresu kao odabrana obavezna ulaznica." : "The workshop attendee must use the same email as the selected required ticket attendee.", variant: "destructive" });
       return;
     }
 
@@ -592,7 +635,12 @@ export default function EventRegister() {
       });
 
       if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || "Registration failed");
+        let message = data?.error || error?.message || "Registration failed";
+        if (!data?.error && error && "context" in error && error.context instanceof Response) {
+          const response = await error.context.clone().json().catch(() => null);
+          message = response?.error || message;
+        }
+        throw new Error(message);
       }
 
       if (data.discount_skip_reason) {
@@ -723,7 +771,8 @@ export default function EventRegister() {
       if (slug) sessionStorage.removeItem(`checkout_state_${slug}`);
       // Don't auto-redirect to Stripe — user clicks PAY NOW on OrderConfirmation
     } catch (err: any) {
-      toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+      const message = err.message ?? "Registration failed";
+      toast({ title: message.includes("TIER_DEPENDENCY") ? message : "Registration failed", description: message.includes("TIER_DEPENDENCY") ? undefined : message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -935,6 +984,7 @@ export default function EventRegister() {
   const eventName = tr(event.translations as Record<string, any> | null, lang, "name", event.name);
   const primaryColor = event.branding_primary_color ?? "#6366f1";
   const bannerUrl = event.branding_banner_url;
+  const mobileBannerUrl = event.branding_banner_mobile_url;
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
   const dateLocale = lang === "hr" ? hrLocale : undefined;
   const dateFmt = lang === "hr" ? "d. MMMM yyyy." : "MMMM d, yyyy";
@@ -948,15 +998,19 @@ export default function EventRegister() {
       <ConvwayoHeader showBackToEvents />
 
       {/* HERO — clean banner only */}
-      {bannerUrl ? (
+      {(bannerUrl || mobileBannerUrl) ? (
         <section className="w-full overflow-hidden">
-          <img
-            src={bannerUrl}
-            alt={`${eventName} banner`}
-            className="block w-full h-auto"
-          />
+          <picture>
+            {mobileBannerUrl && <source media="(max-width: 767px)" srcSet={mobileBannerUrl} />}
+            {bannerUrl ? (
+              <img src={bannerUrl} alt={`${eventName} banner`} className="block w-full h-auto object-contain" />
+            ) : (
+              <img src={mobileBannerUrl} alt={`${eventName} banner`} className="block w-full h-auto object-contain md:hidden" />
+            )}
+          </picture>
         </section>
-      ) : (
+      ) : null}
+      {!bannerUrl && !mobileBannerUrl && (
         <section
           className="relative w-full overflow-hidden"
           style={{ height: 200, backgroundColor: primaryColor }}
@@ -974,7 +1028,8 @@ export default function EventRegister() {
               <img
                 src={event.branding_logo_url}
                 alt={`${eventName} logo`}
-                className="h-20 w-auto max-w-[240px] object-contain rounded-lg border border-border bg-white p-2 mb-3"
+                 style={event.branding_logo_height != null ? { height: `${event.branding_logo_height}px` } : undefined}
+                 className={`${event.branding_logo_height == null ? "h-14 " : ""}w-auto max-w-[240px] object-contain rounded-lg border border-border bg-card p-2 mb-3`}
               />
             )}
             <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-4xl">
