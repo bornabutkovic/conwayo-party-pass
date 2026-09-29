@@ -58,6 +58,17 @@ interface AttendeeRow {
   tierName: string;
   selectedServiceIds: Set<string>;
   requiredAttendeeIndex?: number;
+  requiredOwnedAttendeeId?: string;
+}
+
+interface OwnedTicket {
+  attendee_id: string;
+  ticket_tier_id: string;
+  tier_name: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  order_status: string | null;
 }
 
 interface SuccessAttendeeInfo {
@@ -144,6 +155,8 @@ export default function EventRegister() {
   // Per-ticket attendee rows
   const [attendees, setAttendees] = useState<AttendeeRow[]>([]);
   const [requiredAttendeeSelections, setRequiredAttendeeSelections] = useState<Record<string, number>>({});
+  const [ownedTickets, setOwnedTickets] = useState<OwnedTicket[]>([]);
+  const [ownedSelections, setOwnedSelections] = useState<Record<string, string>>({});
 
   // Contact phone (shared)
   const [contactPhone, setContactPhone] = useState("");
@@ -268,18 +281,14 @@ export default function EventRegister() {
 
     const init = async () => {
       try {
-        const { data: existing } = await supabase
-          .from("attendees")
-          .select("id")
-          .eq("event_id", event.id)
-          .eq("profile_id", user.id)
-          .maybeSingle();
-
-        if (existing) {
-          toast({ title: "Already registered", description: "Redirecting to your dashboard." });
-          navigate(`/event/${slug}/dashboard`);
-          return;
+        try {
+          const { data: owned, error: ownedErr } = await (supabase.rpc as any)("get_my_event_tickets", { p_event_id: event.id });
+          setOwnedTickets(!ownedErr && Array.isArray(owned) ? (owned as OwnedTicket[]) : []);
+        } catch {
+          setOwnedTickets([]);
         }
+
+
 
         const { data: profile } = await supabase
           .from("profiles")
@@ -336,9 +345,7 @@ export default function EventRegister() {
         if (existing) {
           newRows.push(existing);
         } else {
-          const selectedIndex = requiredAttendeeSelections[tier.id] ?? 0;
-          const required = attendees.filter(row => row.tierId === tier.requires_tier_id)[selectedIndex];
-          newRows.push({ firstName: required?.firstName ?? "", lastName: required?.lastName ?? "", email: required?.email ?? "", tierId: tier.id, tierName: tier.name, selectedServiceIds: new Set(), requiredAttendeeIndex: tier.requires_tier_id ? selectedIndex : undefined });
+          newRows.push(makeDependentRow(tier));
         }
       }
     }
@@ -452,6 +459,17 @@ export default function EventRegister() {
   const currency = event.currency ?? "EUR";
   
 
+  const makeDependentRow = (tier: typeof tiers[number], ownedOverride?: OwnedTicket): AttendeeRow => {
+    const ownedId = ownedOverride?.attendee_id ?? ownedSelections[tier.id];
+    const owned = ownedOverride ?? (ownedId ? ownedTickets.find(o => o.attendee_id === ownedId && o.ticket_tier_id === tier.requires_tier_id) : undefined);
+    if (tier.requires_tier_id && owned) {
+      return { firstName: owned.first_name ?? "", lastName: owned.last_name ?? "", email: owned.email ?? "", tierId: tier.id, tierName: tier.name, selectedServiceIds: new Set(), requiredOwnedAttendeeId: owned.attendee_id };
+    }
+    const selectedIndex = requiredAttendeeSelections[tier.id] ?? 0;
+    const required = attendees.filter(row => row.tierId === tier.requires_tier_id)[selectedIndex];
+    return { firstName: required?.firstName ?? "", lastName: required?.lastName ?? "", email: required?.email ?? "", tierId: tier.id, tierName: tier.name, selectedServiceIds: new Set(), requiredAttendeeIndex: tier.requires_tier_id ? selectedIndex : undefined };
+  };
+
   const setTierQty = (tierId: string, delta: number) => {
     const tier = tiers.find(t => t.id === tierId);
     if (!tier) return;
@@ -459,27 +477,31 @@ export default function EventRegister() {
     const max = tier.remaining !== null && tier.remaining !== undefined ? tier.remaining : Infinity;
     const next = Math.max(0, Math.min(max, current + delta));
     if (next === current) return;
-    if (delta > 0 && tier.requires_tier_id &&
-        ((ticketQuantities[tier.requires_tier_id] ?? 0) <= (requiredAttendeeSelections[tierId] ?? 0))) return;
+    let ownedFallback: OwnedTicket | undefined;
+    if (delta > 0 && tier.requires_tier_id && !ownedSelections[tierId] &&
+        ((ticketQuantities[tier.requires_tier_id] ?? 0) <= (requiredAttendeeSelections[tierId] ?? 0))) {
+      ownedFallback = ownedTickets.find(o => o.ticket_tier_id === tier.requires_tier_id);
+      if (!ownedFallback) return;
+    }
 
     const quantities = { ...ticketQuantities, [tierId]: next };
     let rows = attendees.filter(row => row.tierId !== tierId);
     const ownRows = attendees.filter(row => row.tierId === tierId).slice(0, next);
     if (next > current) {
-      const selectedIndex = requiredAttendeeSelections[tierId] ?? 0;
-      const required = attendees.filter(row => row.tierId === tier.requires_tier_id)[selectedIndex];
-      ownRows.push({ firstName: required?.firstName ?? "", lastName: required?.lastName ?? "", email: required?.email ?? "", tierId, tierName: tier.name, selectedServiceIds: new Set(), requiredAttendeeIndex: tier.requires_tier_id ? selectedIndex : undefined });
+      ownRows.push(makeDependentRow(tier, ownedFallback));
     }
     rows = [...rows, ...ownRows];
     // Prune dependent tickets transitively whenever their selected prerequisite disappears.
+    // Rows linked to an already-owned ticket are never pruned.
     const removedPrerequisites = new Set<string>();
     let changed = true;
     while (changed) {
       changed = false;
       for (const dependent of tiers.filter(t => t.requires_tier_id)) {
-        const valid = rows.filter(row => row.tierId === dependent.id &&
-          row.requiredAttendeeIndex !== undefined &&
-          row.requiredAttendeeIndex < (quantities[dependent.requires_tier_id ?? ""] ?? 0));
+        const valid = rows.filter(row => row.tierId === dependent.id && (
+          !!row.requiredOwnedAttendeeId ||
+          (row.requiredAttendeeIndex !== undefined &&
+            row.requiredAttendeeIndex < (quantities[dependent.requires_tier_id ?? ""] ?? 0))));
         if (valid.length < (quantities[dependent.id] ?? 0)) {
           const required = tiers.find(t => t.id === dependent.requires_tier_id);
           if (required) removedPrerequisites.add(required.name.trim());
@@ -502,19 +524,28 @@ export default function EventRegister() {
       updated[index] = { ...updated[index], [field]: value };
       const baseIndex = updated.slice(0, index).filter(row => row.tierId === updated[index].tierId).length;
       return updated.map((row, rowIndex) =>
-        rowIndex !== index && tiers.find(tier => tier.id === row.tierId)?.requires_tier_id === updated[index].tierId && row.requiredAttendeeIndex === baseIndex
+        rowIndex !== index && !row.requiredOwnedAttendeeId && tiers.find(tier => tier.id === row.tierId)?.requires_tier_id === updated[index].tierId && row.requiredAttendeeIndex === baseIndex
           ? { ...row, [field]: value }
           : row
       );
     });
   };
 
-  const selectRequiredAttendee = (index: number, requiredIndex: number) => {
+  const selectRequiredAttendee = (index: number, value: string) => {
     const tier = tiers.find(t => t.id === attendees[index]?.tierId);
+    if (value.startsWith("o:")) {
+      const owned = ownedTickets.find(o => o.attendee_id === value.slice(2) && o.ticket_tier_id === tier?.requires_tier_id);
+      if (!owned) return;
+      setAttendees(prev => prev.map((row, rowIndex) => rowIndex === index
+        ? { ...row, requiredAttendeeIndex: undefined, requiredOwnedAttendeeId: owned.attendee_id, firstName: owned.first_name ?? "", lastName: owned.last_name ?? "", email: owned.email ?? "" }
+        : row));
+      return;
+    }
+    const requiredIndex = Number(value.slice(2));
     const required = attendees.filter(row => row.tierId === tier?.requires_tier_id)[requiredIndex];
     if (!required) return;
     setAttendees(prev => prev.map((row, rowIndex) => rowIndex === index
-      ? { ...row, requiredAttendeeIndex: requiredIndex, firstName: required.firstName, lastName: required.lastName, email: required.email }
+      ? { ...row, requiredAttendeeIndex: requiredIndex, requiredOwnedAttendeeId: undefined, firstName: required.firstName, lastName: required.lastName, email: required.email }
       : row));
   };
 
@@ -562,8 +593,13 @@ export default function EventRegister() {
     const invalidDependency = attendees.find(att => {
       const requiredId = tiers.find(tier => tier.id === att.tierId)?.requires_tier_id;
       if (!requiredId) return false;
+      const email = att.email.trim().toLowerCase();
+      if (att.requiredOwnedAttendeeId) {
+        const owned = ownedTickets.find(o => o.attendee_id === att.requiredOwnedAttendeeId && o.ticket_tier_id === requiredId);
+        return !owned || (owned.email ?? "").trim().toLowerCase() !== email;
+      }
       const requiredAttendee = attendees.filter(row => row.tierId === requiredId)[att.requiredAttendeeIndex ?? -1];
-      return !requiredAttendee || requiredAttendee.email.trim().toLowerCase() !== att.email.trim().toLowerCase();
+      return !requiredAttendee || requiredAttendee.email.trim().toLowerCase() !== email;
     });
     if (invalidDependency) {
       toast({ title: lang === "hr" ? "Radionica mora imati istu e-mail adresu kao odabrana obavezna ulaznica." : "The workshop attendee must use the same email as the selected required ticket attendee.", variant: "destructive" });
@@ -1160,6 +1196,16 @@ export default function EventRegister() {
               {/* ── Ticket Selection with Quantity ── */}
               <div className="mb-10">
                 <h3 className="mb-4 text-lg font-semibold text-foreground">{t("register.selectTickets")}</h3>
+                {ownedTickets.length > 0 && (
+                  <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
+                    {lang === "hr" ? "Već imate: " : "You already have: "}
+                    {[...new Set(ownedTickets.map(o => o.tier_name))].join(", ")}.{" "}
+                    {lang === "hr" ? "Možete dokupiti dodatne ulaznice." : "You can purchase additional tickets."}{" "}
+                    <Link to={`/event/${slug}/dashboard`} className="font-medium text-primary underline">
+                      {lang === "hr" ? "Moje ulaznice" : "My tickets"}
+                    </Link>
+                  </div>
+                )}
                 <div className="space-y-3">
                   {tiers.map((tier) => {
                     const qty = ticketQuantities[tier.id] ?? 0;
@@ -1167,7 +1213,8 @@ export default function EventRegister() {
                     const tierDesc = tr(tier.translations as Record<string, any> | null, lang, "description", tier.description);
                     const requiredTier = tiers.find(candidate => candidate.id === tier.requires_tier_id);
                     const requiredName = requiredTier ? tr(requiredTier.translations as Record<string, any> | null, lang, "name", requiredTier.name) : "";
-                    const missingRequired = !!tier.requires_tier_id && (ticketQuantities[tier.requires_tier_id] ?? 0) === 0;
+                    const ownedOptions = ownedTickets.filter(o => o.ticket_tier_id === tier.requires_tier_id);
+                    const missingRequired = !!tier.requires_tier_id && (ticketQuantities[tier.requires_tier_id] ?? 0) === 0 && ownedOptions.length === 0;
                     const requiredOptions = attendees.filter(row => row.tierId === tier.requires_tier_id);
                     const disabledReason = lang === "hr" ? `Najprije odaberite: ${requiredName}` : `First select: ${requiredName}`;
                     return (
@@ -1195,16 +1242,28 @@ export default function EventRegister() {
                                {lang === "hr" ? "Do " : "Until "}{new Date(tier.sales_end).toLocaleDateString(lang === "hr" ? "hr-HR" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}
                              </p>
                            )}
-                           {requiredTier && requiredOptions.length > 0 && qty > 0 && (
+                           {requiredTier && (requiredOptions.length > 0 || ownedOptions.length > 0) && (qty > 0 || ownedOptions.length > 0) && (
                              <div className="mt-2">
                                <Label htmlFor={`required-${tier.id}`} className="text-xs text-muted-foreground">
                                  {lang === "hr" ? "Za sudionika" : "For attendee"}
                                </Label>
-                               <select id={`required-${tier.id}`} value={requiredAttendeeSelections[tier.id] ?? 0}
-                                 onChange={e => setRequiredAttendeeSelections(prev => ({ ...prev, [tier.id]: Number(e.target.value) }))}
+                               <select id={`required-${tier.id}`}
+                                 value={ownedSelections[tier.id] ? `o:${ownedSelections[tier.id]}` : requiredOptions.length > 0 ? `c:${requiredAttendeeSelections[tier.id] ?? 0}` : `o:${ownedOptions[0]?.attendee_id}`}
+                                 onChange={e => {
+                                   const v = e.target.value;
+                                   if (v.startsWith("o:")) {
+                                     setOwnedSelections(prev => ({ ...prev, [tier.id]: v.slice(2) }));
+                                   } else {
+                                     setOwnedSelections(prev => { const n = { ...prev }; delete n[tier.id]; return n; });
+                                     setRequiredAttendeeSelections(prev => ({ ...prev, [tier.id]: Number(v.slice(2)) }));
+                                   }
+                                 }}
                                  className="mt-1 block max-w-full rounded border border-input bg-background px-2 py-1 text-sm text-foreground">
-                                 {requiredOptions.map((row, index) => <option key={index} value={index}>
+                                 {requiredOptions.map((row, index) => <option key={`c${index}`} value={`c:${index}`}>
                                    {`${requiredName} #${index + 1}${row.firstName || row.lastName ? ` — ${row.firstName} ${row.lastName}` : ""}`}
+                                 </option>)}
+                                 {ownedOptions.map(o => <option key={`o${o.attendee_id}`} value={`o:${o.attendee_id}`}>
+                                   {`${o.tier_name} — ${o.first_name} ${o.last_name} (${lang === "hr" ? "već kupljeno" : "already purchased"})`}
                                  </option>)}
                                </select>
                              </div>
@@ -1272,17 +1331,24 @@ export default function EventRegister() {
                             const requiredTier = tiers.find(tier => tier.id === tiers.find(t => t.id === att.tierId)?.requires_tier_id);
                             if (!requiredTier) return null;
                             const requiredRows = attendees.filter(row => row.tierId === requiredTier.id);
+                            const ownedRows = ownedTickets.filter(o => o.ticket_tier_id === requiredTier.id);
                             return (
                               <div className="mb-3">
                                 <Label htmlFor={`attendee-required-${idx}`} className="text-xs">
                                   {lang === "hr" ? "Sudionik obavezne ulaznice" : "Required ticket attendee"}
                                 </Label>
-                                <select id={`attendee-required-${idx}`} value={att.requiredAttendeeIndex ?? ""}
-                                  onChange={e => selectRequiredAttendee(idx, Number(e.target.value))}
+                                <select id={`attendee-required-${idx}`}
+                                  value={att.requiredOwnedAttendeeId ? `o:${att.requiredOwnedAttendeeId}` : att.requiredAttendeeIndex !== undefined ? `c:${att.requiredAttendeeIndex}` : ""}
+                                  onChange={e => selectRequiredAttendee(idx, e.target.value)}
                                   className="mt-1 block w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground">
                                   {requiredRows.map((row, requiredIndex) => (
-                                    <option key={requiredIndex} value={requiredIndex}>
+                                    <option key={`c${requiredIndex}`} value={`c:${requiredIndex}`}>
                                       {`${requiredTier.name} #${requiredIndex + 1}${row.firstName || row.lastName ? ` — ${row.firstName} ${row.lastName}` : ""}`}
+                                    </option>
+                                  ))}
+                                  {ownedRows.map(o => (
+                                    <option key={`o${o.attendee_id}`} value={`o:${o.attendee_id}`}>
+                                      {`${o.tier_name} — ${o.first_name} ${o.last_name} (${lang === "hr" ? "već kupljeno" : "already purchased"})`}
                                     </option>
                                   ))}
                                 </select>

@@ -203,6 +203,10 @@ export default function EventDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-2xl space-y-6">
+          <Button size="lg" className="w-full" onClick={() => navigate(`/event/${slug}/register`)}>
+            <ShoppingBag className="mr-2 h-4 w-4" />
+            Kupi dodatne ulaznice / Buy additional tickets
+          </Button>
           {/* My Tickets */}
           <Card>
             <CardHeader>

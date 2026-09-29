@@ -2998,6 +2998,18 @@ export type Database = {
       get_event_organizers_info: { Args: { p_event_id: string }; Returns: Json }
       get_event_revenue_stats: { Args: { p_event_id: string }; Returns: Json }
       get_event_translations: { Args: { p_event_id: string }; Returns: Json }
+      get_my_event_tickets: {
+        Args: { p_event_id: string }
+        Returns: {
+          attendee_id: string
+          email: string
+          first_name: string
+          last_name: string
+          order_status: string
+          ticket_tier_id: string
+          tier_name: string
+        }[]
+      }
       get_order_full_data: { Args: { p_order_id: string }; Returns: Json }
       get_session_missing_fields: {
         Args: { p_wa_id: string }
