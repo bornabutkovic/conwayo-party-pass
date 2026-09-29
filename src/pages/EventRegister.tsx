@@ -486,7 +486,7 @@ export default function EventRegister() {
         }
       }
     }
-    setAttendees(rows);
+    setAttendees(tiers.flatMap(t => rows.filter(row => row.tierId === t.id)));
     setTicketQuantities(quantities);
     for (const name of removedPrerequisites) {
       toast({ title: lang === "hr" ? `Uklonjene su radionice koje zahtijevaju ${name}` : `Workshops requiring ${name} were removed` });
