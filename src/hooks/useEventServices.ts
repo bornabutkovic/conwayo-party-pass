@@ -12,6 +12,7 @@ export function useEventServices(eventId: string | undefined | null) {
         .from("event_services")
         .select("*")
         .eq("event_id", eventId!)
+        .order("display_order", { ascending: true, nullsFirst: false })
         .order("price", { ascending: true });
       if (error) throw error;
       return data as EventService[];

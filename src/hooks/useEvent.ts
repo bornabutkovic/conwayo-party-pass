@@ -142,6 +142,7 @@ export function useEventFull(slug: string) {
         .select("*")
         .eq("event_id", event.id)
         .eq("status", "active")
+        .order("display_order", { ascending: true, nullsFirst: false })
         .order("price", { ascending: true });
 
       // Fetch co-organizers and technical organizer
