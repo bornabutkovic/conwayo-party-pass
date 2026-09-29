@@ -52,6 +52,40 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    let orderData: Record<string, any> | null = null;
+    let orderItems: Array<Record<string, any>> = [];
+    if (order_id) {
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("id, order_number, total_amount, payer_name, payer_oib, payer_address, billing_email, po_number, payment_method, status")
+        .eq("id", order_id)
+        .single();
+      orderData = ord;
+
+      if (ord && (ord.payment_method === "free" || Number(ord.total_amount ?? 0) <= 0)) {
+        console.log("[create-invoice-registration] Free order, skipping BC:", order_id);
+        return new Response(
+          JSON.stringify({ success: true, free: true, order_id, message: "Complimentary registration — no BC quote" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const { data: items } = await supabase
+        .from("order_items")
+        .select("ticket_type_id, service_id, unit_price, price_at_purchase, quantity, discount_amount, discount_code_id")
+        .eq("order_id", order_id);
+      orderItems = items ?? [];
+    }
+
+    const netFromOrder = (key: "ticket_type_id" | "service_id", id: string): { net: number; list: number } | null => {
+      const rows = orderItems.filter((i) => i[key] === id);
+      if (rows.length === 0) return null;
+      const qty = rows.reduce((s, r) => s + Number(r.quantity ?? 1), 0) || 1;
+      const net = rows.reduce((s, r) => s + Number(r.unit_price ?? 0) * Number(r.quantity ?? 1), 0) / qty;
+      const list = Number(rows[0].price_at_purchase ?? rows[0].unit_price ?? 0);
+      return { net: Math.round(net * 100) / 100, list };
+    };
+
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select("id, name, vat_rate, currency, institution_uuid, bc_position, bc_reference")
@@ -85,11 +119,16 @@ Deno.serve(async (req) => {
       if (tiers) {
         enrichedTickets = (tickets || []).map((t: { ticket_tier_id: string; quantity: number }) => {
           const tier = tiers.find((tt) => tt.id === t.ticket_tier_id);
+          const fromOrder = netFromOrder("ticket_type_id", t.ticket_tier_id);
+          const listPrice = Number(tier?.price ?? 0);
+          const netPrice = fromOrder ? fromOrder.net : listPrice;
           return {
             ticket_tier_id: t.ticket_tier_id,
             quantity: t.quantity,
             name: tier?.name,
-            price: tier?.price,
+            price: netPrice,
+            list_price: listPrice,
+            discount_percent: listPrice > 0 ? Math.round(((listPrice - netPrice) / listPrice) * 10000) / 100 : 0,
             erp_code: tier?.erp_code,
           };
         });
@@ -106,25 +145,20 @@ Deno.serve(async (req) => {
       if (svcData) {
         enrichedServices = (services || []).map((s: { service_id: string; quantity: number }) => {
           const svc = svcData.find((sv) => sv.id === s.service_id);
+          const fromOrder = netFromOrder("service_id", s.service_id);
+          const listPrice = Number(svc?.price ?? 0);
+          const netPrice = fromOrder ? fromOrder.net : listPrice;
           return {
             service_id: s.service_id,
             quantity: s.quantity,
             name: svc?.name,
-            price: svc?.price,
+            price: netPrice,
+            list_price: listPrice,
+            discount_percent: listPrice > 0 ? Math.round(((listPrice - netPrice) / listPrice) * 10000) / 100 : 0,
             erp_code: svc?.erp_code,
           };
         });
       }
-    }
-
-    let orderData = null;
-    if (order_id) {
-      const { data: ord } = await supabase
-        .from("orders")
-        .select("id, order_number, total_amount, payer_name, payer_oib, payer_address, billing_email, po_number, payment_method")
-        .eq("id", order_id)
-        .single();
-      orderData = ord;
     }
 
     const n8nPayload = {
@@ -208,7 +242,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("create-invoice-registration error:", err);
     return new Response(
-      JSON.stringify({ success: false, error: err.message || "Internal server error" }),
+      JSON.stringify({ success: false, error: (err as Error).message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

@@ -18,6 +18,11 @@ interface AttendeeInput {
   specialty?: string | null;
 }
 
+const json = (b: unknown, status = 200) =>
+  new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -61,99 +66,54 @@ Deno.serve(async (req) => {
       gdpr_consent_given,
       gdpr_consent_at,
     } = body;
+    const discountCodeInput: string | null =
+      (body.discount_code ?? body.discountCode ?? body.promo_code ?? null) || null;
 
-    // ── Validate ──
     const attendeesList: AttendeeInput[] = attendeesInput || [];
 
-    if (!event_id) {
-      console.error("[create-order] Missing event_id");
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing event_id" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    if (!event_id) return json({ success: false, error: "Missing event_id" }, 400);
+    if (attendeesList.length === 0) return json({ success: false, error: "At least one attendee is required" }, 400);
 
-    if (attendeesList.length === 0) {
-      console.error("[create-order] No attendees provided");
-      return new Response(
-        JSON.stringify({ success: false, error: "At least one attendee is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Validate each attendee
     for (let i = 0; i < attendeesList.length; i++) {
       const a = attendeesList[i];
       if (!a.first_name?.trim() || !a.last_name?.trim() || !a.email?.trim()) {
-        console.error(`[create-order] Attendee ${i} missing required fields:`, JSON.stringify(a));
-        return new Response(
-          JSON.stringify({ success: false, error: `Attendee ${i + 1} is missing first_name, last_name, or email` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return json({ success: false, error: `Attendee ${i + 1} is missing first_name, last_name, or email` }, 400);
       }
       if (!a.ticket_tier_id) {
-        console.error(`[create-order] Attendee ${i} missing ticket_tier_id`);
-        return new Response(
-          JSON.stringify({ success: false, error: `Attendee ${i + 1} is missing ticket_tier_id` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return json({ success: false, error: `Attendee ${i + 1} is missing ticket_tier_id` }, 400);
       }
     }
 
-    // ── Get event details ──
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select("id, vat_rate, currency")
       .eq("id", event_id)
       .single();
-
-    if (eventError || !event) {
-      console.error("[create-order] Event not found:", eventError);
-      return new Response(
-        JSON.stringify({ success: false, error: "Event not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    if (eventError || !event) return json({ success: false, error: "Event not found" }, 404);
 
     const vatRate = event.vat_rate ?? 25;
     const isCompany = payer_type === "company";
 
-    // ── Collect unique tier IDs and service IDs ──
     const allTierIds = [...new Set(attendeesList.map(a => a.ticket_tier_id))];
-    const allServiceIds = [...new Set(
-      attendeesList.flatMap(a => (a.services || []).map(s => s.service_id))
-    )];
+    const allServiceIds = [...new Set(attendeesList.flatMap(a => (a.services || []).map(s => s.service_id)))];
 
-    // Fetch tier prices
     const { data: tierData } = await supabase
       .from("ticket_tiers")
       .select("id, name, price, erp_code, sales_start, sales_end")
       .in("id", allTierIds);
     const tierMap = new Map((tierData ?? []).map(t => [t.id, t]));
 
-    // ── Reject tiers outside their sales window ──
     const now = new Date();
     for (const tierId of allTierIds) {
       const tier = tierMap.get(tierId);
-      if (!tier) {
-        console.error("[create-order] Unknown ticket_tier_id:", tierId);
-        return new Response(
-          JSON.stringify({ success: false, error: "Invalid ticket tier" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+      if (!tier) return json({ success: false, error: "Invalid ticket tier" }, 400);
       const start = tier.sales_start ? new Date(tier.sales_start) : null;
       const end = tier.sales_end ? new Date(tier.sales_end) : null;
       if ((start && now < start) || (end && now > end)) {
-        console.error("[create-order] Tier outside sales window:", tierId, tier.sales_start, tier.sales_end);
-        return new Response(
-          JSON.stringify({ success: false, error: `Ticket tier "${tier.name}" is no longer available for purchase` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return json({ success: false, error: `Ticket tier "${tier.name}" is no longer available for purchase` }, 400);
       }
     }
 
-    // Fetch service prices
     let serviceMap = new Map<string, { id: string; name: string; price: number; erp_code: string | null }>();
     if (allServiceIds.length > 0) {
       const { data: svcData } = await supabase
@@ -163,27 +123,85 @@ Deno.serve(async (req) => {
       serviceMap = new Map((svcData ?? []).map(s => [s.id, s]));
     }
 
-    // ── Calculate total ──
-    let totalAmount = 0;
-    for (const att of attendeesList) {
-      const tier = tierMap.get(att.ticket_tier_id);
-      totalAmount += tier?.price ?? 0;
-      for (const svc of (att.services || [])) {
-        const service = serviceMap.get(svc.service_id);
-        totalAmount += (service?.price ?? 0) * (svc.quantity || 1);
+    let discount: {
+      id: string; type: string; value: number;
+      allTickets: boolean; allServices: boolean;
+      tierIds: string[]; serviceIds: string[];
+    } | null = null;
+
+    if (discountCodeInput && String(discountCodeInput).trim()) {
+      const { data: vRows, error: vErr } = await supabase.rpc("validate_discount_code", {
+        p_event_id: event_id,
+        p_code: String(discountCodeInput),
+      });
+      const v = Array.isArray(vRows) ? vRows[0] : vRows;
+      if (vErr || !v || !v.valid) {
+        console.error("[create-order] Invalid discount code:", discountCodeInput, vErr, v?.reason);
+        return json({ success: false, error: "Kod za popust nije valjan", reason: v?.reason ?? "invalid" }, 400);
       }
+      discount = {
+        id: v.discount_code_id,
+        type: v.discount_type,
+        value: Number(v.discount_value),
+        allTickets: !!v.applies_to_all_tickets,
+        allServices: !!v.applies_to_all_services,
+        tierIds: v.target_ticket_tier_ids ?? [],
+        serviceIds: v.target_event_service_ids ?? [],
+      };
     }
 
-    console.log("[create-order] Total amount:", totalAmount, "Attendees:", attendeesList.length);
+    const unitDiscount = (price: number): number => {
+      if (!discount || price <= 0) return 0;
+      if (discount.type === "percentage") return r2(Math.min(price, (price * discount.value) / 100));
+      return r2(Math.min(price, discount.value));
+    };
+    const tierEligible = (tierId: string) => !!discount && (discount.allTickets || discount.tierIds.includes(tierId));
+    const serviceEligible = (svcId: string) => !!discount && (discount.allServices || discount.serviceIds.includes(svcId));
 
-    // ── Primary attendee info ──
+    type Line = {
+      attIdx: number; kind: "ticket" | "service"; refId: string; description: string;
+      quantity: number; listUnit: number; netUnit: number; discountAmount: number; erp_code: string | null;
+    };
+    const lines: Line[] = [];
+    let discountApplied = false;
+
+    attendeesList.forEach((att, idx) => {
+      const tier = tierMap.get(att.ticket_tier_id)!;
+      const listUnit = Number(tier.price ?? 0);
+      const d = tierEligible(att.ticket_tier_id) ? unitDiscount(listUnit) : 0;
+      if (d > 0) discountApplied = true;
+      lines.push({
+        attIdx: idx, kind: "ticket", refId: att.ticket_tier_id, description: tier.name ?? "Ticket",
+        quantity: 1, listUnit, netUnit: r2(listUnit - d), discountAmount: d, erp_code: tier.erp_code || null,
+      });
+      for (const svc of (att.services || [])) {
+        const service = serviceMap.get(svc.service_id);
+        const sList = Number(service?.price ?? 0);
+        const qty = svc.quantity || 1;
+        const sd = serviceEligible(svc.service_id) ? unitDiscount(sList) : 0;
+        if (sd > 0) discountApplied = true;
+        lines.push({
+          attIdx: idx, kind: "service", refId: svc.service_id, description: service?.name ?? "Service",
+          quantity: qty, listUnit: sList, netUnit: r2(sList - sd), discountAmount: r2(sd * qty),
+          erp_code: service?.erp_code || null,
+        });
+      }
+    });
+
+    if (discount && !discountApplied) {
+      return json({ success: false, error: "Kod za popust ne vrijedi za odabrane ulaznice", reason: "not_applicable" }, 400);
+    }
+
+    const totalAmount = r2(lines.reduce((s, l) => s + l.netUnit * l.quantity, 0));
+    const isFree = totalAmount <= 0;
+    console.log("[create-order] Total:", totalAmount, "Discount:", discount?.id ?? "none", "Free:", isFree);
+
     const primary = attendeesList[0];
     const primaryPhone = primary.phone || null;
-
-    // ── Create all attendees ──
     const attendeeIds: string[] = [];
-    for (const att of attendeesList) {
-      const tier = tierMap.get(att.ticket_tier_id);
+    for (let i = 0; i < attendeesList.length; i++) {
+      const att = attendeesList[i];
+      const ticketLine = lines.find(l => l.attIdx === i && l.kind === "ticket")!;
       const { data: createdAtt, error: attError } = await supabase
         .from("attendees")
         .insert({
@@ -197,28 +215,21 @@ Deno.serve(async (req) => {
           oib: att.oib || null,
           institution: isCompany ? (company_name || null) : (att.institution || null),
           specialty: att.specialty || null,
-          status: totalAmount === 0 ? "approved" : (isCompany && payment_method !== "stripe" ? "pending" : "approved"),
-          payment_status: totalAmount === 0 ? "paid" : "pending",
-          price_paid: tier?.price ?? 0,
+          status: isFree ? "approved" : (isCompany && payment_method !== "stripe" ? "pending" : "approved"),
+          payment_status: "pending",
+          price_paid: ticketLine.netUnit,
         })
         .select("id")
         .single();
-
-      if (attError) {
-        console.error("[create-order] Failed to create attendee:", attError);
-        throw attError;
-      }
+      if (attError) throw attError;
       attendeeIds.push(createdAtt.id);
     }
 
-    const primaryAttendeeId = attendeeIds[0];
-
-    // ── Create order ──
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
         event_id,
-        attendee_id: primaryAttendeeId,
+        attendee_id: attendeeIds[0],
         payer_name: payer_name || (isCompany ? company_name : `${primary.first_name} ${primary.last_name}`),
         payer_type: payer_type || "individual",
         payer_oib: company_oib || null,
@@ -232,9 +243,9 @@ Deno.serve(async (req) => {
         contact_email: primary.email,
         contact_phone: primaryPhone,
         po_number: po_number || null,
-        payment_method: payment_method || (isCompany ? "invoice" : "stripe"),
+        payment_method: isFree ? "free" : (payment_method || (isCompany ? "invoice" : "stripe")),
         lang: lang === "en" ? "en" : "hr",
-        status: totalAmount === 0 ? "paid" : "draft",
+        status: "draft",
         total_amount: totalAmount,
         is_group_order: attendeesList.length > 1,
         terms_accepted: terms_accepted ?? false,
@@ -245,90 +256,58 @@ Deno.serve(async (req) => {
       })
       .select("id, order_number")
       .single();
+    if (orderError) throw orderError;
 
-    if (orderError) {
-      console.error("[create-order] Failed to create order:", orderError);
-      throw orderError;
-    }
-
-    console.log("[create-order] Order created:", order.id, "Order#", order.order_number);
-
-    // ── Create order items ──
-    const orderItems: Array<Record<string, unknown>> = [];
-
-    for (let i = 0; i < attendeesList.length; i++) {
-      const att = attendeesList[i];
-      const attId = attendeeIds[i];
-      const tier = tierMap.get(att.ticket_tier_id);
-      const tierPrice = tier?.price ?? 0;
-      const ticketVat = Number(((tierPrice * vatRate) / (100 + vatRate)).toFixed(2));
-
-      // Ticket item
-      orderItems.push({
+    const orderItems = lines.map(l => {
+      const lineTotal = r2(l.netUnit * l.quantity);
+      const vat = Number(((lineTotal * vatRate) / (100 + vatRate)).toFixed(2));
+      const eligible = l.discountAmount > 0;
+      return {
         order_id: order.id,
-        attendee_id: attId,
-        ticket_type_id: att.ticket_tier_id,
-        description: tier?.name ?? "Ticket",
-        quantity: 1,
-        unit_price: tierPrice,
-        total_price: tierPrice,
-        vat_amount: ticketVat,
-        price_at_purchase: tierPrice,
-        erp_code: tier?.erp_code || null,
-        item_type: "ticket",
-      });
+        attendee_id: attendeeIds[l.attIdx],
+        ticket_type_id: l.kind === "ticket" ? l.refId : null,
+        service_id: l.kind === "service" ? l.refId : null,
+        description: l.description,
+        quantity: l.quantity,
+        unit_price: l.netUnit,
+        total_price: lineTotal,
+        vat_amount: vat,
+        price_at_purchase: l.listUnit,
+        erp_code: l.erp_code,
+        item_type: l.kind,
+        discount_code_id: eligible ? discount!.id : null,
+        discount_amount: eligible ? l.discountAmount : 0,
+      };
+    });
 
-      // Service items for this attendee
-      for (const svc of (att.services || [])) {
-        const service = serviceMap.get(svc.service_id);
-        const svcPrice = service?.price ?? 0;
-        const svcQty = svc.quantity || 1;
-        const svcTotal = svcPrice * svcQty;
-        const svcVat = Number(((svcTotal * vatRate) / (100 + vatRate)).toFixed(2));
+    const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+    if (itemsError) throw itemsError;
 
-        orderItems.push({
-          order_id: order.id,
-          attendee_id: attId,
-          service_id: svc.service_id,
-          description: service?.name ?? "Service",
-          quantity: svcQty,
-          unit_price: svcPrice,
-          total_price: svcTotal,
-          vat_amount: svcVat,
-          price_at_purchase: svcPrice,
-          erp_code: service?.erp_code || null,
-          item_type: "service",
-        });
-      }
+    if (discount) {
+      const { error: incErr } = await supabase.rpc("increment_discount_code_usage", { p_discount_code_id: discount.id });
+      if (incErr) console.error("[create-order] increment usage failed:", incErr);
     }
 
-    if (orderItems.length > 0) {
-      const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-      if (itemsError) {
-        console.error("[create-order] Failed to create order items:", itemsError);
-        throw itemsError;
-      }
+    if (isFree) {
+      const { error: paidErr } = await supabase.from("orders").update({ status: "paid" }).eq("id", order.id);
+      if (paidErr) console.error("[create-order] Failed to mark free order paid:", paidErr);
     }
 
-    console.log("[create-order] Success. Order:", order.id, "Attendees:", attendeeIds.length, "Items:", orderItems.length);
+    console.log("[create-order] Success. Order:", order.id, "Items:", orderItems.length);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        order_id: order.id,
-        order_number: order.order_number,
-        primary_attendee_id: primaryAttendeeId,
-        attendee_ids: attendeeIds,
-        total_amount: totalAmount,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return json({
+      success: true,
+      order_id: order.id,
+      order_number: order.order_number,
+      primary_attendee_id: attendeeIds[0],
+      attendee_ids: attendeeIds,
+      total_amount: totalAmount,
+      discount_applied: !!discount,
+      free: isFree,
+    });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = err instanceof Error ? err.message : (typeof err === "object" ? JSON.stringify(err) : String(err));
     console.error("[create-order] Unhandled error:", message);
-    return new Response(
-      JSON.stringify({ success: false, error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return json({ success: false, error: message }, 500);
   }
 });
