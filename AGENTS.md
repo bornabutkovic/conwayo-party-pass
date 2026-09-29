@@ -1,0 +1,1 @@
+- Dependent ticket purchases match the required ticket by attendee email within the same order, because each ticket creates a separate attendee record.

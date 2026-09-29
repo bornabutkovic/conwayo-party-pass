@@ -1,0 +1,4 @@
+- [ ] Show ticket sales-end, featured placement, and dependency notes on event page.
+- [ ] Match dependent checkout tickets to an explicitly chosen attendee, clean up removed dependencies, and surface purchase errors.
+- [ ] Apply desktop/mobile banner and default logo sizing on the event and checkout pages.
+- [ ] Verify ticket and banner behavior in the preview.
