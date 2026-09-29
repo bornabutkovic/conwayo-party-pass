@@ -288,7 +288,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const hasMeaningfulTierChoice = tiers.length > 1 || tiers.some((tier) => Number(tier.price) > 0);
   const services = event.event_services ?? [];
   const institution = event.institutions;
-  const primaryColor = event.branding_primary_color ?? "#6366f1";
   const bannerUrl = event.branding_banner_url;
   const mobileBannerUrl = (event as any).branding_banner_mobile_url;
   const eventTypeEntry = EVENT_TYPE_LABELS[event.event_type ?? "face2face"] ?? EVENT_TYPE_LABELS.face2face;
@@ -375,27 +374,18 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
         <ConvwayoHeader showBackToEvents />
 
         {/* SECTION 1 — HERO (clean, no text) */}
-        {bannerUrl ? (
+        {(bannerUrl || mobileBannerUrl) ? (
           <section className="w-full overflow-hidden">
             <picture>
               {mobileBannerUrl && <source media="(max-width: 767px)" srcSet={mobileBannerUrl} />}
-              <img
-                src={bannerUrl}
-                alt={`${eventName} banner`}
-                className="block w-full h-auto"
-              />
+              {bannerUrl ? (
+                <img src={bannerUrl} alt={`${eventName} banner`} className="block w-full h-auto object-contain" />
+              ) : (
+                <img src={mobileBannerUrl} alt={`${eventName} banner`} className="block w-full h-auto object-contain md:hidden" />
+              )}
             </picture>
           </section>
-        ) : (
-          <section
-            className="relative w-full overflow-hidden"
-            style={{ height: 200, backgroundColor: primaryColor }}
-          >
-            <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10" />
-            <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
-          </section>
-        )}
-
+        ) : null}
         {/* SECTION 1b — EVENT TITLE */}
         <section className="bg-card border-b border-border">
           <div className="container mx-auto px-4 py-8 md:py-10">
@@ -404,8 +394,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                 <img
                   src={event.branding_logo_url}
                   alt={`${eventName} logo`}
-                  style={{ height: (event as any).branding_logo_height ? `${(event as any).branding_logo_height}px` : '6rem' }}
-                  className="w-auto max-w-[280px] object-contain rounded-lg border border-border bg-white p-2 mb-4"
+                  style={event.branding_logo_height != null ? { height: `${event.branding_logo_height}px` } : undefined}
+                  className={`${event.branding_logo_height == null ? 'h-14 ' : ''}w-auto max-w-[280px] object-contain rounded-lg border border-border bg-card p-2 mb-4`}
                 />
               )}
               <h1 className={`text-3xl font-bold tracking-tight text-foreground md:text-5xl ${bannerUrl ? 'sr-only' : ''}`}>
@@ -546,7 +536,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     const avail = availabilityMap?.get(tier.id);
 
                     return (
-                      <Card key={tier.id} className={`border-border ${dimmed ? "opacity-40 pointer-events-none" : ""}`}>
+                      <Card key={tier.id} className={`border-border ${tier.is_featured ? "col-span-full" : ""} ${dimmed ? "opacity-40 pointer-events-none" : ""}`}>
                         <CardContent className="p-5">
                           <h3 className="text-lg font-semibold text-card-foreground">
                             {tierName}
@@ -557,19 +547,29 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                             </p>
                           )}
 
-                          <p className="mt-3 text-2xl font-bold text-primary">
+                           <p className={`mt-3 font-bold text-primary ${tier.is_featured ? "text-3xl" : "text-2xl"}`}>
                             {tier.price === 0
                               ? t("event.freeLabel")
                               : `${Number(tier.price).toFixed(2)} ${currency}`}
                           </p>
 
-                          {status === "active" && end && (
+                           {status === "active" && end && tier.show_sales_end === true && (
                             <p className="mt-2 text-xs font-medium text-muted-foreground">
                               {displayLang === "hr"
                                 ? `Do ${fmtTierDate(end)}`
                                 : `Until ${fmtTierDate(end)}`}
                             </p>
                           )}
+
+                           {tier.requires_tier_id && (
+                             <p className="mt-2 text-xs text-muted-foreground">
+                               {displayLang === "hr" ? "Dostupno uz kupnju: " : "Available with purchase: "}
+                               {(() => {
+                                 const required = event.ticket_tiers.find((candidate) => candidate.id === tier.requires_tier_id);
+                                 return required ? (displayLang === "en" ? tr(required.translations as Record<string, any> | null, displayLang, "name", required.name) : required.name) : "—";
+                               })()}
+                             </p>
+                           )}
 
                           {status === "upcoming" && start && (
                             <p className="mt-2 text-xs font-medium text-muted-foreground">
