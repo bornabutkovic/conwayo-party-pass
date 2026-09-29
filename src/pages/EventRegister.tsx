@@ -1179,7 +1179,6 @@ export default function EventRegister() {
                           ) : null}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span title={missingRequired ? disabledReason : undefined}>
                           <Button
                             type="button"
                             variant="outline"
@@ -1191,6 +1190,7 @@ export default function EventRegister() {
                             <Minus className="h-3 w-3" />
                           </Button>
                           <span className="w-8 text-center font-medium text-foreground">{qty}</span>
+                          <span title={missingRequired ? disabledReason : undefined}>
                           <Button
                             type="button"
                             variant="outline"
