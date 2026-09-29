@@ -419,7 +419,6 @@ export default function EventRegister() {
     });
     return total;
   }, [discountPreview, discountCheckStatus, tiers, ticketQuantities, attendees, services]);
-  const isFreeAfterDiscount = discountCheckStatus === "valid" && estimatedDiscount > 0 && grandTotal - estimatedDiscount <= 0;
 
 
 
@@ -543,6 +542,7 @@ export default function EventRegister() {
       .reduce((s, svc) => s + Number(svc.price), 0);
   }, 0);
   const grandTotal = ticketTotal + servicesTotal;
+  const isFreeAfterDiscount = discountCheckStatus === "valid" && estimatedDiscount > 0 && grandTotal - estimatedDiscount <= 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
