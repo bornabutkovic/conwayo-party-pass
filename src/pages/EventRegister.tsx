@@ -781,6 +781,7 @@ export default function EventRegister() {
           payerType,
           allAttendees: allAtts,
           totalAmount: data.total_amount ?? grandTotal,
+          discountAmount,
         });
         setInvoiceSuccess(true);
         if (slug) sessionStorage.removeItem(`checkout_state_${slug}`);
@@ -824,6 +825,7 @@ export default function EventRegister() {
         payerType,
         allAttendees: allAtts,
         totalAmount: data.total_amount ?? grandTotal,
+        discountAmount,
       };
       setCurrentOrderId(data.order_id);
       setSuccess(successData);
@@ -920,6 +922,7 @@ export default function EventRegister() {
         paymentDueDays={event.payment_due_days}
         billingEmail={billingEmail || attendees[0]?.email}
         companyName={companyName}
+        discountAmount={success.discountAmount}
       />
     );
   }

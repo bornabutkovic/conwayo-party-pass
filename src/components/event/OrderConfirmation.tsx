@@ -92,7 +92,9 @@ export function OrderConfirmation({
             {isInvoice ? "Invoice Request Received!" : "Registration Confirmed!"}
           </h1>
           <p className="text-muted-foreground">
-            {isInvoice
+            {freeMessage
+              ? freeMessage
+              : isInvoice
               ? "A payment instruction will be sent to your email."
               : "Complete your payment to activate your tickets."}
           </p>
@@ -186,10 +188,10 @@ export function OrderConfirmation({
                     {/* QR Code */}
                     {att.id && (
                       <div className="shrink-0">
-                        <div className={`rounded-lg border border-border bg-background p-2 ${!isInvoice && payerType === "individual" ? "blur-sm opacity-60" : ""}`}>
+                        <div className={`rounded-lg border border-border bg-background p-2 ${!isInvoice && !isPaid && payerType === "individual" ? "blur-sm opacity-60" : ""}`}>
                           <QRCodeSVG value={att.id} size={80} level="H" />
                         </div>
-                        {!isInvoice && (
+                        {!isInvoice && !isPaid && (
                           <p className="text-[10px] text-muted-foreground text-center mt-1">
                             Pending payment
                           </p>
@@ -224,6 +226,12 @@ export function OrderConfirmation({
                 </div>
               );
             })}
+            {discountAmount != null && discountAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Discount</span>
+                <span className="font-medium text-primary">-{discountAmount.toFixed(2)} {currency}</span>
+              </div>
+            )}
             <Separator className="my-2" />
             <div className="flex justify-between text-base font-bold">
               <span className="text-foreground">Total</span>
@@ -259,7 +267,7 @@ export function OrderConfirmation({
         )}
 
         {/* Stripe Payment CTA */}
-        {!isInvoice && totalAmount > 0 && onPayNow && (
+        {!isInvoice && !isPaid && totalAmount > 0 && onPayNow && (
           <div className="space-y-3 mb-6">
             <Button
               size="lg"
