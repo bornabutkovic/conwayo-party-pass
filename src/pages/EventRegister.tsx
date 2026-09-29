@@ -1128,19 +1128,19 @@ export default function EventRegister() {
                     const qty = ticketQuantities[tier.id] ?? 0;
                     const tierName = tr(tier.translations as Record<string, any> | null, lang, "name", tier.name);
                     const tierDesc = tr(tier.translations as Record<string, any> | null, lang, "description", tier.description);
-                     const requiredTier = tiers.find(candidate => candidate.id === tier.requires_tier_id);
-                     const requiredName = requiredTier ? tr(requiredTier.translations as Record<string, any> | null, lang, "name", requiredTier.name) : "";
-                     const missingRequired = !!tier.requires_tier_id && (ticketQuantities[tier.requires_tier_id] ?? 0) === 0;
-                     const requiredOptions = attendees.filter(row => row.tierId === tier.requires_tier_id);
-                     const disabledReason = lang === "hr" ? `Najprije odaberite: ${requiredName}` : `First select: ${requiredName}`;
+                    const requiredTier = tiers.find(candidate => candidate.id === tier.requires_tier_id);
+                    const requiredName = requiredTier ? tr(requiredTier.translations as Record<string, any> | null, lang, "name", requiredTier.name) : "";
+                    const missingRequired = !!tier.requires_tier_id && (ticketQuantities[tier.requires_tier_id] ?? 0) === 0;
+                    const requiredOptions = attendees.filter(row => row.tierId === tier.requires_tier_id);
+                    const disabledReason = lang === "hr" ? `Najprije odaberite: ${requiredName}` : `First select: ${requiredName}`;
                     return (
                       <div
                         key={tier.id}
-                        className={`flex items-center justify-between rounded-lg border-2 p-4 transition-colors ${
+                        className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 p-4 transition-colors ${
                           qty > 0 ? "border-primary bg-primary/5" : "border-border bg-card"
                         }`}
                       >
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                           <p className="font-medium text-foreground">{tierName}</p>
                           {tierDesc && (
                             <p className="text-sm text-muted-foreground">{tierDesc}</p>
