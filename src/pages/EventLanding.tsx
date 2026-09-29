@@ -288,7 +288,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   const hasMeaningfulTierChoice = tiers.length > 1 || tiers.some((tier) => Number(tier.price) > 0);
   const services = event.event_services ?? [];
   const institution = event.institutions;
-  const primaryColor = event.branding_primary_color ?? "#6366f1";
   const bannerUrl = event.branding_banner_url;
   const mobileBannerUrl = (event as any).branding_banner_mobile_url;
   const eventTypeEntry = EVENT_TYPE_LABELS[event.event_type ?? "face2face"] ?? EVENT_TYPE_LABELS.face2face;
@@ -387,16 +386,6 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
             </picture>
           </section>
         ) : null}
-        {!bannerUrl && !mobileBannerUrl && (
-          <section
-            className="relative w-full overflow-hidden"
-            style={{ height: 200, backgroundColor: primaryColor }}
-          >
-            <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10" />
-            <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
-          </section>
-        )}
-
         {/* SECTION 1b — EVENT TITLE */}
         <section className="bg-card border-b border-border">
           <div className="container mx-auto px-4 py-8 md:py-10">
@@ -405,8 +394,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                 <img
                   src={event.branding_logo_url}
                   alt={`${eventName} logo`}
-                   style={(event as any).branding_logo_height != null ? { height: `${(event as any).branding_logo_height}px` } : undefined}
-                   className={`${(event as any).branding_logo_height == null ? 'h-14 ' : ''}w-auto max-w-[280px] object-contain rounded-lg border border-border bg-card p-2 mb-4`}
+                  style={event.branding_logo_height != null ? { height: `${event.branding_logo_height}px` } : undefined}
+                  className={`${event.branding_logo_height == null ? 'h-14 ' : ''}w-auto max-w-[280px] object-contain rounded-lg border border-border bg-card p-2 mb-4`}
                 />
               )}
               <h1 className={`text-3xl font-bold tracking-tight text-foreground md:text-5xl ${bannerUrl ? 'sr-only' : ''}`}>
@@ -547,7 +536,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
                     const avail = availabilityMap?.get(tier.id);
 
                     return (
-                       <Card key={tier.id} className={`border-border ${tier.is_featured ? "sm:col-span-full" : ""} ${dimmed ? "opacity-40 pointer-events-none" : ""}`}>
+                      <Card key={tier.id} className={`border-border ${tier.is_featured ? "col-span-full" : ""} ${dimmed ? "opacity-40 pointer-events-none" : ""}`}>
                         <CardContent className="p-5">
                           <h3 className="text-lg font-semibold text-card-foreground">
                             {tierName}

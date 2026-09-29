@@ -1000,7 +1000,6 @@ export default function EventRegister() {
   );
 
   const eventName = tr(event.translations as Record<string, any> | null, lang, "name", event.name);
-  const primaryColor = event.branding_primary_color ?? "#6366f1";
   const bannerUrl = event.branding_banner_url;
   const mobileBannerUrl = event.branding_banner_mobile_url;
   const locationParts = [event.venue_name, event.location_address, event.location_city].filter(Boolean);
@@ -1028,16 +1027,6 @@ export default function EventRegister() {
           </picture>
         </section>
       ) : null}
-      {!bannerUrl && !mobileBannerUrl && (
-        <section
-          className="relative w-full overflow-hidden"
-          style={{ height: 200, backgroundColor: primaryColor }}
-        >
-          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10" />
-          <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-white/5" />
-        </section>
-      )}
-
       {/* EVENT TITLE + INFO BAR */}
       <section className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-6 md:py-8">
@@ -1158,7 +1147,7 @@ export default function EventRegister() {
                                {lang === "hr" ? "Do " : "Until "}{new Date(tier.sales_end).toLocaleDateString(lang === "hr" ? "hr-HR" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}
                              </p>
                            )}
-                           {requiredTier && requiredOptions.length > 0 && (
+                           {requiredTier && requiredOptions.length > 0 && qty > 0 && (
                              <div className="mt-2">
                                <Label htmlFor={`required-${tier.id}`} className="text-xs text-muted-foreground">
                                  {lang === "hr" ? "Za sudionika" : "For attendee"}
