@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const N8N_WEBHOOK_URL_COMPANY = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration-v1";
 const N8N_WEBHOOK_URL_INDIVIDUAL = "https://penta.app.n8n.cloud/webhook/lovable-invoice-registration-individual";
-const N8N_WEBHOOK_SECRET = Deno.env.get("CONWAYO_N8N_WEBHOOK_SECRET") ?? "";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -51,6 +50,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    const { data: N8N_WEBHOOK_SECRET, error: secretErr } = await supabase.rpc("get_webhook_secret", {
+      p_secret_name: "conwayo_webhook_secret",
+    });
+    if (secretErr || !N8N_WEBHOOK_SECRET) {
+      console.error("Webhook secret not available from Vault:", secretErr?.message);
+      return new Response(
+        JSON.stringify({ success: false, error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     let orderData: Record<string, any> | null = null;
     let orderItems: Array<Record<string, any>> = [];
@@ -194,7 +204,7 @@ Deno.serve(async (req) => {
 
     const n8nWebhookUrl = payer_type === "company" ? N8N_WEBHOOK_URL_COMPANY : N8N_WEBHOOK_URL_INDIVIDUAL;
 
-    console.log("Forwarding to n8n:", n8nWebhookUrl, JSON.stringify(n8nPayload));
+    console.log("Forwarding to n8n:", n8nWebhookUrl, "order:", order_id);
 
     let n8nOk = false;
     let n8nStatus = 0;
@@ -204,7 +214,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(N8N_WEBHOOK_SECRET ? { "x-conwayo-secret": N8N_WEBHOOK_SECRET } : {}),
+          "x-conwayo-secret": N8N_WEBHOOK_SECRET as string,
         },
         body: JSON.stringify(n8nPayload),
       });
