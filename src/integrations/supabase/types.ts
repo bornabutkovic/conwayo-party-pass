@@ -1084,6 +1084,161 @@ export type Database = {
           },
         ]
       }
+      gdpr_documents: {
+        Row: {
+          category: string
+          counterparty: string | null
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          external_url: string | null
+          id: string
+          is_current: boolean
+          notes: string | null
+          review_due: string | null
+          storage_path: string | null
+          title: string
+          version: string | null
+        }
+        Insert: {
+          category: string
+          counterparty?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          external_url?: string | null
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          review_due?: string | null
+          storage_path?: string | null
+          title: string
+          version?: string | null
+        }
+        Update: {
+          category?: string
+          counterparty?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          external_url?: string | null
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          review_due?: string | null
+          storage_path?: string | null
+          title?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
+      gdpr_incidents: {
+        Row: {
+          azop_notified_at: string | null
+          controller_decision: string | null
+          controller_notified_at: string | null
+          created_at: string
+          data_categories: string | null
+          data_subjects_notified_at: string | null
+          description: string
+          detected_at: string
+          evidence_of_misuse: string | null
+          exposure_end: string | null
+          exposure_start: string | null
+          id: string
+          records_affected: string | null
+          remediated_at: string | null
+          remediation: string | null
+          risk_assessment: string | null
+          title: string
+          updated_at: string
+          who_could_access: string | null
+        }
+        Insert: {
+          azop_notified_at?: string | null
+          controller_decision?: string | null
+          controller_notified_at?: string | null
+          created_at?: string
+          data_categories?: string | null
+          data_subjects_notified_at?: string | null
+          description: string
+          detected_at: string
+          evidence_of_misuse?: string | null
+          exposure_end?: string | null
+          exposure_start?: string | null
+          id: string
+          records_affected?: string | null
+          remediated_at?: string | null
+          remediation?: string | null
+          risk_assessment?: string | null
+          title: string
+          updated_at?: string
+          who_could_access?: string | null
+        }
+        Update: {
+          azop_notified_at?: string | null
+          controller_decision?: string | null
+          controller_notified_at?: string | null
+          created_at?: string
+          data_categories?: string | null
+          data_subjects_notified_at?: string | null
+          description?: string
+          detected_at?: string
+          evidence_of_misuse?: string | null
+          exposure_end?: string | null
+          exposure_start?: string | null
+          id?: string
+          records_affected?: string | null
+          remediated_at?: string | null
+          remediation?: string | null
+          risk_assessment?: string | null
+          title?: string
+          updated_at?: string
+          who_could_access?: string | null
+        }
+        Relationships: []
+      }
+      gdpr_subprocessors: {
+        Row: {
+          data_location: string | null
+          dpa_document_id: string | null
+          name: string
+          role: string
+          status: string
+          transfer_mechanism: string | null
+          verification_source: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          data_location?: string | null
+          dpa_document_id?: string | null
+          name: string
+          role: string
+          status?: string
+          transfer_mechanism?: string | null
+          verification_source?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          data_location?: string | null
+          dpa_document_id?: string | null
+          name?: string
+          role?: string
+          status?: string
+          transfer_mechanism?: string | null
+          verification_source?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gdpr_subprocessors_dpa_document_id_fkey"
+            columns: ["dpa_document_id"]
+            isOneToOne: false
+            referencedRelation: "gdpr_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       institutions: {
         Row: {
           address: string
@@ -2974,6 +3129,7 @@ export type Database = {
         Returns: string
       }
       expire_stale_orders: { Args: never; Returns: Json }
+      gdpr_export_package: { Args: never; Returns: Json }
       get_admin_users: {
         Args: never
         Returns: {
