@@ -1,7 +1,7 @@
 import { useLanguage } from "@/hooks/useLanguage";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 
-const LAST_UPDATED = { hr: "Zadnja izmjena: 27.05.2026.", en: "Last updated: 27.05.2026." };
+const LAST_UPDATED = { hr: "Zadnja izmjena: 01.10.2026.", en: "Last updated: 01.10.2026." };
 
 const content = {
   hr: {
@@ -9,24 +9,24 @@ const content = {
     intro: "Penta turistička agencija d.o.o. (u nastavku „mi\", „nama\", „naš\") je vlasnik web stranice www.conwayo.io. Stvorili smo ovu izjavu o privatnosti kako bismo pokazali da brinemo o privatnosti naših korisnika te ih informirali o načinima prikupljanja i obrade osobnih podataka. Molimo vas da ovu Izjavu pročitate pažljivo.",
     sections: [
       { h: "Voditelj obrade", p: "Penta turistička agencija d.o.o., Izidora Kršnjavoga 25, 10000 Zagreb, OIB: 31375495391. Za pitanja o zaštiti podataka kontaktirajte registration@conwayo.ai." },
-      { h: "Prikupljanje podataka", p: "Osobni podatak jest svaki podatak koji se odnosi na pojedinca čiji je identitet poznat ili se može utvrditi. Vaše osobne podatke prikupljamo samo kada nam svojom voljom date takve informacije — kada ispunite obrazac na web stranici, prijavite se putem WhatsAppa ili glasovnog agenta, te prijavite se na newsletter. Automatski prikupljamo i neosobne podatke putem naših servera ili kolačića: najposjećenije stranice, broj ispunjenih obrazaca, IP adresu, podatke o uređaju i pregledniku, kolačiće." },
+      { h: "Prikupljanje podataka", p: "Osobni podatak jest svaki podatak koji se odnosi na pojedinca čiji je identitet poznat ili se može utvrditi. Vaše osobne podatke prikupljamo samo kada nam svojom voljom date takve informacije — kada ispunite obrazac na web stranici, prijavite se putem WhatsAppa ili glasovnog agenta. Automatski prikupljamo i tehničke podatke putem naših servera: IP adresu, podatke o uređaju i pregledniku." },
       {
         h: "Koje podatke prikupljamo",
         items: [
-          "Podaci koje nam izravno dajete: ime i prezime / naziv tvrtke, OIB (za poslovne korisnike), e-mail adresa, broj telefona, podaci o računu (login, hashirana lozinka)",
+          "Podaci koje nam izravno dajete: ime i prezime / naziv tvrtke, OIB (za poslovne korisnike), e-mail adresa, broj telefona, adresa (za izdavanje računa), specijalizacija i ustanova (ako ih organizator traži), podaci o računu (login, hashirana lozinka)",
           "Podaci vezani uz plaćanje: podatke o karticama ne pohranjujemo — obrada ide preko pružatelja platnih usluga (npr. Stripe)",
-          "Podaci koje prikupljamo automatski: IP adresa, podaci o uređaju i pregledniku, ponašanje na stranici, kolačići",
+          "Podaci koje prikupljamo automatski: IP adresa, podaci o uređaju i pregledniku",
           "Podaci dobiveni od Organizatora: podaci o prijavi na događaj, status sudjelovanja, posebni podaci vezani uz event (ako ih Organizator traži)",
         ],
       },
       {
         h: "Obrada podataka — svrha i pravna osnova",
-        p: "Ova Politika privatnosti odnosi se na obradu osobnih podataka putem: web stranice Conwayo.io, WhatsApp komunikacije, glasovnog AI agenta (Voice Agent) i svih povezanih digitalnih kanala.",
+        p: "Ova Politika privatnosti odnosi se na obradu osobnih podataka putem: web stranice Conwayo.io, administratorskog portala conwayo.app, WhatsApp komunikacije, glasovnog AI agenta (Voice Agent) i svih povezanih digitalnih kanala.",
         items: [
           "Izvršenje ugovora (čl. 6(1)(b)): registracija i korisnički račun, kupnja kotizacija, korisnička podrška",
           "Zakonska obveza (čl. 6(1)(c)): računovodstvo, porezi",
-          "Legitimni interes (čl. 6(1)(f)): sigurnost sustava, prevencija prijevara, analitika i poboljšanje usluge",
-          "Privola (čl. 6(1)(a)): marketing, kolačići, WhatsApp komunikacija, glasovni kanal (Voice Agent)",
+          "Legitimni interes (čl. 6(1)(f)): sigurnost sustava, prevencija prijevara",
+          "Privola (čl. 6(1)(a)): WhatsApp komunikacija, glasovni kanal (Voice Agent)",
         ],
       },
       {
@@ -37,13 +37,13 @@ const content = {
           "Platforma može djelovati kao izvršitelj obrade u ime Organizatora ili zaseban voditelj obrade, ovisno o konkretnoj obradi",
         ],
       },
-      { h: "Automatizirana obrada i AI (WhatsApp)", p: "Komunikacija putem WhatsApp kanala može biti automatizirana korištenjem AI sustava. To uključuje: odgovaranje na upite, vođenje kroz registraciju, generiranje uputa za plaćanje. Takva obrada ne proizvodi pravne učinke niti donosi automatizirane odluke koje značajno utječu na korisnika. Korisnik uvijek može zatražiti komunikaciju s ljudskim operaterom." },
+      { h: "Automatizirana obrada i AI (WhatsApp)", p: "Komunikacija putem WhatsApp kanala može biti automatizirana korištenjem AI sustava. To uključuje: odgovaranje na upite, vođenje kroz registraciju, generiranje uputa za plaćanje. Takva obrada ne proizvodi pravne učinke niti donosi automatizirane odluke koje značajno utječu na korisnika. Za pitanja koja AI ne može riješiti korisnik se može obratiti organizatoru događaja na kontakt naveden uz događaj ili na registration@conwayo.ai." },
       {
         h: "Glasovni kanal (Voice Agent)",
         p: "Conwayo nudi opcionalnu registraciju putem glasovnog AI agenta (Voice Agent). Korištenjem ovog kanala:",
         items: [
           "Razgovor obrađuje AI sustav tvrtke Retell AI Inc. (SAD) koji djeluje kao izvršitelj obrade",
-          "Prikupljaju se isključivo: metadata poziva, ime, e-mail adresa i odabir kotizacije — audio snimke i transkripti se NE pohranjuju (postavka: Basic Attributes Only)",
+          "Prikupljaju se: metadata poziva, ime i prezime, e-mail adresa, broj telefona, odabir kotizacije i usluga, te ovisno o događaju OIB, specijalizacija i ustanova; za plaćanje na tvrtku i naziv, OIB i adresa tvrtke — audio snimke i transkripti se NE pohranjuju (postavka: Basic Attributes Only)",
           "Obrada se temelji na vašoj eksplicitnoj privoli danoj usmeno na početku poziva (čl. 6(1)(a) GDPR)",
           "Metadata poziva čuvaju se kod Retell AI 30 dana, nakon čega se automatski brišu",
           "Evidencija privole (datum, ID poziva, verzija teksta obavijesti) pohranjuje se trajno radi dokazivanja sukladno čl. 7(1) GDPR",
@@ -55,32 +55,33 @@ const content = {
         h: "Primatelji podataka",
         p: "Podatke dijelimo samo kada je potrebno:",
         items: [
-          "Pružatelji IT infrastrukture (hosting, baze podataka)",
+          "Pružatelji IT infrastrukture — Supabase (baza podataka, EU – Frankfurt), Lovable (hosting web aplikacije)",
+          "Automatizacija procesa — n8n (EU – Frankfurt)",
           "Platni procesori — Stripe (SAD, SCC)",
           "Komunikacijski alati — Meta/WhatsApp (SCC)",
-          "Analitički alati — Google Analytics (SCC)",
-          "AI alati — OpenAI (SCC)",
+          "Slanje e-pošte — Resend (SAD, SCC), Google Workspace (SCC)",
+          "AI alati — OpenAI (SAD, SCC)",
           "Glasovni AI agent — Retell AI Inc. (SAD, SCC + DPA)",
+          "Izdavanje ponuda i računa — Microsoft Business Central (sustav voditelja obrade)",
           "Organizatori događaja — u mjeri potrebnoj za provedbu događaja",
         ],
         footer: "Svi izvršitelji obrade ugovorno su obvezani na zaštitu podataka.",
       },
-      { h: "Prijenos podataka izvan EU/EGP", p: "Neki partneri (npr. Retell AI, Meta, Google, Stripe, OpenAI) mogu obrađivati podatke izvan EU. U tim slučajevima koristimo standardne ugovorne klauzule (SCC) i druge GDPR zaštitne mehanizme." },
+      { h: "Prijenos podataka izvan EU/EGP", p: "Neki partneri (npr. Retell AI, Meta, Google, Stripe, OpenAI, Resend) mogu obrađivati podatke izvan EU. U tim slučajevima koristimo standardne ugovorne klauzule (SCC) i druge GDPR zaštitne mehanizme." },
       {
         h: "Rokovi čuvanja",
         items: [
-          "Transakcijski podaci: 11 godina",
-          "Korisnički računi: dok je račun aktivan + max. 3 godine neaktivnosti",
-          "Marketing podaci: do povlačenja privole",
-          "Analitika: do 24 mjeseca",
+          "Podaci za izdavanje računa i transakcijski podaci: 11 godina (Zakon o računovodstvu)",
+          "Podaci sudionika i povijest WhatsApp razgovora: 2 godine nakon završetka događaja, nakon čega se anonimiziraju ili brišu",
+          "Korisnički računi: dok je račun aktivan + max. 2 godine neaktivnosti",
           "Metadata glasovnih poziva (Retell AI): 30 dana",
           "Audio snimke i transkripti: ne pohranjuju se (Basic Attributes Only)",
-          "Evidencija privole za glasovni kanal: trajno (čl. 7(1) GDPR)",
+          "Evidencija privole: trajno (čl. 7(1) GDPR)",
         ],
       },
-      { h: "Zaštita podataka", p: "Primjenjujemo SSL/TLS enkripciju, kontrolu pristupa i autentifikaciju te redovite sigurnosne provjere. U slučaju povrede osobnih podataka obavijestit ćemo vas i nadležno tijelo u roku od 72 sata." },
-      { h: "Uporaba kolačića", p: "Koristimo nužne, analitičke, marketinške i funkcionalne kolačiće. Marketinške kolačiće koristimo isključivo uz vašu privolu." },
-      { h: "Prava pojedinaca", p: "Imate pravo na: pristup osobnim podacima, ispravak netočnih podataka, brisanje podataka, ograničenje obrade, prenosivost podataka, prigovor na obradu, povlačenje privole u bilo kojem trenutku. Zahtjeve pošaljite na registration@conwayo.ai — odgovaramo unutar 30 dana. Pritužbu možete podnijeti Agenciji za zaštitu osobnih podataka (AZOP), Martićeva 14, Zagreb, www.azop.hr." },
+      { h: "Zaštita podataka", p: "Primjenjujemo SSL/TLS enkripciju, kontrolu pristupa na razini baze podataka, autentifikaciju te redovite sigurnosne provjere. U slučaju povrede osobnih podataka postupamo sukladno čl. 33. i 34. GDPR-a: povredu bez odgode procjenjujemo i dokumentiramo, nadležno tijelo obavještavamo u roku od 72 sata ako je vjerojatno da povreda predstavlja rizik za prava i slobode pojedinaca, a pojedince izravno ako je taj rizik visok." },
+      { h: "Uporaba kolačića", p: "Koristimo isključivo nužne kolačiće i lokalnu pohranu preglednika potrebne za prijavu i rad aplikacije. Ne koristimo analitičke ni marketinške kolačiće." },
+      { h: "Prava pojedinaca", p: "Imate pravo na: pristup osobnim podacima, ispravak netočnih podataka, brisanje podataka, ograničenje obrade, prenosivost podataka, prigovor na obradu, povlačenje privole u bilo kojem trenutku. Zahtjeve pošaljite na registration@conwayo.ai — odgovaramo unutar 30 dana. Pritužbu možete podnijeti Agenciji za zaštitu osobnih podataka (AZOP), Selska cesta 136, 10000 Zagreb, www.azop.hr." },
       { h: "Kontakt", p: "Za sva pitanja vezana uz privatnost kontaktirajte nas na registration@conwayo.ai. Penta turistička agencija d.o.o., Izidora Kršnjavoga 25, 10000 Zagreb, OIB: 31375495391." },
     ],
   },
