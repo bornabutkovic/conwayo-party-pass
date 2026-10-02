@@ -1,7 +1,7 @@
 import { useLanguage } from "@/hooks/useLanguage";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
 
-const LAST_UPDATED = { hr: "Zadnja izmjena: 01.10.2026.", en: "Last updated: 01.10.2026." };
+const LAST_UPDATED = { hr: "Zadnja izmjena: 02.10.2026.", en: "Last updated: 02.10.2026." };
 
 const content = {
   hr: {
@@ -55,6 +55,7 @@ const content = {
         h: "Primatelji podataka",
         p: "Podatke dijelimo samo kada je potrebno:",
         items: [
+          "Organizator i suorganizatori događaja – organizator događaja na koji se prijavljujete te tvrtke koje su navedene kao suorganizatori tog događaja imaju uvid u podatke o prijavi (ime i prezime, kontakt podaci, odabrana kotizacija i usluge, status plaćanja i podaci za račun) u svrhu organizacije i provedbe događaja. Suorganizatori imaju pristup isključivo podacima o događaju koji suorganiziraju, na temelju ugovora s Pentom kojim je uređena obrada osobnih podataka.",
           "Pružatelji IT infrastrukture — Supabase (baza podataka, EU – Frankfurt), Lovable (hosting web aplikacije)",
           "Automatizacija procesa — n8n (EU – Frankfurt)",
           "Platni procesori — Stripe (SAD, SCC)",
@@ -136,6 +137,7 @@ const content = {
         h: "Data Recipients",
         p: "We share data only when necessary:",
         items: [
+          "Event organizer and co-organizers – the organizer of the event you register for and the companies listed as co-organizers of that event can view registration data (name, contact details, selected fee and services, payment status and invoicing details) for the purpose of organizing and running the event. Co-organizers can access only the data of the event they co-organize, under an agreement with Penta that governs the processing of personal data.",
           "IT infrastructure providers — Supabase (database, EU – Frankfurt), Lovable (web application hosting)",
           "Process automation — n8n (EU – Frankfurt)",
           "Payment processors — Stripe (USA, SCC)",

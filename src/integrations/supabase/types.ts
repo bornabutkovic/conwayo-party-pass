@@ -2279,6 +2279,83 @@ export type Database = {
           },
         ]
       }
+      user_access_requests: {
+        Row: {
+          created_at: string
+          created_user_id: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          email: string
+          first_name: string
+          id: string
+          institution_id: string
+          last_name: string
+          note: string | null
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_user_id?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          email: string
+          first_name: string
+          id?: string
+          institution_id: string
+          last_name: string
+          note?: string | null
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_user_id?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          institution_id?: string
+          last_name?: string
+          note?: string | null
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_access_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_access_requests_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_access_requests_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_access_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voice_session: {
         Row: {
           billing_email: string | null
@@ -3081,6 +3158,7 @@ export type Database = {
     }
     Functions: {
       admin_resend_ticket: { Args: { p_attendee_id: string }; Returns: Json }
+      auth_user_id_by_email: { Args: { p_email: string }; Returns: string }
       auto_complete_past_events: { Args: never; Returns: undefined }
       calculate_event_status: {
         Args: {
@@ -3147,6 +3225,7 @@ export type Database = {
         Args: { p_country_code: string; p_payer_type: string }
         Returns: Json
       }
+      get_dashboard_stats: { Args: { p_event_id?: string }; Returns: Json }
       get_event_gdpr_contact_email: {
         Args: { p_event_id: string }
         Returns: string
@@ -3209,10 +3288,28 @@ export type Database = {
         Returns: undefined
       }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
+      jwt_can_view_event_stats: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
       jwt_institution_uuid: { Args: never; Returns: string }
       jwt_is_admin: { Args: never; Returns: boolean }
+      jwt_is_coorganizer_of: { Args: { p_event_id: string }; Returns: boolean }
+      jwt_is_coorganizer_of_order: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
       jwt_role: { Args: never; Returns: string }
       normalize_phone_to_waid: { Args: { phone: string }; Returns: string }
+      portal_users_auth_info: {
+        Args: never
+        Returns: {
+          banned_until: string
+          email: string
+          id: string
+          last_sign_in_at: string
+        }[]
+      }
       process_order_refund: {
         Args: {
           p_credit_note_issued_at?: string
