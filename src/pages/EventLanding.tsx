@@ -100,6 +100,7 @@ const EVENT_TYPE_LABELS: Record<string, { label: { hr: string; en: string }; ico
 interface EventLandingProps {
   previewEvent?: any;
   isPreview?: boolean;
+  embedded?: boolean;
 }
 
 function stripUnsafeHtml(html: string): string {
@@ -147,7 +148,7 @@ function stripUnsafeHtml(html: string): string {
   return out.innerHTML;
 }
 
-export default function EventLanding({ previewEvent, isPreview = false }: EventLandingProps = {}) {
+export default function EventLanding({ previewEvent, isPreview = false, embedded = false }: EventLandingProps = {}) {
 
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
@@ -188,11 +189,12 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
   }, [supportsEnglish]);
 
   useEffect(() => {
+    if (embedded) return;
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [slug]);
+  }, [slug, embedded]);
 
   useEffect(() => {
-    if (!event) return;
+    if (!event || embedded) return;
 
     const stripHtml = (html: string) => {
       const tmp = document.createElement('div');
@@ -212,7 +214,7 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
 
     const plainDescription = metaEventDescription ? stripHtml(metaEventDescription).slice(0, 160) : '';
     const description = plainDescription || `Registrirajte se na ${metaEventName} putem Conwayo platforme.`;
-    const canonicalUrl = `https://conwayo.io/event/${slug}`;
+    const canonicalUrl = `https://conwayo.io/event/${slug ?? event?.slug ?? ""}`;
 
     const setMeta = (selector: string, attr: string, value: string) => {
       let el = document.querySelector(selector) as HTMLMetaElement | null;
@@ -298,8 +300,8 @@ export default function EventLanding({ previewEvent, isPreview = false }: EventL
 
 
   const whatsappMessage = displayLang === "en"
-    ? `Sign up for: ${slug}`
-    : `Prijava za: ${slug}`;
+    ? `Sign up for: ${slug ?? event?.slug ?? ""}`
+    : `Prijava za: ${slug ?? event?.slug ?? ""}`;
   const whatsappUrl = `https://wa.me/385912015954?text=${encodeURIComponent(whatsappMessage)}`;
 
   const enTrans = (event.translations as any)?.en ?? {};
