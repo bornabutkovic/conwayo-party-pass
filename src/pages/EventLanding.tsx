@@ -103,6 +103,33 @@ interface EventLandingProps {
   embedded?: boolean;
 }
 
+// Whitelists the handful of inline declarations the Admin Portal's editor can
+// emit. Anything else (including url()/expression(), parens outside rgb/rgba,
+// backslashes and @-rules) is dropped; the attribute is rebuilt from what
+// survives, or omitted entirely if nothing does.
+function sanitizeStyleAttr(raw: string): string {
+  const kept: string[] = [];
+  raw.split(';').forEach((decl) => {
+    const sep = decl.indexOf(':');
+    if (sep === -1) return;
+    const prop = decl.slice(0, sep).trim().toLowerCase();
+    const value = decl.slice(sep + 1).trim().toLowerCase();
+    if (!prop || !value) return;
+    if (/\\|@|url|expression|\(/.test(value) && !/^rgba?\([0-9., %]+\)$/.test(value)) return;
+    const ok =
+      (prop === 'text-align' && /^(left|center|right|justify)$/.test(value)) ||
+      ((prop === 'color' || prop === 'background-color') &&
+        (/^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/.test(value) ||
+          /^rgba?\([0-9., %]+\)$/.test(value))) ||
+      (prop === 'font-size' && /^\d+(?:\.\d+)?px$/.test(value) &&
+        parseFloat(value) >= 10 && parseFloat(value) <= 48) ||
+      (prop === 'line-height' && /^\d+(?:\.\d+)?$/.test(value) &&
+        parseFloat(value) >= 1 && parseFloat(value) <= 3);
+    if (ok) kept.push(`${prop}: ${value}`);
+  });
+  return kept.join('; ');
+}
+
 function stripUnsafeHtml(html: string): string {
   // Any run of 1+ raw-empty paragraphs (from the RichTextEditor's blank-line
   // breaks) collapses into a single placeholder paragraph. We give it a <br>
@@ -112,7 +139,7 @@ function stripUnsafeHtml(html: string): string {
   // renders empty paragraph nodes with a trailing <br>, so this matches the
   // Admin Portal's RichTextEditor rendering exactly.
   const cleanedHtml = html.replace(/(?:<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>)+/gi, '<p><br></p>');
-  const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','ul','ol','li','h1','h2','h3','h4','a','span','div','small'];
+  const ALLOWED_TAGS = ['p','br','strong','b','em','i','u','s','del','mark','sub','sup','blockquote','hr','ul','ol','li','h1','h2','h3','h4','a','span','div','small'];
   const doc = new DOMParser().parseFromString(cleanedHtml, 'text/html');
   function clean(node: Node): Node | null {
     if (node.nodeType === Node.TEXT_NODE) return node.cloneNode();
@@ -123,9 +150,18 @@ function stripUnsafeHtml(html: string): string {
     const safe = document.createElement(tag);
     if (tag === 'a') {
       const href = el.getAttribute('href') || '';
-      if (/^https?:\/\//i.test(href)) safe.setAttribute('href', href);
-      safe.setAttribute('target', '_blank');
-      safe.setAttribute('rel', 'noopener noreferrer');
+      if (/^https?:\/\//i.test(href)) {
+        safe.setAttribute('href', href);
+        safe.setAttribute('target', '_blank');
+        safe.setAttribute('rel', 'noopener noreferrer');
+      } else if (/^(mailto|tel):/i.test(href)) {
+        safe.setAttribute('href', href);
+      }
+    }
+    const styleAttr = el.getAttribute('style');
+    if (styleAttr) {
+      const safeStyle = sanitizeStyleAttr(styleAttr);
+      if (safeStyle) safe.setAttribute('style', safeStyle);
     }
     el.childNodes.forEach(child => {
       const cleaned = clean(child);
