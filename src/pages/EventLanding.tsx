@@ -347,14 +347,14 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
                   'name': event.venue_name,
                   'address': event.location_city,
                 },
-                'url': `https://conwayo.io/event/${slug}`,
+                'url': `https://conwayo.io/event/${slug ?? event?.slug ?? ""}`,
                 'description': plainDesc,
                 ...(event.branding_banner_url ? { 'image': event.branding_banner_url } : {}),
               });
             })()}
           </script>
         )}
-        {isPreview && (
+        {isPreview && !embedded && (
           <div
             className="sticky top-0 z-50 w-full border-b-2 border-yellow-600 bg-yellow-400 text-yellow-950"
             role="alert"
