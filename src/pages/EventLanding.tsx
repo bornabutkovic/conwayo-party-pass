@@ -150,9 +150,18 @@ function stripUnsafeHtml(html: string): string {
     const safe = document.createElement(tag);
     if (tag === 'a') {
       const href = el.getAttribute('href') || '';
-      if (/^https?:\/\//i.test(href)) safe.setAttribute('href', href);
-      safe.setAttribute('target', '_blank');
-      safe.setAttribute('rel', 'noopener noreferrer');
+      if (/^https?:\/\//i.test(href)) {
+        safe.setAttribute('href', href);
+        safe.setAttribute('target', '_blank');
+        safe.setAttribute('rel', 'noopener noreferrer');
+      } else if (/^(mailto|tel):/i.test(href)) {
+        safe.setAttribute('href', href);
+      }
+    }
+    const styleAttr = el.getAttribute('style');
+    if (styleAttr) {
+      const safeStyle = sanitizeStyleAttr(styleAttr);
+      if (safeStyle) safe.setAttribute('style', safeStyle);
     }
     el.childNodes.forEach(child => {
       const cleaned = clean(child);

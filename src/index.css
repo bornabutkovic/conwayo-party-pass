@@ -205,3 +205,35 @@
   margin-top: 0.75em;
   margin-bottom: 0.25em;
 }
+/* New editor formatting options — rendered after the prose utilities so they
+   win the cascade tie against .prose blockquote/hr rules. */
+.event-description-content blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1rem;
+  margin: 0.75em 0;
+  color: hsl(var(--muted-foreground));
+}
+.event-description-content blockquote::before,
+.event-description-content blockquote::after {
+  content: none;
+}
+.event-description-content hr {
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+  margin: 1.25em 0;
+}
+.event-description-content mark {
+  background: hsl(var(--brand-cyan) / 0.25);
+  color: inherit;
+  padding: 0 0.15em;
+  border-radius: 0.15rem;
+}
+.event-description-content sub,
+.event-description-content sup {
+  font-size: 0.7em;
+  line-height: 0;
+}
+.event-description-content s,
+.event-description-content del {
+  text-decoration: line-through;
+}
