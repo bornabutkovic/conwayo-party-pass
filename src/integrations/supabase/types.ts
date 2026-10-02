@@ -3343,6 +3343,7 @@ export type Database = {
         Returns: undefined
       }
       run_data_retention_cleanup: { Args: { dry_run?: boolean }; Returns: Json }
+      sanitize_rich_html: { Args: { p: string }; Returns: string }
       scanner_checkin: {
         Args: {
           p_attendee_id: string
