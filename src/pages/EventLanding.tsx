@@ -52,6 +52,7 @@ import { QRCodeSVG } from "qrcode.react";
 import pentaLogo from "@/assets/penta-logo.png";
 
 const VOICE_AGENT_ENABLED = true;
+const HIDE_ALTERNATIVE_REGISTRATION_FOR_PMI = true;
 
 function localiseWorkingHours(value: string, lang: string): string {
   if (lang !== "hr") return value;
@@ -712,6 +713,7 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
                   </Card>
 
                   {/* Card 2 — WhatsApp AI registration */}
+                  {!HIDE_ALTERNATIVE_REGISTRATION_FOR_PMI || !event.name?.toLowerCase().includes("pmi forum") ? (
                   <Card className="border-border">
                     <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                       <div className="space-y-3">
@@ -744,10 +746,12 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
                       </a>
                     </CardContent>
                   </Card>
+                  ) : null}
 
                   <div className="h-full flex flex-col">
                     {/* Card 3 — Voice Agent */}
-                    {VOICE_AGENT_ENABLED && (
+                    {!HIDE_ALTERNATIVE_REGISTRATION_FOR_PMI || !event.name?.toLowerCase().includes("pmi forum") ? (
+                    VOICE_AGENT_ENABLED && (
                       <Card className="border-border h-full flex flex-col">
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                           <div className="space-y-3">
@@ -774,7 +778,7 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
                           </div>
                         </CardContent>
                       </Card>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
