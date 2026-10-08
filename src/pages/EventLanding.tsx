@@ -779,7 +779,7 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
                           </div>
                         </CardContent>
                       </Card>
-                    ) : null}
+                    )}
                   </div>
                 </div>
               </div>
