@@ -44,18 +44,30 @@ export default function MyTickets() {
     }
 
     const fetchTickets = async () => {
-      const { data, error } = await supabase
-        .from("attendees")
-        .select(`
-          id, first_name, last_name, email, payment_status, ticket_sent_at, created_at,
-          ticket_tiers(name, price),
-          events(name, start_date, end_date, slug, venue_name, location_city, branding_primary_color)
-        `)
-        .eq("email", user.email!)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("get_my_tickets");
 
       if (!error && data) {
-        setAttendees(data as unknown as AttendeeWithRelations[]);
+        const mapped: AttendeeWithRelations[] = (data as any[]).map((item) => ({
+          id: item.attendee_id,
+          first_name: item.first_name,
+          last_name: item.last_name,
+          email: item.email,
+          payment_status: item.payment_status,
+          ticket_sent_at: item.ticket_sent_at,
+          created_at: null,
+          ticket_tiers: { name: item.tier_name, price: 0 },
+          events: {
+            name: item.event?.name,
+            slug: item.event?.slug,
+            start_date: item.event?.start_date ?? null,
+            end_date: item.event?.end_date ?? null,
+            venue_name: item.event?.venue_name ?? null,
+            location_city: item.event?.location_city ?? null,
+            branding_primary_color: null,
+          },
+        }));
+
+        setAttendees(mapped);
       }
       setLoading(false);
     };
