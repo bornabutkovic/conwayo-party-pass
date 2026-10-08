@@ -343,6 +343,8 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
 
   const enTrans = (event.translations as any)?.en ?? {};
 
+  const isPmiForumEvent = HIDE_ALTERNATIVE_REGISTRATION_FOR_PMI && event.name?.toLowerCase().includes("pmi forum");
+
   const eventName = displayLang === 'en' && enTrans.name
     ? String(enTrans.name)
     : event.name ?? '';
@@ -713,7 +715,7 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
                   </Card>
 
                   {/* Card 2 — WhatsApp AI registration */}
-                  {!HIDE_ALTERNATIVE_REGISTRATION_FOR_PMI || !event.name?.toLowerCase().includes("pmi forum") ? (
+                  {!isPmiForumEvent ? (
                   <Card className="border-border">
                     <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                       <div className="space-y-3">
@@ -750,8 +752,7 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
 
                   <div className="h-full flex flex-col">
                     {/* Card 3 — Voice Agent */}
-                    {!HIDE_ALTERNATIVE_REGISTRATION_FOR_PMI || !event.name?.toLowerCase().includes("pmi forum") ? (
-                    VOICE_AGENT_ENABLED && (
+                    {!isPmiForumEvent && VOICE_AGENT_ENABLED && (
                       <Card className="border-border h-full flex flex-col">
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-6">
                           <div className="space-y-3">
