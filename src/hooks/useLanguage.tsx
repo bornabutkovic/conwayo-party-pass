@@ -170,6 +170,33 @@ const translations = {
     en: "Tax ID / VAT ID cannot be longer than 20 characters.",
   },
 
+  // Set Password
+  "setPassword.titleInvite": { hr: "Postavite lozinku", en: "Set Your Password" },
+  "setPassword.titleRecovery": { hr: "Promjena lozinke", en: "Change Password" },
+  "setPassword.formDesc": {
+    hr: "Unesite novu lozinku za svoj račun.",
+    en: "Enter a new password for your account.",
+  },
+  "setPassword.newPassword": { hr: "Nova lozinka", en: "New Password" },
+  "setPassword.confirmPassword": { hr: "Ponovi lozinku", en: "Repeat Password" },
+  "setPassword.minChars": { hr: "Najmanje 8 znakova", en: "Minimum 8 characters" },
+  "setPassword.save": { hr: "Spremi lozinku", en: "Save Password" },
+  "setPassword.saving": { hr: "Spremanje...", en: "Saving..." },
+  "setPassword.verifying": { hr: "Provjera linka...", en: "Verifying link..." },
+  "setPassword.invalidTitle": { hr: "Link nije ispravan ili je istekao", en: "Link is invalid or has expired" },
+  "setPassword.invalidDesc": {
+    hr: "Zatražite novi link za postavljanje lozinke.",
+    en: "Please request a new password link.",
+  },
+  "setPassword.backToLogin": { hr: "Natrag na prijavu", en: "Back to Login" },
+  "setPassword.tooShort": {
+    hr: "Lozinka mora imati najmanje 8 znakova.",
+    en: "Password must be at least 8 characters.",
+  },
+  "setPassword.mismatch": { hr: "Lozinke se ne podudaraju.", en: "Passwords do not match." },
+  "setPassword.success": { hr: "Lozinka je postavljena", en: "Password has been set" },
+  "setPassword.failed": { hr: "Postavljanje lozinke nije uspjelo", en: "Failed to set password" },
+
   // Footer
   "footer.poweredBy": {
     hr: "Prodaja ulaznica omogućena putem platforme Conwayo.",
