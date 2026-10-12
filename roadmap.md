@@ -2,3 +2,4 @@
 - [x] Match dependent checkout tickets to an explicitly chosen attendee, clean up removed dependencies, and surface purchase errors.
 - [x] Apply desktop/mobile banner and default logo sizing on the event and checkout pages.
 - [x] Verify ticket and banner behavior in the preview.
+- [x] Add collapsible Programme block (text + PDF) below About on the public event page and preview.
