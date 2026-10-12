@@ -33,6 +33,8 @@ const translations = {
   "event.phoneLabel": { hr: "Telefon", en: "Phone" },
   "event.typeLabel": { hr: "Tip", en: "Event Type" },
   "event.aboutTitle": { hr: "O eventu", en: "About the Event" },
+  "event.programTitle": { hr: "Program", en: "Programme" },
+  "event.downloadProgram": { hr: "Preuzmi program (PDF)", en: "Download programme (PDF)" },
   "event.ticketsTitle": { hr: "Ulaznice", en: "Tickets" },
   "event.servicesTitle": { hr: "Dodatne usluge", en: "Additional Services" },
   "event.servicesNote": {

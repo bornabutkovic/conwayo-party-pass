@@ -36,6 +36,7 @@ import {
   Headphones,
   Smartphone,
   Eye,
+  Download,
 } from "lucide-react";
 
 interface SupportContact {
@@ -183,6 +184,16 @@ function stripUnsafeHtml(html: string): string {
     if (cleaned) out.appendChild(cleaned);
   });
   return out.innerHTML;
+}
+
+// True when sanitized HTML still carries something a reader can see — empty
+// paragraphs the editor leaves behind (or a stray &nbsp;) must not make a
+// section appear that renders as blank space.
+function htmlHasVisibleText(html: string): boolean {
+  if (!html) return false;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || '').replace(/[\s\u00a0\u200b]/g, '').length > 0;
 }
 
 export default function EventLanding({ previewEvent, isPreview = false, embedded = false }: EventLandingProps = {}) {
@@ -356,6 +367,16 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
   const cancellationPolicy = displayLang === 'en' && enTrans.cancellation_policy
     ? String(enTrans.cancellation_policy)
     : event.cancellation_policy ?? '';
+
+  // Programme: EN comes from translations.en.program_text and falls back to the
+  // HR column; the PDF attachment is optional and shared across languages.
+  const programText = displayLang === 'en' && enTrans.program_text
+    ? String(enTrans.program_text)
+    : event.program_text ?? '';
+  const programHtml = stripUnsafeHtml(programText || '');
+  const programHasText = htmlHasVisibleText(programHtml);
+  const programFileUrl = event.program_file_url ?? null;
+  const hasProgram = programHasText || !!programFileUrl;
 
 
 
@@ -546,6 +567,40 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
                   className="event-description-content prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
                   dangerouslySetInnerHTML={{ __html: stripUnsafeHtml(eventDescription || '') }}
                 />
+              </section>
+            )}
+
+            {/* SECTION 3b — PROGRAM (collapsible, closed by default) */}
+            {hasProgram && (
+              <section>
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="program" className="border-border">
+                    <AccordionTrigger>
+                      <span className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                        <CalendarDays className="h-6 w-6" />
+                        {t("event.programTitle")}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {programHasText && (
+                        <div
+                          className="event-description-content prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
+                          dangerouslySetInnerHTML={{ __html: programHtml }}
+                        />
+                      )}
+                      {programFileUrl && (
+                        <div className="mt-4">
+                          <Button asChild variant="outline" size="sm" className="gap-2">
+                            <a href={programFileUrl} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4" />
+                              {t("event.downloadProgram")}
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </section>
             )}
 
