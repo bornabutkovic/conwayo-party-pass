@@ -186,6 +186,16 @@ function stripUnsafeHtml(html: string): string {
   return out.innerHTML;
 }
 
+// True when sanitized HTML still carries something a reader can see — empty
+// paragraphs the editor leaves behind (or a stray &nbsp;) must not make a
+// section appear that renders as blank space.
+function htmlHasVisibleText(html: string): boolean {
+  if (!html) return false;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || '').replace(/[\s\u00a0\u200b]/g, '').length > 0;
+}
+
 export default function EventLanding({ previewEvent, isPreview = false, embedded = false }: EventLandingProps = {}) {
 
   const { slug } = useParams<{ slug: string }>();
