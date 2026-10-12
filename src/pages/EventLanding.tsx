@@ -36,6 +36,7 @@ import {
   Headphones,
   Smartphone,
   Eye,
+  Download,
 } from "lucide-react";
 
 interface SupportContact {
