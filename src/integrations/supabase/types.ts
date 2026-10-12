@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -3464,6 +3464,16 @@ export type Database = {
         Returns: string
       }
       expire_stale_orders: { Args: never; Returns: Json }
+      find_active_registrations: {
+        Args: { p_event_id: string; p_people: Json }
+        Returns: {
+          email: string
+          first_name: string
+          last_name: string
+          order_number: number
+          order_status: string
+        }[]
+      }
       fix_my_order_attendee_email: {
         Args: { p_attendee_id: string; p_new_email: string }
         Returns: Json
@@ -3521,6 +3531,7 @@ export type Database = {
       get_my_orders: { Args: never; Returns: Json }
       get_my_tickets: { Args: never; Returns: Json }
       get_order_full_data: { Args: { p_order_id: string }; Returns: Json }
+      get_public_ticket: { Args: { p_attendee_id: string }; Returns: Json }
       get_session_missing_fields: {
         Args: { p_wa_id: string }
         Returns: {
