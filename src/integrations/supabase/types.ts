@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_invites: {
+        Row: {
+          email: string
+          first_sent_at: string
+          last_sent_at: string
+          send_count: number
+        }
+        Insert: {
+          email: string
+          first_sent_at?: string
+          last_sent_at?: string
+          send_count?: number
+        }
+        Update: {
+          email?: string
+          first_sent_at?: string
+          last_sent_at?: string
+          send_count?: number
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           created_at: string | null
@@ -850,6 +871,9 @@ export type Database = {
           organizers_info: Json | null
           payment_due_days: number | null
           price: number | null
+          program_file_name: string | null
+          program_file_url: string | null
+          program_text: string | null
           rejection_reason: string | null
           required_attendee_fields: string[] | null
           short_name: string | null
@@ -911,6 +935,9 @@ export type Database = {
           organizers_info?: Json | null
           payment_due_days?: number | null
           price?: number | null
+          program_file_name?: string | null
+          program_file_url?: string | null
+          program_text?: string | null
           rejection_reason?: string | null
           required_attendee_fields?: string[] | null
           short_name?: string | null
@@ -972,6 +999,9 @@ export type Database = {
           organizers_info?: Json | null
           payment_due_days?: number | null
           price?: number | null
+          program_file_name?: string | null
+          program_file_url?: string | null
+          program_text?: string | null
           rejection_reason?: string | null
           required_attendee_fields?: string[] | null
           short_name?: string | null
@@ -1414,6 +1444,85 @@ export type Database = {
           },
         ]
       }
+      order_item_cancellations: {
+        Row: {
+          attendee_id: string | null
+          cancelled_by: string | null
+          cancelled_by_email: string | null
+          created_at: string
+          description: string | null
+          id: string
+          institution_uuid: string | null
+          item_type: string | null
+          order_id: string | null
+          order_item_id: string
+          reason: string | null
+          service_id: string | null
+          snapshot: Json
+          total_price: number | null
+          unit_price: number | null
+          vat_amount: number | null
+        }
+        Insert: {
+          attendee_id?: string | null
+          cancelled_by?: string | null
+          cancelled_by_email?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution_uuid?: string | null
+          item_type?: string | null
+          order_id?: string | null
+          order_item_id: string
+          reason?: string | null
+          service_id?: string | null
+          snapshot: Json
+          total_price?: number | null
+          unit_price?: number | null
+          vat_amount?: number | null
+        }
+        Update: {
+          attendee_id?: string | null
+          cancelled_by?: string | null
+          cancelled_by_email?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution_uuid?: string | null
+          item_type?: string | null
+          order_id?: string | null
+          order_item_id?: string
+          reason?: string | null
+          service_id?: string | null
+          snapshot?: Json
+          total_price?: number | null
+          unit_price?: number | null
+          vat_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_cancellations_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "attendee_invoice_summary"
+            referencedColumns: ["attendee_id"]
+          },
+          {
+            foreignKeyName: "order_item_cancellations_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_cancellations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           attendee_id: string | null
@@ -1519,6 +1628,7 @@ export type Database = {
           bc_invoice_number: string | null
           bc_quote_number: string | null
           bc_quote_number_history: Json
+          bc_quote_requested_at: string | null
           billing_email: string | null
           card_brand: string | null
           card_country: string | null
@@ -1546,6 +1656,7 @@ export type Database = {
           order_number: number
           paid_at: string | null
           payer_address: string | null
+          payer_changed_at: string | null
           payer_city: string | null
           payer_country_code: string | null
           payer_country_name: string | null
@@ -1556,6 +1667,7 @@ export type Database = {
           payment_method: string | null
           pdf_url: string | null
           po_number: string | null
+          profile_id: string | null
           source: string | null
           status: Database["public"]["Enums"]["payment_status"] | null
           stripe_session_expires_at: string | null
@@ -1573,6 +1685,7 @@ export type Database = {
           bc_invoice_number?: string | null
           bc_quote_number?: string | null
           bc_quote_number_history?: Json
+          bc_quote_requested_at?: string | null
           billing_email?: string | null
           card_brand?: string | null
           card_country?: string | null
@@ -1600,6 +1713,7 @@ export type Database = {
           order_number?: number
           paid_at?: string | null
           payer_address?: string | null
+          payer_changed_at?: string | null
           payer_city?: string | null
           payer_country_code?: string | null
           payer_country_name?: string | null
@@ -1610,6 +1724,7 @@ export type Database = {
           payment_method?: string | null
           pdf_url?: string | null
           po_number?: string | null
+          profile_id?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           stripe_session_expires_at?: string | null
@@ -1627,6 +1742,7 @@ export type Database = {
           bc_invoice_number?: string | null
           bc_quote_number?: string | null
           bc_quote_number_history?: Json
+          bc_quote_requested_at?: string | null
           billing_email?: string | null
           card_brand?: string | null
           card_country?: string | null
@@ -1654,6 +1770,7 @@ export type Database = {
           order_number?: number
           paid_at?: string | null
           payer_address?: string | null
+          payer_changed_at?: string | null
           payer_city?: string | null
           payer_country_code?: string | null
           payer_country_name?: string | null
@@ -1664,6 +1781,7 @@ export type Database = {
           payment_method?: string | null
           pdf_url?: string | null
           po_number?: string | null
+          profile_id?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           stripe_session_expires_at?: string | null
@@ -1701,6 +1819,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "view_events_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2356,15 +2481,38 @@ export type Database = {
           },
         ]
       }
+      verified_email_grants: {
+        Row: {
+          email: string
+          granted_at: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          email: string
+          granted_at?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          email?: string
+          granted_at?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       voice_session: {
         Row: {
           billing_email: string | null
           call_duration_seconds: number | null
           cart_attendees: Json | null
           cart_services: Json | null
+          code_attempts: number
           company_name: string | null
           company_oib: string | null
           created_at: string | null
+          discount_code: string | null
           email: string | null
           ended_at: string | null
           event_id: string | null
@@ -2389,8 +2537,10 @@ export type Database = {
           specialty: string | null
           status: string | null
           submit_error: string | null
+          submit_locked_at: string | null
           ticket_tier_id: string | null
           ticket_tier_name: string | null
+          ui_request: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -2398,9 +2548,11 @@ export type Database = {
           call_duration_seconds?: number | null
           cart_attendees?: Json | null
           cart_services?: Json | null
+          code_attempts?: number
           company_name?: string | null
           company_oib?: string | null
           created_at?: string | null
+          discount_code?: string | null
           email?: string | null
           ended_at?: string | null
           event_id?: string | null
@@ -2425,8 +2577,10 @@ export type Database = {
           specialty?: string | null
           status?: string | null
           submit_error?: string | null
+          submit_locked_at?: string | null
           ticket_tier_id?: string | null
           ticket_tier_name?: string | null
+          ui_request?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -2434,9 +2588,11 @@ export type Database = {
           call_duration_seconds?: number | null
           cart_attendees?: Json | null
           cart_services?: Json | null
+          code_attempts?: number
           company_name?: string | null
           company_oib?: string | null
           created_at?: string | null
+          discount_code?: string | null
           email?: string | null
           ended_at?: string | null
           event_id?: string | null
@@ -2461,8 +2617,10 @@ export type Database = {
           specialty?: string | null
           status?: string | null
           submit_error?: string | null
+          submit_locked_at?: string | null
           ticket_tier_id?: string | null
           ticket_tier_name?: string | null
+          ui_request?: Json | null
           updated_at?: string | null
         }
         Relationships: [
@@ -2606,6 +2764,7 @@ export type Database = {
           contact_phone: string | null
           conversation_mode: string | null
           created_at: string | null
+          discount_code: string | null
           draft_order_id: string | null
           email: string | null
           event_id: string | null
@@ -2635,6 +2794,7 @@ export type Database = {
           registration_type: string | null
           specialty: string | null
           step: string | null
+          submit_locked_at: string | null
           updated_at: string | null
           wa_id: string
         }
@@ -2656,6 +2816,7 @@ export type Database = {
           contact_phone?: string | null
           conversation_mode?: string | null
           created_at?: string | null
+          discount_code?: string | null
           draft_order_id?: string | null
           email?: string | null
           event_id?: string | null
@@ -2685,6 +2846,7 @@ export type Database = {
           registration_type?: string | null
           specialty?: string | null
           step?: string | null
+          submit_locked_at?: string | null
           updated_at?: string | null
           wa_id: string
         }
@@ -2706,6 +2868,7 @@ export type Database = {
           contact_phone?: string | null
           conversation_mode?: string | null
           created_at?: string | null
+          discount_code?: string | null
           draft_order_id?: string | null
           email?: string | null
           event_id?: string | null
@@ -2735,6 +2898,7 @@ export type Database = {
           registration_type?: string | null
           specialty?: string | null
           step?: string | null
+          submit_locked_at?: string | null
           updated_at?: string | null
           wa_id?: string
         }
@@ -2864,6 +3028,41 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      attendee_order_items_v: {
+        Row: {
+          attendee_id: string | null
+          bc_quote_number: string | null
+          discount_amount: number | null
+          due_date: string | null
+          event_id: string | null
+          fiscal_invoice_number: string | null
+          is_primary_order: boolean | null
+          is_refunded: boolean | null
+          item_status: string | null
+          item_type: string | null
+          name: string | null
+          order_created_at: string | null
+          order_id: string | null
+          order_item_id: string | null
+          order_number: number | null
+          order_source: string | null
+          order_status: string | null
+          order_total_amount: number | null
+          paid_at: string | null
+          payer_name: string | null
+          payer_type: string | null
+          payment_method: string | null
+          quantity: number | null
+          removed_at: string | null
+          removed_reason: string | null
+          service_id: string | null
+          ticket_type_id: string | null
+          total_price: number | null
+          unit_price: number | null
+          vat_amount: number | null
+        }
+        Relationships: []
       }
       institutions_public: {
         Row: {
@@ -3157,7 +3356,62 @@ export type Database = {
       }
     }
     Functions: {
+      admin_add_attendee_services: {
+        Args: {
+          p_allow_over_capacity?: boolean
+          p_attendee_id: string
+          p_service_ids: string[]
+        }
+        Returns: Json
+      }
+      admin_attendee_service_options: {
+        Args: { p_attendee_id: string }
+        Returns: Json
+      }
+      admin_cancel_attendee_service: {
+        Args: {
+          p_credit_note_number?: string
+          p_order_item_id: string
+          p_reason?: string
+          p_refund?: boolean
+          p_stripe_refund_id?: string
+        }
+        Returns: Json
+      }
+      admin_create_manual_order: {
+        Args: {
+          p_allow_over_capacity?: boolean
+          p_bc_quote_number?: string
+          p_discount_code?: string
+          p_email: string
+          p_event_id: string
+          p_first_name: string
+          p_lang?: string
+          p_last_name: string
+          p_mark_paid?: boolean
+          p_payer?: Json
+          p_payment_method?: string
+          p_phone?: string
+          p_price?: number
+          p_service_ids?: string[]
+          p_ticket_tier_id: string
+        }
+        Returns: Json
+      }
+      admin_link_registrations: {
+        Args: { p_reason: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_request_order_quote: { Args: { p_order_id: string }; Returns: Json }
       admin_resend_ticket: { Args: { p_attendee_id: string }; Returns: Json }
+      apply_order_discount: {
+        Args: { p_code: string; p_order_id: string }
+        Returns: Json
+      }
+      attendee_primary_order_id: {
+        Args: { p_attendee_id: string }
+        Returns: string
+      }
       auth_user_id_by_email: { Args: { p_email: string }; Returns: string }
       auto_complete_past_events: { Args: never; Returns: undefined }
       calculate_event_status: {
@@ -3178,6 +3432,9 @@ export type Database = {
           tier_name: string
         }[]
       }
+      claim_whatsapp_submit:
+        | { Args: { p_wa_id: string }; Returns: Json }
+        | { Args: { p_ready: boolean; p_wa_id: string }; Returns: Json }
       close_abandoned_voice_sessions: { Args: never; Returns: number }
       create_registration_items: {
         Args: {
@@ -3207,6 +3464,10 @@ export type Database = {
         Returns: string
       }
       expire_stale_orders: { Args: never; Returns: Json }
+      fix_my_order_attendee_email: {
+        Args: { p_attendee_id: string; p_new_email: string }
+        Returns: Json
+      }
       gdpr_export_package: { Args: never; Returns: Json }
       get_admin_users: {
         Args: never
@@ -3232,6 +3493,18 @@ export type Database = {
       }
       get_event_organizers_info: { Args: { p_event_id: string }; Returns: Json }
       get_event_revenue_stats: { Args: { p_event_id: string }; Returns: Json }
+      get_event_service_availability: {
+        Args: { p_event_id: string }
+        Returns: {
+          capacity: number
+          is_sold_out: boolean
+          paid: number
+          remaining: number
+          service_id: string
+          service_name: string
+          sold: number
+        }[]
+      }
       get_event_translations: { Args: { p_event_id: string }; Returns: Json }
       get_my_event_tickets: {
         Args: { p_event_id: string }
@@ -3245,6 +3518,8 @@ export type Database = {
           tier_name: string
         }[]
       }
+      get_my_orders: { Args: never; Returns: Json }
+      get_my_tickets: { Args: never; Returns: Json }
       get_order_full_data: { Args: { p_order_id: string }; Returns: Json }
       get_session_missing_fields: {
         Args: { p_wa_id: string }
@@ -3288,6 +3563,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
+      is_valid_hr_oib: { Args: { p: string }; Returns: boolean }
       jwt_can_view_event_stats: {
         Args: { p_event_id: string }
         Returns: boolean
@@ -3300,6 +3576,10 @@ export type Database = {
         Returns: boolean
       }
       jwt_role: { Args: never; Returns: string }
+      link_registrations_for_user: {
+        Args: { p_force?: boolean; p_reason?: string; p_user_id: string }
+        Returns: Json
+      }
       normalize_phone_to_waid: { Args: { phone: string }; Returns: string }
       portal_users_auth_info: {
         Args: never
@@ -3310,6 +3590,7 @@ export type Database = {
           last_sign_in_at: string
         }[]
       }
+      prepare_account_invite: { Args: { p_email: string }; Returns: Json }
       process_order_refund: {
         Args: {
           p_credit_note_issued_at?: string
@@ -3342,6 +3623,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_owner_profile: { Args: { p_email: string }; Returns: string }
       run_data_retention_cleanup: { Args: { dry_run?: boolean }; Returns: Json }
       sanitize_rich_html: { Args: { p: string }; Returns: string }
       scanner_checkin: {
@@ -3363,6 +3645,31 @@ export type Database = {
       }
       unaccent: { Args: { "": string }; Returns: string }
       update_completed_events: { Args: never; Returns: undefined }
+      update_my_attendee_contact: {
+        Args: {
+          p_attendee_id: string
+          p_institution?: string
+          p_phone?: string
+          p_specialty?: string
+        }
+        Returns: Json
+      }
+      update_my_order_payer: {
+        Args: {
+          p_billing_email?: string
+          p_order_id: string
+          p_payer_address: string
+          p_payer_city: string
+          p_payer_country_code: string
+          p_payer_country_name: string
+          p_payer_name: string
+          p_payer_oib: string
+          p_payer_postal_code: string
+          p_payer_type: string
+          p_po_number?: string
+        }
+        Returns: Json
+      }
       upsert_wa_session: {
         Args: { p_new_slug?: string; p_wa_id: string }
         Returns: {
@@ -3401,6 +3708,11 @@ export type Database = {
           token_id: string
           valid: boolean
         }[]
+      }
+      verified_account_id: { Args: { p_email: string }; Returns: string }
+      voice_claim_code_attempt: {
+        Args: { p_max?: number; p_session_id: string }
+        Returns: number
       }
     }
     Enums: {
