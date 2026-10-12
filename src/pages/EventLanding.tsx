@@ -368,6 +368,16 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
     ? String(enTrans.cancellation_policy)
     : event.cancellation_policy ?? '';
 
+  // Programme: EN comes from translations.en.program_text and falls back to the
+  // HR column; the PDF attachment is optional and shared across languages.
+  const programText = displayLang === 'en' && enTrans.program_text
+    ? String(enTrans.program_text)
+    : event.program_text ?? '';
+  const programHtml = stripUnsafeHtml(programText || '');
+  const programHasText = htmlHasVisibleText(programHtml);
+  const programFileUrl = event.program_file_url ?? null;
+  const hasProgram = programHasText || !!programFileUrl;
+
 
 
 
@@ -557,6 +567,40 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
                   className="event-description-content prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
                   dangerouslySetInnerHTML={{ __html: stripUnsafeHtml(eventDescription || '') }}
                 />
+              </section>
+            )}
+
+            {/* SECTION 3b — PROGRAM (collapsible, closed by default) */}
+            {hasProgram && (
+              <section>
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="program" className="border-border">
+                    <AccordionTrigger>
+                      <span className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                        <CalendarDays className="h-6 w-6" />
+                        {t("event.programTitle")}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {programHasText && (
+                        <div
+                          className="event-description-content prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-primary"
+                          dangerouslySetInnerHTML={{ __html: programHtml }}
+                        />
+                      )}
+                      {programFileUrl && (
+                        <div className="mt-4">
+                          <Button asChild variant="outline" size="sm" className="gap-2">
+                            <a href={programFileUrl} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4" />
+                              {t("event.downloadProgram")}
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </section>
             )}
 
