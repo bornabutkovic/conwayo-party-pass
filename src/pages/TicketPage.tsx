@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { ConvwayoHeader } from "@/components/ConvwayoHeader";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useEventServices } from "@/hooks/useEventServices";
 import { CreateAccountBanner } from "@/components/event/CreateAccountBanner";
 import { ServiceCard } from "@/components/event/ServiceCard";
@@ -13,98 +14,119 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { Ticket, User, CreditCard, Loader2, ShoppingBag } from "lucide-react";
-import type { Tables } from "@/integrations/supabase/types";
 
-type Attendee = Tables<"attendees">;
+interface PublicTicket {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  status: string | null;
+  payment_status: string | null;
+  event_id: string | null;
+  is_guest: boolean;
+  event_name: string | null;
+  event_slug: string | null;
+  currency: string | null;
+  order_id: string | null;
+  order_number: number | null;
+  order_status: string | null;
+  payment_method: string | null;
+  po_number: string | null;
+  purchased_service_ids: string[] | null;
+}
 
 export default function TicketPage() {
   const { attendeeId } = useParams<{ attendeeId: string }>();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [attendee, setAttendee] = useState<Attendee | null>(null);
-  const [eventName, setEventName] = useState("");
-  const [eventId, setEventId] = useState<string | null>(null);
-  const [poNumber, setPoNumber] = useState<string | null>(null);
-  const [currency, setCurrency] = useState("EUR");
+  const { lang } = useLanguage();
+  const [ticket, setTicket] = useState<PublicTicket | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
-  const [purchasedServiceIds, setPurchasedServiceIds] = useState<Set<string>>(new Set());
+  const [pollTimedOut, setPollTimedOut] = useState(false);
 
-  const { data: services = [] } = useEventServices(eventId);
+  const paymentParam = searchParams.get("payment");
+  const isPaymentSuccess = paymentParam === "success";
+
+  const { data: services = [] } = useEventServices(ticket?.event_id);
+
+  const isPaid = ticket?.payment_status === "paid";
+  const isPolling =
+    isPaymentSuccess && !!ticket && !isPaid && !pollTimedOut;
 
   useEffect(() => {
     if (!attendeeId) return;
 
-    const fetchData = async () => {
-      try {
-        const { data: att, error: attErr } = await supabase
-          .from("attendees")
-          .select("*")
-          .eq("id", attendeeId)
-          .maybeSingle();
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
 
-        if (attErr) throw attErr;
-        if (!att) {
-          toast({ title: "Ticket not found", variant: "destructive" });
-          return;
-        }
-
-        setAttendee(att);
-
-        // Fetch PO number from order
-        const { data: order } = await supabase
-          .from("orders")
-          .select("po_number")
-          .eq("attendee_id", att.id)
-          .maybeSingle();
-
-        if (order?.po_number) {
-          setPoNumber(order.po_number);
-        }
-
-        // Fetch purchased services
-        const { data: items } = await supabase
-          .from("order_items")
-          .select("service_id")
-          .eq("attendee_id", att.id)
-          .not("service_id", "is", null);
-
-        if (items) {
-          setPurchasedServiceIds(new Set(items.map((i) => i.service_id!)));
-        }
-
-        if (att.event_id) {
-          setEventId(att.event_id);
-          const { data: ev } = await supabase
-            .from("events")
-            .select("name, slug, currency")
-            .eq("id", att.event_id)
-            .maybeSingle();
-
-          if (ev) {
-            setEventName(ev.name);
-            setCurrency(ev.currency ?? "EUR");
-          }
-        }
-      } catch (err: any) {
-        toast({ title: "Error loading ticket", description: err.message, variant: "destructive" });
-      } finally {
-        setLoading(false);
+    const applyData = (data: PublicTicket | null) => {
+      if (!data) {
+        setNotFound(true);
+        setTicket(null);
+        return;
       }
+      setNotFound(false);
+      setTicket(data);
+    };
+
+    const fetchData = async () => {
+      const { data, error } = await supabase.rpc("get_public_ticket" as any, {
+        p_attendee_id: attendeeId,
+      });
+      if (cancelled) return;
+      if (error) {
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
+      applyData(data as PublicTicket | null);
+      setLoading(false);
     };
 
     fetchData();
-  }, [attendeeId]);
+
+    if (paymentParam === "success") {
+      interval = setInterval(async () => {
+        const { data, error } = await supabase.rpc("get_public_ticket" as any, {
+          p_attendee_id: attendeeId,
+        });
+        if (cancelled || error || !data) return;
+        const t = data as PublicTicket;
+        if (t.payment_status === "paid") {
+          applyData(t);
+          if (interval) clearInterval(interval);
+          if (timeout) clearTimeout(timeout);
+        }
+      }, 2000);
+
+      timeout = setTimeout(() => {
+        if (interval) clearInterval(interval);
+        if (!cancelled) setPollTimedOut(true);
+      }, 60000);
+    }
+
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [attendeeId, paymentParam]);
 
   const triggerStripeCheckout = async () => {
-    if (!attendee) return;
+    if (!ticket) return;
     setRedirectingToStripe(true);
     try {
       const res = await supabase.functions.invoke("create-checkout", {
-        body: { attendeeId: attendee.id, eventId: attendee.event_id },
+        body: { orderId: ticket.order_id, eventId: ticket.event_id },
       });
       const result = res.data;
       if (result.free) {
-        setAttendee({ ...attendee, payment_status: "paid" });
+        setTicket({ ...ticket, payment_status: "paid" });
         toast({ title: "Free ticket activated!" });
         return;
       }
@@ -121,7 +143,7 @@ export default function TicketPage() {
   };
 
   const handlePurchaseService = async (serviceId: string) => {
-    if (!attendee || !eventId) return;
+    if (!ticket || !ticket.event_id) return;
 
     const service = services.find((s) => s.id === serviceId);
     if (!service) return;
@@ -131,7 +153,7 @@ export default function TicketPage() {
       const { data: ev } = await supabase
         .from("events")
         .select("vat_rate")
-        .eq("id", eventId)
+        .eq("id", ticket.event_id)
         .maybeSingle();
 
       const vatRate = ev?.vat_rate ?? 25;
@@ -140,9 +162,9 @@ export default function TicketPage() {
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
-          event_id: eventId,
-          attendee_id: attendee.id,
-          payer_name: `${attendee.first_name} ${attendee.last_name}`,
+          event_id: ticket.event_id,
+          attendee_id: ticket.id,
+          payer_name: `${ticket.first_name} ${ticket.last_name}`,
           payer_type: "individual",
           status: "draft",
           total_amount: service.price,
@@ -154,7 +176,7 @@ export default function TicketPage() {
 
       const { error: itemError } = await supabase.from("order_items").insert({
         order_id: order.id,
-        attendee_id: attendee.id,
+        attendee_id: ticket.id,
         service_id: serviceId,
         description: service.name,
         quantity: 1,
@@ -167,13 +189,20 @@ export default function TicketPage() {
       if (itemError) throw itemError;
 
       if (service.price <= 0) {
-        setPurchasedServiceIds((prev) => new Set([...prev, serviceId]));
+        setTicket((prev) =>
+          prev
+            ? {
+                ...prev,
+                purchased_service_ids: [...(prev.purchased_service_ids ?? []), serviceId],
+              }
+            : prev
+        );
         toast({ title: "Service added to your ticket!" });
         return;
       }
 
       const res = await supabase.functions.invoke("create-checkout", {
-        body: { attendeeId: attendee.id, eventId },
+        body: { attendeeId: ticket.id, eventId: ticket.event_id },
       });
 
       if (res.data?.url) {
@@ -198,7 +227,24 @@ export default function TicketPage() {
     );
   }
 
-  if (!attendee) {
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            {lang === "en" ? "Something went wrong" : "Došlo je do pogreške"}
+          </h1>
+          <p className="text-muted-foreground">
+            {lang === "en"
+              ? "We cannot display your ticket right now. Please check your email or contact the organizer."
+              : "Ulaznicu trenutno ne možemo prikazati. Provjerite e-mail ili kontaktirajte organizatora."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound || !ticket) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center">
@@ -209,8 +255,12 @@ export default function TicketPage() {
     );
   }
 
-  const isPaid = attendee.payment_status === "paid";
-  const isGuest = !attendee.profile_id;
+  const purchasedServiceIds = new Set(ticket.purchased_service_ids ?? []);
+  const isGuest = ticket.is_guest;
+  const orderSettled = ["paid", "issued", "overdue", "deferred"].includes(
+    ticket.order_status ?? ""
+  );
+  const showPayNow = !isPaid && !isPaymentSuccess && !orderSettled && !isPolling;
 
   return (
     <div className="min-h-screen bg-background">
@@ -219,13 +269,40 @@ export default function TicketPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-lg space-y-6">
           {/* Guest → Account Conversion Banner */}
-          {isGuest && !user && attendee.email && (
+          {isGuest && !user && ticket.email && (
             <CreateAccountBanner
-              attendeeId={attendee.id}
-              email={attendee.email}
-              firstName={attendee.first_name}
-              lastName={attendee.last_name}
+              attendeeId={ticket.id}
+              email={ticket.email}
+              firstName={ticket.first_name}
+              lastName={ticket.last_name}
             />
+          )}
+
+          {/* Payment confirmation pending */}
+          {isPolling && (
+            <Card>
+              <CardContent className="flex items-center justify-center gap-3 py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">
+                  {lang === "en"
+                    ? "Payment received. Confirming your payment, this takes a few seconds…"
+                    : "Plaćanje je zaprimljeno. Potvrđujemo uplatu, ovo traje nekoliko sekundi…"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Payment received but not confirmed within 60s */}
+          {isPaymentSuccess && !isPaid && pollTimedOut && (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {lang === "en"
+                    ? "Your payment was received; the confirmation and ticket will arrive by email. Please do not pay again."
+                    : "Uplata je zaprimljena, a potvrda i ulaznica stižu na vaš e-mail. Nemojte ponovno plaćati."}
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {/* QR Code Card */}
@@ -234,14 +311,18 @@ export default function TicketPage() {
               <CardTitle className="flex items-center gap-2">
                 <Ticket className="h-5 w-5 text-primary" />
                 My Ticket
-                {eventName && <span className="text-sm font-normal text-muted-foreground">— {eventName}</span>}
+                {ticket.event_name && (
+                  <span className="text-sm font-normal text-muted-foreground">
+                    — {ticket.event_name}
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="relative rounded-xl border-2 border-primary/20 bg-card p-4">
                   <div className={!isPaid ? "blur-md pointer-events-none select-none" : ""}>
-                    <QRCodeSVG value={attendee.id} size={192} level="H" includeMargin />
+                    <QRCodeSVG value={ticket.id} size={192} level="H" includeMargin />
                   </div>
                   {!isPaid && (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -252,9 +333,9 @@ export default function TicketPage() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  ID: {attendee.id.slice(0, 8)}...
+                  ID: {ticket.id.slice(0, 8)}...
                 </p>
-                {!isPaid && (
+                {showPayNow && (
                   <Button
                     size="lg"
                     className="w-full mt-2"
@@ -286,24 +367,24 @@ export default function TicketPage() {
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Name</dt>
                   <dd className="font-medium text-foreground">
-                    {attendee.first_name} {attendee.last_name}
+                    {ticket.first_name} {ticket.last_name}
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Email</dt>
-                  <dd className="font-medium text-foreground">{attendee.email}</dd>
+                  <dd className="font-medium text-foreground">{ticket.email}</dd>
                 </div>
-                {attendee.phone && (
+                {ticket.phone && (
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Phone</dt>
-                    <dd className="font-medium text-foreground">{attendee.phone}</dd>
+                    <dd className="font-medium text-foreground">{ticket.phone}</dd>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Status</dt>
                   <dd>
-                    <Badge variant={attendee.status === "approved" ? "default" : "secondary"}>
-                      {attendee.status ?? "Pending"}
+                    <Badge variant={ticket.status === "approved" ? "default" : "secondary"}>
+                      {ticket.status ?? "Pending"}
                     </Badge>
                   </dd>
                 </div>
@@ -311,14 +392,14 @@ export default function TicketPage() {
                   <dt className="text-muted-foreground">Payment</dt>
                   <dd>
                     <Badge variant={isPaid ? "default" : "secondary"}>
-                      {attendee.payment_status ?? "Pending"}
+                      {ticket.payment_status ?? "Pending"}
                     </Badge>
                   </dd>
                 </div>
-                {poNumber && (
+                {ticket.po_number && (
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">PO Number</dt>
-                    <dd className="font-medium text-foreground">{poNumber}</dd>
+                    <dd className="font-medium text-foreground">{ticket.po_number}</dd>
                   </div>
                 )}
               </dl>
@@ -339,7 +420,7 @@ export default function TicketPage() {
                   <ServiceCard
                     key={service.id}
                     service={service}
-                    currency={currency}
+                    currency={ticket.currency ?? "EUR"}
                     purchased={purchasedServiceIds.has(service.id)}
                     onPurchase={handlePurchaseService}
                   />
