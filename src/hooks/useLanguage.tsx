@@ -72,6 +72,7 @@ const translations = {
   },
   "event.whatsappButton": { hr: "Otvori WhatsApp", en: "Open WhatsApp" },
   "event.chooseRegistration": { hr: "Odaberi način prijave", en: "Choose how to register" },
+  "event.registerSingle": { hr: "Prijavi se", en: "Register" },
   "event.voiceTitle": { hr: "Voice Agent", en: "Voice Agent" },
   "event.voiceDesc": {
     hr: "Kupi kartu glasovnom naredbom — uskoro dostupno.",
