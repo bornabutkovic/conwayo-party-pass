@@ -356,6 +356,12 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
 
   const isPmiForumEvent = HIDE_ALTERNATIVE_REGISTRATION_FOR_PMI && event.name?.toLowerCase().includes("pmi forum");
 
+  // Number of registration-channel cards actually rendered for this event.
+  const registrationChannelCount =
+    1 +
+    (!isPmiForumEvent ? 1 : 0) +
+    (!isPmiForumEvent && VOICE_AGENT_ENABLED ? 1 : 0);
+
   const eventName = displayLang === 'en' && enTrans.name
     ? String(enTrans.name)
     : event.name ?? '';
@@ -748,7 +754,7 @@ export default function EventLanding({ previewEvent, isPreview = false, embedded
             {/* Registration options — equal weight */}
             <section>
               <div id="registration-options">
-                <h2 className="text-2xl font-bold text-foreground mb-6 mt-10">{t("event.chooseRegistration")}</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-6 mt-10">{registrationChannelCount === 1 ? t("event.registerSingle") : t("event.chooseRegistration")}</h2>
                 <div className="mt-6 grid gap-4 sm:grid-cols-3">
                   {/* Card 1 — Online registration */}
                   <Card className="border-border">
